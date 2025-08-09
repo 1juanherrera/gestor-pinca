@@ -47,7 +47,7 @@ export const Table = ({ products = [], isLoading = false, error = null, onEdit, 
     return (
         <>
             <div className="overflow-hidden rounded-lg border border-gray-200">
-                <div className="max-h-[50vh] overflow-y-auto">
+                <div className="max-h-[70vh] overflow-y-auto">
                     <table className="w-full">
                         <thead className="sticky top-0 bg-gray-700 text-white uppercase">
                             <tr>

@@ -5,6 +5,16 @@ use CodeIgniter\Model;
 
 class ItemGeneralModel extends Model
 {
+    protected $table = 'item_general';
+    protected $primaryKey = 'id_item_general';
+    protected $allowedFields = [
+        'nombre',
+        'codigo',
+        'tipo',
+        'categoria_id',
+        'item_especifico_id'
+    ];
+
     public function __construct(){
         parent::__construct();
     }
