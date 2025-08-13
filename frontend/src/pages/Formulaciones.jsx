@@ -2,90 +2,10 @@
 // import { FormulacionesTable } from '../components/formulaciones/FormulacionesTable';
 // import { CostCalculator } from '../components/formulaciones/CostCalculator';
 // import { ProductSpecificationsTable } from '../components/formulaciones/ProductSpecificationsTable';
-// import { FaFlask, FaChartPie, FaSpinner, FaCube } from 'react-icons/fa';
-// import { MdScience } from 'react-icons/md';
+import { FaFlask, FaChartPie, FaSpinner, FaCube } from 'react-icons/fa';
+import { MdScience } from 'react-icons/md';
 // import { formatoCantidad } from '../utils/formatters';
-// import { CostProductsTable } from '../components/formulaciones/CostProductsTable';
-
-// export const Formulaciones = () => {
-
-
-//     return (
-//         <div className="ml-65 p-4 bg-gray-100 min-h-screen">
-//             {/* Header Compacto */}
-//             <div className="mb-4">
-//                 <div className="flex items-center justify-between">
-//                     <div className="flex items-center gap-2">
-//                         <FaFlask className="text-blue-500" size={20} />
-//                         <div>
-//                             <h1 className="text-xl font-bold text-gray-800">
-//                                 Formulaciones y Calculadora
-//                             </h1>
-//                         </div>
-//                     </div>
-//                     <button
-//                         onClick={refreshData}
-//                         disabled={loading}
-//                         className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 transition-colors"
-//                     >
-//                         {loading ? (
-//                             <>
-//                                 <FaSpinner className="animate-spin" size={14} />
-//                                 Cargando...
-//                             </>
-//                         ) : (
-//                             <>
-//                                 <MdScience size={14} />
-//                                 Actualizar
-//                             </>
-//                         )}
-//                     </button>
-//                 </div>
-//             </div>
-
-//             {/* Estadísticas Compactas */}
-//             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-//                 <div className="bg-white rounded-lg shadow-sm p-3">
-//                     <div className="flex items-center justify-between">
-//                         <div>
-//                             <p className="text-xs font-medium text-gray-600">Productos</p>
-//                             <p className="text-lg font-bold text-blue-600">
-//                                 {estadisticas?.productos || 0}
-//                             </p>
-//                         </div>
-//                         <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-//                             <FaFlask className="h-4 w-4 text-blue-600" />
-//                         </div>
-//                     </div>
-//                 </div>
-
-//                 <div className="bg-white rounded-lg shadow-sm p-3">
-//                     <div className="flex items-center justify-between">
-//                         <div>
-//                             <p className="text-xs font-medium text-gray-600">Insumos</p>
-//                             <p className="text-lg font-bold text-yellow-600">
-//                                 {estadisticas?.insumos || 0}
-//                             </p>
-//                         </div>
-//                         <div className="h-8 w-8 bg-yellow-100 rounded-full flex items-center justify-center">
-//                             <FaCube className="h-4 w-4 text-yellow-600" />
-//                         </div>
-//                     </div>
-//                 </div>
-
-//                 <div className="bg-white rounded-lg shadow-sm p-3">
-//                     <div className="flex items-center justify-between">
-//                         <div>
-//                             <p className="text-xs font-medium text-gray-600">Total Items</p>
-//                             <p className="text-lg font-bold text-purple-600">
-//                                 {productos?.length || 0}
-//                             </p>
-//                         </div>
-//                         <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
-//                             <MdScience className="h-4 w-4 text-purple-600" />
-//                         </div>
-//                     </div>
-//                 </div>
+// import { CostProductsTable } from '../components/formulaciones/CostProductsTable';     
 
 //                 <div className="bg-white rounded-lg shadow-sm p-3">
 //                     <div className="flex items-center justify-between">
@@ -196,3 +116,94 @@
 //         </div>
 //     );
 // };
+
+import { useFormulaciones } from '../hooks/useFormulaciones';
+
+export const Formulaciones = () => {
+  const { data, isLoading, error, refreshData, productos, insumos } = useFormulaciones();
+
+  console.log(data);
+
+  if (isLoading) return <div>Cargando...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div className="ml-65 p-4 bg-gray-100 min-h-screen">
+      {/* Header Compacto */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FaFlask className="text-blue-500" size={20} />
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">
+                Formulaciones y Calculadora
+              </h1>
+            </div>
+          </div>
+          <button
+            onClick={refreshData}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 transition-colors"
+          >
+            {isLoading ? (
+              <>
+                <FaSpinner className="animate-spin" size={14} />
+                Cargando...
+              </>
+            ) : (
+              <>
+                <MdScience size={14} />
+                Actualizar
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Estadísticas Compactas */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+        <div className="bg-white rounded-lg shadow-sm p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-600">Productos</p>
+              <p className="text-lg font-bold text-blue-600">
+                {productos.length}
+              </p>
+            </div>
+            <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <FaFlask className="h-4 w-4 text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-600">Insumos</p>
+              <p className="text-lg font-bold text-yellow-600">
+                {insumos.length}
+              </p>
+            </div>
+            <div className="h-8 w-8 bg-yellow-100 rounded-full flex items-center justify-center">
+              <FaCube className="h-4 w-4 text-yellow-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-600">Total Items</p>
+              <p className="text-lg font-bold text-purple-600">
+                {data.length}
+              </p>
+            </div>
+            <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
+              <MdScience className="h-4 w-4 text-purple-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

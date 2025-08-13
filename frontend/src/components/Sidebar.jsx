@@ -48,7 +48,7 @@ export const Sidebar = () => {
             to="/graficas"
             className={({ isActive }) => `flex items-center gap-2 w-full p-3 rounded-xl cursor-pointer text-left ${ isActive ? 'bg-neutral-900' : 'hover:bg-neutral-900'}`}><BsFileEarmarkBarGraphFill fontSize={25}/> Graficas</NavLink>
         </li>
-        <li className="w-full mt-20">
+        <li className="w-full mt-15">
           <NavLink
             to="/salir"
             className="flex items-center gap-2 w-full p-3 rounded-xl bg-red-500 hover:bg-red-900 cursor-pointer text-left">
