@@ -7,16 +7,22 @@ import { LuAtom } from "react-icons/lu";
 import { FaBoxOpen } from "react-icons/fa";
 import { useItems } from '../hooks/useItems';
 import { Table } from "../components/inventario/TableInventario";
+import { useState } from "react";
 
 export const Inventario = () => {
-
     const { data, isLoading, error } = useItems();
+    const [tipoFiltro, setTipoFiltro] = useState("todos");
 
-  if (isLoading) return <div>Cargando...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+    // Filtrar productos según el tipo seleccionado
+    const productosFiltrados = tipoFiltro === "todos"
+        ? data
+        : data.filter(item => (item.nombre_tipo || "").toLowerCase() === tipoFiltro);
 
-  return (
-    <div className="ml-65 p-4 bg-gray-100 min-h-screen">
+    if (isLoading) return <div>Cargando...</div>;
+    if (error) return <div>Error: {error.message}</div>;
+
+    return (
+        <div className="ml-65 p-4 bg-gray-100 min-h-screen">
             <div className="mb-4 flex items-center gap-2">
                     <FaBoxOpen className="text-blue-500" size={25} />
                 <div>
@@ -27,33 +33,34 @@ export const Inventario = () => {
              </div> 
 
             <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-                 <div className="flex flex-wrap items-center justify-between gap-4">
-
-                     {/* Botones de filtro por tipo de ítem */}
-                     <div className="flex items-center gap-3">
-                         <button
-                            className='
-                                px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide
-                                transition-all duration-200 transform hover:scale-105
-                                shadow-md hover:shadow-lg hover:bg-emerald-600 hover:text-white cursor-pointer flex items-center gap-2'>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    {/* Botones de filtro por tipo de ítem */}
+                    <div className="flex items-center gap-3">
+                        <button
+                            className={`px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg hover:bg-gray-400 hover:text-white cursor-pointer flex items-center gap-2 ${tipoFiltro === "todos" ? "bg-gray-400 text-white" : ""}`}
+                            onClick={() => setTipoFiltro("todos")}
+                        >
+                            <FaBoxOpen size={16} />
+                            Todos
+                        </button>
+                        <button
+                            className={`px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg hover:bg-emerald-600 hover:text-white cursor-pointer flex items-center gap-2 ${tipoFiltro === "producto" ? "bg-emerald-600 text-white" : ""}`}
+                            onClick={() => setTipoFiltro("producto")}
+                        >
                             <AiFillProduct size={16} />
                             Productos
                         </button>
-
                         <button
-                            className='
-                                px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide
-                                transition-all duration-200 transform hover:scale-105
-                                shadow-md hover:shadow-lg hover:bg-purple-600 hover:text-white cursor-pointer flex items-center gap-2'>
+                            className={`px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg hover:bg-purple-600 hover:text-white cursor-pointer flex items-center gap-2 ${tipoFiltro === "materia prima" ? "bg-purple-600 text-white" : ""}`}
+                            onClick={() => setTipoFiltro("materia prima")}
+                        >
                             <LuAtom size={16} />
                             Materia Prima
                         </button>
-
                         <button
-                            className='
-                                px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide
-                                transition-all duration-200 transform hover:scale-105
-                                shadow-md hover:shadow-lg hover:bg-yellow-600 hover:text-white cursor-pointer flex items-center gap-2'>
+                            className={`px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg hover:bg-yellow-600 hover:text-white cursor-pointer flex items-center gap-2 ${tipoFiltro === "insumo" ? "bg-yellow-600 text-white" : ""}`}
+                            onClick={() => setTipoFiltro("insumo")}
+                        >
                             <AiFillAppstore size={16} />
                             Insumos
                         </button>
@@ -108,7 +115,7 @@ export const Inventario = () => {
 
 
                 <Table 
-                    products={data}
+                    products={productosFiltrados}
                     isLoading={isLoading}
                     error={error}
                  />

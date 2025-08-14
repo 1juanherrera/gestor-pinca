@@ -3,17 +3,32 @@ import { useState } from "react";
 import { FaTrash, FaEdit } from "react-icons/fa";
 
 export const Table = ({ products = [], isLoading = false, error = null, onEdit, onDelete }) => {
+
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
 
+
+    // Función para obtener el nombre del producto
+    const getNombre = (item) => item.nombre_item_general || item.nombre || '-';
+
+    // Función para obtener el código del producto
+    const getCodigo = (item) => item.codigo_item_general || item.codigo || '-';
+
+    // Función para obtener el tipo del producto
+    const getTipo = (item) => (item.nombre_tipo || item.tipo || '-').toUpperCase();
+
+    // Función para obtener la categoría
+    const getCategoria = (item) => item.categoria || 'MATERIA PRIMA';
+
     // Función para asignar clases según el tipo
     const handleType = (item) => {
-        switch ((item.nombre_tipo || '').toLowerCase()) {
-            case 'producto':
+        const tipo = getTipo(item);
+        switch (tipo) {
+            case 'PRODUCTO':
                 return 'bg-blue-100 text-blue-700';
-            case 'materia prima':
+            case 'MATERIA PRIMA':
                 return 'bg-purple-100 text-purple-700';
-            case 'insumo':
+            case 'INSUMO':
                 return 'bg-yellow-100 text-yellow-700';
             default:
                 return 'bg-gray-100 text-gray-700';
@@ -65,34 +80,34 @@ export const Table = ({ products = [], isLoading = false, error = null, onEdit, 
                         <tbody className="bg-gray-100">
                             {products.map((producto, index) => (
                                 <tr 
-                                    key={producto.id} 
+                                    key={producto.id || producto.codigo_item_general || producto.codigo || index} 
                                     className={`border-b border-gray-300 hover:bg-gray-200 transition-colors ${
                                         index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                                     }`}
                                 >
                                     <td className="p-1 text-center border border-gray-200">
                                         <span className="text-xs font-medium text-gray-900">
-                                            {producto.id}
+                                            {producto.id || '-'}
                                         </span>
                                     </td>
                                     <td className="p-1 text-center border border-gray-200">
                                         <span className="text-xs font-medium text-gray-900">
-                                            {producto.codigo}
+                                            {getCodigo(producto)}
                                         </span>
                                     </td>
                                     <td className="p-1 border border-gray-200">
                                         <span className="text-xs font-medium text-gray-900">
-                                            {producto.nombre}
+                                            {getNombre(producto)}
                                         </span>
                                     </td>
                                     <td className="p-1 text-center border border-gray-200">
-                                        <span className={`px-3 py-1 text-xs font-medium rounded-md ${handleType(producto)}`}>
-                                            {producto.nombre_tipo}
+                                        <span className={`px-3 py-1 block text-xs font-medium rounded-md ${handleType(producto)}`}>
+                                            {getTipo(producto)}
                                         </span>
                                     </td>
                                     <td className="p-1 text-center border border-gray-200">
                                         <span className="text-xs font-semibold text-gray-900">
-                                            {producto.categoria == undefined ? 'MATERIA PRIMA' : producto.categoria}
+                                            {getCategoria(producto)}
                                         </span>
                                     </td>
                                     {shouldShowCostoUnitario && (

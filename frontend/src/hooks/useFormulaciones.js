@@ -14,8 +14,8 @@ export const useFormulaciones = () => {
     query.refetch();
   };
 
-  const productos = data?.filter(item => item.tipo === 'producto') || [];
-  const insumos = data?.filter(item => item.tipo === 'insumo') || [];
+  const productos = data?.filter(item => item.tipo === 'PRODUCTO') || [];
+  const insumos = data?.filter(item => item.tipo === 'INSUMO') || [];
 
   return {
     ...query,

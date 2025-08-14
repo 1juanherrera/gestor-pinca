@@ -48,9 +48,9 @@ class ItemGeneralModel extends Model
             LEFT JOIN categoria c ON ig.categoria_id = c.id_categoria';
 
         $tipos = [
-            0 => 'Producto',
-            1 => 'Materia Prima',
-            2 => 'Insumo',
+            0 => 'PRODUCTO',
+            1 => 'MATERIA PRIMA',
+            2 => 'INSUMO',
         ];
 
         $items = $this->db->query($sql)->getResult();
@@ -67,32 +67,40 @@ class ItemGeneralModel extends Model
     }
 
     public function get_items_formulaciones(){
-            $sql = 'SELECT f.*, ig.nombre AS item_general, ig.codigo AS codigo_item_general FROM formulaciones f
-                    LEFT JOIN item_general ig ON ig.id_item_general = f.item_general_id
-                    WHERE f.estado = 1'; 
+        $sql = 'SELECT f.*, ig.nombre AS item_general, ig.tipo, ig.codigo AS codigo_item_general 
+            FROM formulaciones f
+            LEFT JOIN item_general ig ON ig.id_item_general = f.item_general_id
+            WHERE f.estado = 1';
             $data = $this->db->query($sql)->getResult();    
             $datos = [];
+            $tipos = [
+                0 => 'PRODUCTO',
+                1 => 'MATERIA PRIMA',
+                2 => 'INSUMO',
+            ];
             if (!empty($data)) { 
                 foreach ($data as $item) {
-                    $sql1 = 'SELECT ie.*, ief.cantidad, ief.porcentaje, 
-                                    ig.nombre, ig.codigo AS codigo_item_general   
+                    $sql1 = 'SELECT ig.nombre, ig.codigo AS codigo_item_general,
+                                    ie.*, ci.*, ief.cantidad, ief.porcentaje
                             FROM item_especifico_formulaciones ief 
                             LEFT JOIN item_especifico ie ON ie.id_item_especifico = ief.item_especifico_id 
                             LEFT JOIN item_general ig ON ig.item_especifico_id = ie.id_item_especifico
+                            LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
                             WHERE ief.formulaciones_id = ?';
                     $items = $this->db->query($sql1, [$item->id_formulaciones])->getResult();
                     $datos[] = [
-                                    'id_formulacion' => $item->id_formulaciones,
-                                    'codigo_item_general' => $item->codigo_item_general,
-                                    'nombre_item_general' => $item->item_general,
-                                    'nombre' => $item->nombre,
-                                    'descripcion' => $item->descripcion,
-                                    'items' => $items,
-                                ];
+                        'id_formulacion' => $item->id_formulaciones,
+                        'codigo_item_general' => $item->codigo_item_general,
+                        'nombre_item_general' => $item->item_general,
+                        'nombre' => $item->nombre,
+                        'tipo' => $tipos[$item->tipo] ?? 'Otro',
+                        'descripcion' => $item->descripcion,
+                        'items' => $items,
+                    ];
                 }
             }
 
-            return $datos;
+        return $datos;
     }
     
     public function get_item($id, $table){

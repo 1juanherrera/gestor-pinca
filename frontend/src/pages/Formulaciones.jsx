@@ -7,34 +7,7 @@ import { MdScience } from 'react-icons/md';
 // import { formatoCantidad } from '../utils/formatters';
 // import { CostProductsTable } from '../components/formulaciones/CostProductsTable';     
 
-//                 <div className="bg-white rounded-lg shadow-sm p-3">
-//                     <div className="flex items-center justify-between">
-//                         <div>
-//                             <p className="text-xs font-medium text-gray-600">Componentes</p>
-//                             <p className="text-lg font-bold text-emerald-600">
-//                                 {formulaciones?.length || 0}
-//                             </p>
-//                         </div>
-//                         <div className="h-8 w-8 bg-emerald-100 rounded-full flex items-center justify-center">
-//                             <MdScience className="h-4 w-4 text-emerald-600" />
-//                         </div>
-//                     </div>
-//                 </div>
 
-//                 <div className="bg-white rounded-lg shadow-sm p-3">
-//                     <div className="flex items-center justify-between">
-//                         <div>
-//                             <p className="text-xs font-medium text-gray-600">Costo Total</p>
-//                             <p className="text-lg font-bold text-green-600">
-//                                 {formatoCantidad(totalCosto?.toFixed(2) || 0)}
-//                             </p>
-//                         </div>
-//                         <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-//                             <FaChartPie className="h-4 w-4 text-green-600" />
-//                         </div>
-//                     </div>
-//                 </div>
-//             </div>
 
 //             {/* Selector de producto compacto */}
 //             <div className="mb-4">
@@ -122,7 +95,7 @@ import { useFormulaciones } from '../hooks/useFormulaciones';
 export const Formulaciones = () => {
   const { data, isLoading, error, refreshData, productos, insumos } = useFormulaciones();
 
-  console.log(data);
+  data.forEach(item => console.log(item.nombre));
 
   if (isLoading) return <div>Cargando...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -203,7 +176,39 @@ export const Formulaciones = () => {
             </div>
           </div>
         </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-600">Componentes</p>
+                <p className="text-lg font-bold text-emerald-600">
+                  0
+                </p>
+            </div>
+            <div className="h-8 w-8 bg-emerald-100 rounded-full flex items-center justify-center">
+              <MdScience className="h-4 w-4 text-emerald-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-600">Costo Total</p>
+                <p className="text-lg font-bold text-green-600">
+                  0,00
+                </p>
+            </div>
+            <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+              <FaChartPie className="h-4 w-4 text-green-600" />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+
+
+
+
   );
 };
