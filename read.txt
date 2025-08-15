@@ -1,0 +1,1 @@
+CREE TABLA costos_item y elimine columna item_id en tabla inventario
