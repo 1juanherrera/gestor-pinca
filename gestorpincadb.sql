@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 14-08-2025 a las 04:59:40
+-- Tiempo de generación: 15-08-2025 a las 07:28:00
 -- Versión del servidor: 10.4.32-MariaDB
--- Versión de PHP: 8.2.12
+-- Versión de PHP: 8.1.25
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -302,7 +302,6 @@ INSERT INTO `formulaciones` (`id_formulaciones`, `nombre`, `descripcion`, `estad
 
 CREATE TABLE `inventario` (
   `id` int(11) NOT NULL,
-  `item_id` smallint(6) DEFAULT NULL,
   `cantidad` decimal(5,2) DEFAULT NULL,
   `fecha_update` varchar(0) DEFAULT NULL,
   `apartada` tinyint(4) DEFAULT NULL,
