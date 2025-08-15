@@ -42,10 +42,12 @@ class ItemGeneralModel extends Model
                     ie.ph,
                     ie.poder_tintoreo,
                     ie.volumen,
-                    c.nombre AS categoria
+                    c.nombre AS categoria,
+                    ci.costo_unitario
             FROM item_especifico ie
             INNER JOIN item_general ig ON ig.item_especifico_id = ie.id_item_especifico
-            LEFT JOIN categoria c ON ig.categoria_id = c.id_categoria';
+            LEFT JOIN categoria c ON ig.categoria_id = c.id_categoria
+            LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general';
 
         $tipos = [
             0 => 'PRODUCTO',

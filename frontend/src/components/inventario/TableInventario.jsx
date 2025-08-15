@@ -1,26 +1,15 @@
 
-import { useState } from "react";
+// import { useState } from "react";
 import { FaTrash, FaEdit } from "react-icons/fa";
+import { formatoPesoColombiano } from "../../utils/formatters";
 
-export const Table = ({ products = [], isLoading = false, error = null, onEdit, onDelete }) => {
+export const Table = ({ products = [], isLoading = false, error = null }) => {
 
-    const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [itemToDelete, setItemToDelete] = useState(null);
-
-
-    // Función para obtener el nombre del producto
     const getNombre = (item) => item.nombre_item_general || item.nombre || '-';
-
-    // Función para obtener el código del producto
     const getCodigo = (item) => item.codigo_item_general || item.codigo || '-';
-
-    // Función para obtener el tipo del producto
     const getTipo = (item) => (item.nombre_tipo || item.tipo || '-').toUpperCase();
+    const getCostoUnitario = (item) => item.costo_unitario || '-';
 
-    // Función para obtener la categoría
-    const getCategoria = (item) => item.categoria || 'MATERIA PRIMA';
-
-    // Función para asignar clases según el tipo
     const handleType = (item) => {
         const tipo = getTipo(item);
         switch (tipo) {
@@ -35,26 +24,23 @@ export const Table = ({ products = [], isLoading = false, error = null, onEdit, 
         }
     };
 
-    // Mostrar columna Costo Unitario solo si algún producto tiene costo_unitario definido
-    const shouldShowCostoUnitario = products.some(producto => producto.costo_unitario !== undefined && producto.costo_unitario !== null);
+    // const handleDeleteClick = (producto) => {
+    //     setItemToDelete(producto);
+    //     setShowConfirmModal(true);
+    // };
 
-    const handleDeleteClick = (producto) => {
-        setItemToDelete(producto);
-        setShowConfirmModal(true);
-    };
+    // const handleConfirmDelete = () => {
+    //     if (itemToDelete && onDelete) {
+    //         onDelete(itemToDelete.id);
+    //     }
+    //     setShowConfirmModal(false);
+    //     setItemToDelete(null);
+    // };
 
-    const handleConfirmDelete = () => {
-        if (itemToDelete && onDelete) {
-            onDelete(itemToDelete.id);
-        }
-        setShowConfirmModal(false);
-        setItemToDelete(null);
-    };
-
-    const handleCancelDelete = () => {
-        setShowConfirmModal(false);
-        setItemToDelete(null);
-    };
+    // const handleCancelDelete = () => {
+    //     setShowConfirmModal(false);
+    //     setItemToDelete(null);
+    // };
 
     if (isLoading) return <div>Cargando...</div>;
     if (error) return <div>Error: {error.message || error}</div>;
@@ -70,10 +56,7 @@ export const Table = ({ products = [], isLoading = false, error = null, onEdit, 
                                 <th className="px-4 py-2 text-center text-xs font-medium w-25">Codigo</th>
                                 <th className="px-4 py-2 text-left text-xs font-medium">Nombre</th>
                                 <th className="px-4 py-2 text-center text-xs font-medium w-32">Tipo</th>
-                                <th className="px-4 py-2 text-center text-xs font-medium w-30">Categoría</th>
-                                {shouldShowCostoUnitario && (
-                                    <th className="px-4 py-2 text-center text-xs font-medium w-40">Costo Unit.</th>
-                                )}
+                                <th className="px-4 py-2 text-center text-xs font-medium w-28">Costo Unit.</th>
                                 <th className="px-4 py-2 text-center text-xs font-medium w-32">Acciones</th>
                             </tr>
                         </thead>
@@ -105,38 +88,25 @@ export const Table = ({ products = [], isLoading = false, error = null, onEdit, 
                                             {getTipo(producto)}
                                         </span>
                                     </td>
-                                    <td className="p-1 text-center border border-gray-200">
-                                        <span className="text-xs font-semibold text-gray-900">
-                                            {getCategoria(producto)}
-                                        </span>
-                                    </td>
-                                    {shouldShowCostoUnitario && (
                                         <td className="p-1 text-left border border-gray-200">
-                                            <span className="text-xs font-semibold text-emerald-800 pl-10">
-                                                {producto.costo_unitario ?? '-'}
+                                            <span className="text-xs font-semibold text-emerald-800 pl-7">
+                                                {formatoPesoColombiano(getCostoUnitario(producto))}
                                             </span>
                                         </td>
-                                    )}
                                     <td className="p-1 py-1 border border-gray-200">
                                         <div className="flex justify-center gap-2">
-                                            {onEdit && (
                                                 <button 
-                                                    onClick={() => onEdit(producto)}
                                                     className="p-2 text-white rounded-md transition-colors bg-gray-500 hover:bg-gray-800 cursor-pointer"
                                                     title="Editar"
                                                 >
                                                     <FaEdit size={14} />
                                                 </button>
-                                            )}
-                                            {onDelete && (
                                                 <button 
-                                                    onClick={() => handleDeleteClick(producto)}
                                                     className="p-2 bg-red-500 text-white hover:bg-red-800 rounded-md transition-colors cursor-pointer"
                                                     title="Eliminar"
                                                 >
                                                     <FaTrash size={14} />
                                                 </button>
-                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -147,7 +117,7 @@ export const Table = ({ products = [], isLoading = false, error = null, onEdit, 
             </div>
 
             {/* Modal de confirmación */}
-            {showConfirmModal && (
+            {/* {showConfirmModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
                         <div className="p-6">
@@ -179,7 +149,7 @@ export const Table = ({ products = [], isLoading = false, error = null, onEdit, 
                         </div>
                     </div>
                 </div>
-            )}
+            )} */}
         </>
     );
-};
+}
