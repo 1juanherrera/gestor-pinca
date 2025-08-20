@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 15-08-2025 a las 07:28:00
+-- Tiempo de generación: 20-08-2025 a las 05:27:54
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.1.25
 
@@ -20,6 +20,28 @@ SET time_zone = "+00:00";
 --
 -- Base de datos: `gestorpincadb`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `bodegas`
+--
+
+CREATE TABLE `bodegas` (
+  `id_bodegas` int(11) NOT NULL,
+  `descripcion` varchar(500) DEFAULT NULL,
+  `estado` tinyint(4) DEFAULT NULL COMMENT '0 inactiva 1 activa',
+  `instalaciones_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `bodegas`
+--
+
+INSERT INTO `bodegas` (`id_bodegas`, `descripcion`, `estado`, `instalaciones_id`) VALUES
+(1, 'Bodega Cordialidad', 1, 1),
+(2, 'Bodega Villa Olimpica', 1, 2),
+(3, 'Bodega Juan Mina', 1, 3);
 
 -- --------------------------------------------------------
 
@@ -227,6 +249,29 @@ CREATE TABLE `detalle_facturas` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `empresa`
+--
+
+CREATE TABLE `empresa` (
+  `id_empresa` int(11) NOT NULL,
+  `nit` varchar(11) DEFAULT NULL,
+  `razon_social` varchar(100) DEFAULT NULL,
+  `descripcion` varchar(500) DEFAULT NULL,
+  `ciudad` varchar(45) DEFAULT NULL,
+  `telefono` varchar(45) DEFAULT NULL,
+  `pagina_web` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `empresa`
+--
+
+INSERT INTO `empresa` (`id_empresa`, `nit`, `razon_social`, `descripcion`, `ciudad`, `telefono`, `pagina_web`) VALUES
+(1, '901314182', 'PINTURAS INDUSTRIALES DEL CARIBE S.A.S', 'Comercio al por mayor de materiales de construcción, artículos de ferretería, pinturas, productos de vidrio, equipo y materiales de fontanería y calefacción. - 4663', 'Barranquilla', '3019794729', 'https://pinca.com.co/');
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `facturas`
 --
 
@@ -293,6 +338,31 @@ INSERT INTO `formulaciones` (`id_formulaciones`, `nombre`, `descripcion`, `estad
 (28, 'PREPARACION PASTA ESMALTE ROJO OXIDO', NULL, 1, 1, 28),
 (29, 'PREPARACION PASTA ESMALTE BLANCO', NULL, 1, 1, 29),
 (30, 'PREPARACION PASTA ESMALTE TABACO', NULL, 1, 1, 30);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `instalaciones`
+--
+
+CREATE TABLE `instalaciones` (
+  `id_instalaciones` int(11) NOT NULL,
+  `nombre` varchar(45) DEFAULT NULL,
+  `descripcion` varchar(500) DEFAULT NULL,
+  `ciudad` varchar(45) DEFAULT NULL,
+  `direccion` varchar(100) DEFAULT NULL,
+  `telefono` varchar(45) DEFAULT NULL,
+  `id_empresa` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `instalaciones`
+--
+
+INSERT INTO `instalaciones` (`id_instalaciones`, `nombre`, `descripcion`, `ciudad`, `direccion`, `telefono`, `id_empresa`) VALUES
+(1, 'Sede Cordialidad', 'Planta principal de fabricación de pinturas', 'Barranquilla', 'Calle 99 # 6-59', '3019794729', 1),
+(2, 'Sede Villa Olimpica', 'Planta principal de fabricación de pinturas', 'Galapa', '', '3019794729', 1),
+(3, 'Sede Juan Mina', 'Planta principal de fabricación de pinturas', 'Barranquilla', '', '3019794729', 1);
 
 -- --------------------------------------------------------
 
@@ -1064,6 +1134,13 @@ CREATE TABLE `unidad` (
 --
 
 --
+-- Indices de la tabla `bodegas`
+--
+ALTER TABLE `bodegas`
+  ADD PRIMARY KEY (`id_bodegas`),
+  ADD KEY `fk_bodegas_instalaciones1_idx` (`instalaciones_id`);
+
+--
 -- Indices de la tabla `categoria`
 --
 ALTER TABLE `categoria`
@@ -1101,6 +1178,12 @@ ALTER TABLE `detalle_facturas`
   ADD KEY `fk_detalle_facturas_item_general1_idx` (`item_general_id`);
 
 --
+-- Indices de la tabla `empresa`
+--
+ALTER TABLE `empresa`
+  ADD PRIMARY KEY (`id_empresa`);
+
+--
 -- Indices de la tabla `facturas`
 --
 ALTER TABLE `facturas`
@@ -1115,6 +1198,13 @@ ALTER TABLE `formulaciones`
   ADD PRIMARY KEY (`id_formulaciones`),
   ADD UNIQUE KEY `id_formulaciones_UNIQUE` (`id_formulaciones`),
   ADD KEY `fk_formulaciones_item_general1_idx` (`item_general_id`);
+
+--
+-- Indices de la tabla `instalaciones`
+--
+ALTER TABLE `instalaciones`
+  ADD PRIMARY KEY (`id_instalaciones`),
+  ADD KEY `fk_instalaciones_empresa_idx` (`id_empresa`);
 
 --
 -- Indices de la tabla `inventario`
@@ -1208,6 +1298,12 @@ ALTER TABLE `unidad`
 --
 
 --
+-- AUTO_INCREMENT de la tabla `bodegas`
+--
+ALTER TABLE `bodegas`
+  MODIFY `id_bodegas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT de la tabla `categoria`
 --
 ALTER TABLE `categoria`
@@ -1232,6 +1328,12 @@ ALTER TABLE `detalle_facturas`
   MODIFY `id_detalle_facturas` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `empresa`
+--
+ALTER TABLE `empresa`
+  MODIFY `id_empresa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT de la tabla `facturas`
 --
 ALTER TABLE `facturas`
@@ -1242,6 +1344,12 @@ ALTER TABLE `facturas`
 --
 ALTER TABLE `formulaciones`
   MODIFY `id_formulaciones` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+
+--
+-- AUTO_INCREMENT de la tabla `instalaciones`
+--
+ALTER TABLE `instalaciones`
+  MODIFY `id_instalaciones` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `item_especifico`
@@ -1302,6 +1410,12 @@ ALTER TABLE `unidad`
 --
 
 --
+-- Filtros para la tabla `bodegas`
+--
+ALTER TABLE `bodegas`
+  ADD CONSTRAINT `fk_bodegas_instalaciones1` FOREIGN KEY (`instalaciones_id`) REFERENCES `instalaciones` (`id_instalaciones`) ON UPDATE CASCADE;
+
+--
 -- Filtros para la tabla `clientes`
 --
 ALTER TABLE `clientes`
@@ -1337,6 +1451,12 @@ ALTER TABLE `facturas`
 --
 ALTER TABLE `formulaciones`
   ADD CONSTRAINT `fk_formulaciones_item_general1` FOREIGN KEY (`item_general_id`) REFERENCES `item_general` (`id_item_general`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Filtros para la tabla `instalaciones`
+--
+ALTER TABLE `instalaciones`
+  ADD CONSTRAINT `fk_instalaciones_empresa` FOREIGN KEY (`id_empresa`) REFERENCES `empresa` (`id_empresa`) ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `inventario`
