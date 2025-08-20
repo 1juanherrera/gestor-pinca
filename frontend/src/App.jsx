@@ -1,6 +1,7 @@
 import { Sidebar } from "./components/Sidebar"
 // import { Clientes } from "./pages/Clientes";
 import { Formulaciones } from "./pages/Formulaciones";
+import { Home } from "./pages/Home";
 import { Inventario } from "./pages/Inventario"
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 // import { Proveedores } from "./pages/Proveedores";
@@ -11,6 +12,7 @@ export const App = () => {
     <BrowserRouter>
       <Sidebar />
       <Routes>
+        <Route path="/" element={<Home />} />
         <Route path="/inventario" element={<Inventario />} />
          <Route path="/formulaciones" element={<Formulaciones />} />
         {/*<Route path="/clientes" element={<Clientes />} />

@@ -14,5 +14,8 @@ $routes->group('api', function ($routes) {
     $routes->post('item_general', 'ItemGeneralController::create');
     $routes->put('item_general/(:num)', 'ItemGeneralController::update/$1');
     $routes->delete('item_general/(:num)', 'ItemGeneralController::delete/$1');
+
+    // BODEGAS
+    $routes->get('bodegas', 'BodegaController::bodega');
 });
 

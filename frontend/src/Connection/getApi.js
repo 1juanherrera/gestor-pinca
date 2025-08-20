@@ -12,7 +12,7 @@ export async function fetchItems() {
     const response = await api.get('/items');
     return response.data;
   } catch (error) {
-    throw new Error('Error al obtener los items');
+    throw new Error('Error al obtener los items: ' + error.message);
   }
 }
 
@@ -22,6 +22,16 @@ export async function fetchFormulaciones() {
     const response = await api.get('/formulaciones');
     return response.data;
   } catch (error) {
-    throw new Error('Error al obtener las formulaciones');
+    throw new Error('Error al obtener las formulaciones: ' + error.message);
+  }
+}
+
+// BODEGAS
+export async function fetchBodegas() {
+  try {
+    const response = await api.get('/bodegas');
+    return response.data;
+  } catch (error) {
+    throw new Error('Error al obtener las bodegas: ' + error.message);
   }
 }
