@@ -15,7 +15,11 @@ $routes->group('api', function ($routes) {
     $routes->put('item_general/(:num)', 'ItemGeneralController::update/$1');
     $routes->delete('item_general/(:num)', 'ItemGeneralController::delete/$1');
 
+    // INSTALACIONES
+    $routes->get('instalaciones', 'InstalacionesController::instalaciones');
+
     // BODEGAS
-    $routes->get('bodegas', 'BodegaController::bodega');
+    $routes->get('bodegas', 'BodegasController::bodegas');
+    $routes->get('bodegas/(:num)', 'BodegasController::bodegas/$1');
 });
 

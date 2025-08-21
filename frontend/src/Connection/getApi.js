@@ -26,12 +26,12 @@ export async function fetchFormulaciones() {
   }
 }
 
-// BODEGAS
-export async function fetchBodegas() {
+// INSTALACIONES
+export async function fetchInstalaciones() {
   try {
-    const response = await api.get('/bodegas');
+    const response = await api.get('/instalaciones');
     return response.data;
   } catch (error) {
-    throw new Error('Error al obtener las bodegas: ' + error.message);
+    throw new Error('Error al obtener las instalaciones: ' + error.message);
   }
 }

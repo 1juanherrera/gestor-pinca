@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 20-08-2025 a las 05:27:54
+-- Tiempo de generación: 21-08-2025 a las 05:35:36
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.1.25
 
@@ -375,10 +375,21 @@ CREATE TABLE `inventario` (
   `cantidad` decimal(5,2) DEFAULT NULL,
   `fecha_update` varchar(0) DEFAULT NULL,
   `apartada` tinyint(4) DEFAULT NULL,
-  `item_general_id` int(11) NOT NULL COMMENT '0 disponible\n1 No disponible',
-  `estado` varchar(45) DEFAULT NULL,
-  `movimiento_inventario_id` int(11) DEFAULT NULL
+  `item_general_id` int(11) NOT NULL,
+  `estado` tinyint(5) DEFAULT NULL COMMENT '0 disponible\r\n1 No disponible',
+  `movimiento_inventario_id` int(11) DEFAULT NULL,
+  `bodegas_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
+
+--
+-- Volcado de datos para la tabla `inventario`
+--
+
+INSERT INTO `inventario` (`id`, `cantidad`, `fecha_update`, `apartada`, `item_general_id`, `estado`, `movimiento_inventario_id`, `bodegas_id`) VALUES
+(1, 100.00, NULL, NULL, 1, 1, NULL, 1),
+(2, 30.00, NULL, NULL, 2, 1, NULL, 1),
+(3, 40.00, NULL, NULL, 3, 1, NULL, 1),
+(4, 80.00, NULL, NULL, 4, 1, NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -1212,7 +1223,8 @@ ALTER TABLE `instalaciones`
 ALTER TABLE `inventario`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_inventario_item_general1_idx` (`item_general_id`),
-  ADD KEY `fk_inventario_movimientos_inventario1_idx` (`movimiento_inventario_id`);
+  ADD KEY `fk_inventario_movimientos_inventario1_idx` (`movimiento_inventario_id`),
+  ADD KEY `fk_inventario_bodega` (`bodegas_id`);
 
 --
 -- Indices de la tabla `item_especifico`
@@ -1352,6 +1364,12 @@ ALTER TABLE `instalaciones`
   MODIFY `id_instalaciones` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
+-- AUTO_INCREMENT de la tabla `inventario`
+--
+ALTER TABLE `inventario`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
 -- AUTO_INCREMENT de la tabla `item_especifico`
 --
 ALTER TABLE `item_especifico`
@@ -1462,6 +1480,7 @@ ALTER TABLE `instalaciones`
 -- Filtros para la tabla `inventario`
 --
 ALTER TABLE `inventario`
+  ADD CONSTRAINT `fk_inventario_bodega` FOREIGN KEY (`bodegas_id`) REFERENCES `bodegas` (`id_bodegas`),
   ADD CONSTRAINT `fk_inventario_item_general1` FOREIGN KEY (`item_general_id`) REFERENCES `item_general` (`id_item_general`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `fk_inventario_movimientos_inventario1` FOREIGN KEY (`movimiento_inventario_id`) REFERENCES `movimiento_inventario` (`id_movimiento_inventario`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
