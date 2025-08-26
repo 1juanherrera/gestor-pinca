@@ -17,9 +17,11 @@ $routes->group('api', function ($routes) {
 
     // INSTALACIONES
     $routes->get('instalaciones', 'InstalacionesController::instalaciones');
+    $routes->get('instalaciones/bodegas', 'InstalacionesController::instalaciones_with_bodegas');
 
     // BODEGAS
     $routes->get('bodegas', 'BodegasController::bodegas');
     $routes->get('bodegas/(:num)', 'BodegasController::bodegas/$1');
+    $routes->get('bodegas/instalacion', 'BodegasController::bodegas_by_instalacion');
 });
 

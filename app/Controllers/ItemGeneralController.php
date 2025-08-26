@@ -40,7 +40,8 @@ class ItemGeneralController extends ResourceController
 
     public function create()
     {
-        $data = $this->request->getJSON(true);
+        $json = $this->request->getBody();
+        $data = json_decode($json, true);
         if ($this->model->create_item($data, 'item_general')) {
             return $this->respondCreated([
                 'mensaje' => 'Item creado',
@@ -52,7 +53,8 @@ class ItemGeneralController extends ResourceController
 
     public function update($id = null)
     {
-        $data = $this->request->getJSON(true);
+        $json = $this->request->getBody();
+        $data = json_decode($json, true);
         if (!$this->model->find($id)) {
             return $this->failNotFound("Item con ID $id no encontrado.");
         }

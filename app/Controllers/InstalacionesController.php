@@ -17,12 +17,8 @@ class InstalacionesController extends ResourceController
         return $this->respond($instalaciones);
     }
 
-    public function bodegas($id){
-        $bodegas = $this->model->get_bodegas_by_instalacion($id);
-        if ($bodegas) {
-            return $this->respond($bodegas);
-        } else {
-            return $this->failNotFound('No se encontraron bodegas para la instalación especificada.');
-        }
+    public function instalaciones_with_bodegas() {
+        $data = $this->model->instalaciones_with_bodegas();
+        return $this->respond($data);
     }
 }
