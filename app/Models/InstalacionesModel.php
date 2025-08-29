@@ -5,6 +5,8 @@ use CodeIgniter\Model;
 
 class InstalacionesModel extends Model
 {
+    protected $primaryKey = null;
+
     public function __construct(){
         parent::__construct();
     }
@@ -40,5 +42,30 @@ class InstalacionesModel extends Model
             }
         }
         return $datos;
+    }
+
+    public function get($id, $table)
+    {
+        $this->table = $table;   
+        $this->primaryKey = 'id_'.$table;
+        return $this->find($id);
+    }
+
+    public function create_instalacion($data, $table)
+    {
+        $this->table = $table;      
+        return $this->insert($data);
+    }
+
+    public function update_instalacion($id, $data, $table)
+    {
+        $this->table = $table;      
+        return $this->update($id, $data);
+    }
+
+    public function delete_instalacion($id, $table)
+    {
+        $this->table = $table;      
+        return $this->delete($id);
     }
 }

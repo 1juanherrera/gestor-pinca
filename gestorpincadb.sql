@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 21-08-2025 a las 05:35:36
+-- Tiempo de generación: 29-08-2025 a las 23:59:58
 -- Versión del servidor: 10.4.32-MariaDB
--- Versión de PHP: 8.1.25
+-- Versión de PHP: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -29,6 +29,7 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `bodegas` (
   `id_bodegas` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
   `descripcion` varchar(500) DEFAULT NULL,
   `estado` tinyint(4) DEFAULT NULL COMMENT '0 inactiva 1 activa',
   `instalaciones_id` int(11) NOT NULL
@@ -38,10 +39,10 @@ CREATE TABLE `bodegas` (
 -- Volcado de datos para la tabla `bodegas`
 --
 
-INSERT INTO `bodegas` (`id_bodegas`, `descripcion`, `estado`, `instalaciones_id`) VALUES
-(1, 'Bodega Cordialidad', 1, 1),
-(2, 'Bodega Villa Olimpica', 1, 2),
-(3, 'Bodega Juan Mina', 1, 3);
+INSERT INTO `bodegas` (`id_bodegas`, `nombre`, `descripcion`, `estado`, `instalaciones_id`) VALUES
+(1, 'Bodega Cordialidad', 'Centro logístico ubicado en el sector de Juan Mina, diseñado para almacenamiento y distribución de mercancías, con fácil acceso a vías principales para transporte de carga.', 1, 1),
+(2, 'Bodega Villa Olimpica', 'Instalación de acopio y despacho situada en la zona de Villa Olímpica, ideal para operaciones urbanas gracias a su cercanía con áreas residenciales y comerciales.', 1, 2),
+(3, 'Bodega Juan Mina', 'Punto estratégico en la Vía Cordialidad, orientado al manejo de inventarios y distribución regional, con conexiones hacia rutas intermunicipales.', 1, 3);
 
 -- --------------------------------------------------------
 
@@ -1385,7 +1386,7 @@ ALTER TABLE `item_especifico_formulaciones`
 -- AUTO_INCREMENT de la tabla `item_general`
 --
 ALTER TABLE `item_general`
-  MODIFY `id_item_general` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=102;
+  MODIFY `id_item_general` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=104;
 
 --
 -- AUTO_INCREMENT de la tabla `item_proveedor`

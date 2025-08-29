@@ -7,6 +7,7 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 $routes->group('api', function ($routes) {
+    // ITEMS
     $routes->get('item_general', 'ItemGeneralController::item_general');
     $routes->get('formulaciones', 'ItemGeneralController::item_formulaciones');
     $routes->get('items', 'ItemGeneralController::get_items_all');
@@ -18,6 +19,7 @@ $routes->group('api', function ($routes) {
     // INSTALACIONES
     $routes->get('instalaciones', 'InstalacionesController::instalaciones');
     $routes->get('instalaciones/bodegas', 'InstalacionesController::instalaciones_with_bodegas');
+    $routes->get('instalaciones/(:num)', 'InstalacionesController::show/$1');
 
     // BODEGAS
     $routes->get('bodegas', 'BodegasController::bodegas');
