@@ -16,7 +16,7 @@ export const Sidebar = () => {
         <li className="w-full"> 
           <NavLink
             to="/formulaciones"
-            className={({ isActive }) => `flex items-center gap-2 w-full p-3 rounded-xl cursor-pointer text-left ${ isActive ? 'bg-neutral-900' : 'hover:bg-neutral-900'}`}><FaCalculator fontSize={25}/> Formulaciones</NavLink>
+            className={({ isActive }) => `flex items-center gap-2 w-full p-3 rounded-xl cursor-pointer text-left ${ isActive ? 'bg-neutral-900' : 'hover:bg-neutral-900'}`}><FaCalculator fontSize={25}/> Laboratorio</NavLink>
         </li>
         <li className="w-full"> 
           <NavLink

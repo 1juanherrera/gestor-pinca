@@ -26,10 +26,23 @@ class InstalacionesController extends ResourceController
 
     public function show($id = null)
     {
-        $instalacion = $this->model->get_instalacion($id, 'instalaciones');
+        $instalacion = $this->model->get($id, 'instalaciones');
         if (!$instalacion) {
             return $this->failNotFound("Instalación con ID $id no encontrada.");
         }
         return $this->respond($instalacion);
+    }
+
+    public function create()
+    {
+        $json = $this->request->getBody();
+        $data = json_decode($json, true);
+        if ($this->model->create_instalacion($data, 'instalaciones')) {
+            return $this->respondCreated([
+                'mensaje' => 'instalacion creado',
+                'id' => $this->model->insertID(),
+            ]);
+        }
+        return $this->failValidationErrors($this->model->errors());
     }
 }

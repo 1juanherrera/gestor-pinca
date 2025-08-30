@@ -3,7 +3,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class ItemGeneralModel extends Model
+class ItemModel extends Model
 {
     protected $table = 'item_general';
     protected $primaryKey = 'id_item_general';
@@ -68,7 +68,7 @@ class ItemGeneralModel extends Model
         return $items;
     }
 
-    public function get_items_formulaciones(){
+    public function get_items_formulaciones(): array{
         $sql = 'SELECT f.*, ig.nombre AS item_general, ig.tipo, ig.codigo AS codigo_item_general 
             FROM formulaciones f
             LEFT JOIN item_general ig ON ig.id_item_general = f.item_general_id
@@ -105,22 +105,26 @@ class ItemGeneralModel extends Model
         return $datos;
     }
     
-    public function get_item($id, $table){
+    public function get_item($id, $table)
+    {
         $this->table = $table;                      
         return $this->find($id);
     }
 
-    public function create_item($data, $table){
+    public function create_item($data, $table)
+    {
         $this->table = $table;      
         return $this->insert($data);
     }
 
-    public function update_item($id, $data, $table){
+    public function update_item($id, $data, $table)
+    {
         $this->table = $table;      
         return $this->update($id, $data);
     }
 
-    public function delete_item($id, $table){
+    public function delete_item($id, $table)
+    {
         $this->table = $table;      
         return $this->delete($id);
     }

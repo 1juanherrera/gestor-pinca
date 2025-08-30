@@ -5,7 +5,16 @@ use CodeIgniter\Model;
 
 class InstalacionesModel extends Model
 {
-    protected $primaryKey = null;
+    protected $table = 'instalaciones';
+    protected $primaryKey = 'id_instalaciones';
+    protected $allowedFields = [
+        'nombre',
+        'descripcion',
+        'ciudad',
+        'direccion',
+        'telefono',
+        'id_empresa'
+    ];
 
     public function __construct(){
         parent::__construct();
@@ -46,8 +55,7 @@ class InstalacionesModel extends Model
 
     public function get($id, $table)
     {
-        $this->table = $table;   
-        $this->primaryKey = 'id_'.$table;
+        $this->table = $table;
         return $this->find($id);
     }
 

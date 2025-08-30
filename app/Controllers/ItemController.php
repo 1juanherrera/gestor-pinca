@@ -3,13 +3,15 @@
 namespace App\Controllers;
 
 use CodeIgniter\RESTful\ResourceController;
-use App\Models\ItemGeneralModel;
+use App\Models\ItemModel;
 
-class ItemGeneralController extends ResourceController 
+class ItemController extends ResourceController 
 {
-    public function __construct(){
+    protected $model;
 
-        $this->model = new ItemGeneralModel();
+    public function __construct()
+    {
+        $this->model = new ItemModel();
     }
 
     public function item_general()
@@ -31,7 +33,7 @@ class ItemGeneralController extends ResourceController
 
     public function show($id = null)
     {
-        $item = $this->model->get_item($id, 'item_general');
+        $item = $this->model->get($id, 'item_general');
         if (!$item) {
             return $this->failNotFound("Item con ID $id no encontrado.");
         }
