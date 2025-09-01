@@ -68,7 +68,7 @@ class ItemModel extends Model
         return $items;
     }
 
-    public function get_items_formulaciones(): array{
+    public function get_items_formulaciones() {
         $sql = 'SELECT f.*, ig.nombre AS item_general, ig.tipo, ig.codigo AS codigo_item_general 
             FROM formulaciones f
             LEFT JOIN item_general ig ON ig.id_item_general = f.item_general_id

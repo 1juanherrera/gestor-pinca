@@ -3,18 +3,28 @@
 namespace App\Controllers;
 
 use CodeIgniter\RESTful\ResourceController;
-use App\Models\bodegasModel;
+use App\Models\BodegasModel;
 
 class BodegasController extends ResourceController
 {
-    public function __construct(){
+    protected $modelName = BodegasModel::class;
 
-        $this->model = new BodegasModel();
-    }
 
     public function bodegas()
     {
-        $bodegas = $this->model->get_all('bodegas');
+        // Opción 1: usando tu método genérico
+        $bodegas = $this->model->get_bodegas_all();
         return $this->respond($bodegas);
+    }
+
+    public function show($id = null)
+    {
+        $bodega = $this->model->get($id, 'bodegas');
+
+        if (!$bodega) {
+            return $this->failNotFound("No se encontró la bodega con ID $id");
+        }
+
+        return $this->respond($bodega);
     }
 }

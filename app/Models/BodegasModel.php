@@ -1,17 +1,21 @@
 <?php
 namespace App\Models;
 
-use CodeIgniter\Model;
+use PhpParser\Node\Expr\FuncCall;
 
-class BodegasModel extends Model
+class BodegasModel extends BaseModel
 {
-    public function __construct(){
+    protected $table      = 'bodegas';
+    protected $primaryKey = 'id_bodegas';
+    protected $allowedFields = ['nombre', 'direccion', 'telefono'];
+
+    public function __construct()
+    {
         parent::__construct();
     }
 
-    public function get_all($table, $where = null){ 
-        $this->table = $table;
-        if ($where) { $this->where($where);  }           
-        return $this->findAll();
+    public function get_bodegas_all(){
+        return  $this->get_all($this->table);
     }
+    
 }
