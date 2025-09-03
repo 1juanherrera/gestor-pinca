@@ -3,7 +3,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class ItemModel extends Model
+class ItemModel extends BaseModel
 {
     protected $table = 'item_general';
     protected $primaryKey = 'id_item_general';
@@ -106,27 +106,23 @@ class ItemModel extends Model
     }
     
     public function get_item($id, $table)
-    {
-        $this->table = $table;                      
-        return $this->find($id);
+    {                    
+        return $this->get($id, $table);
     }
 
     public function create_item($data, $table)
     {
-        $this->table = $table;      
-        return $this->insert($data);
+        return $this->create_table($data, $table);
     }
 
-    public function update_item($id, $data, $table)
-    {
-        $this->table = $table;      
-        return $this->update($id, $data);
+    public function update_item($id, $data)
+    {    
+        return $this->update_table($id, $data);
     }
 
     public function delete_item($id, $table)
-    {
-        $this->table = $table;      
-        return $this->delete($id);
+    {  
+        return $this->delete_table($id);
     }
 }
 
