@@ -1,14 +1,17 @@
 import { FaBoxOpen, FaMapMarkerAlt, FaCity, FaPhoneAlt, FaBuilding, FaEdit } from "react-icons/fa";
+import InstalacionesForm from "../components/instalaciones/InstalacionesForm";
 import { useState } from "react";
-import { useInstalaciones } from "../hooks/useinstalaciones";
+import { useInstalaciones } from "../hooks/useInstalaciones";
 import { IoCloseSharp } from "react-icons/io5";
 import Pincalogo from "../assets/pincalogo.png";
 import { NavLink } from "react-router-dom";
+
 
 export const Home = () => {
 
     const { data: instalaciones, isLoading, error } = useInstalaciones();
     const [showEdit, setShowEdit] = useState(false);
+    const [showCreate, setShowCreate] = useState(false);
     const [instalacionEdit, setInstalacionEdit] = useState(null);
 
     if (isLoading) return <p>Cargando instalaciones...</p>;
@@ -17,13 +20,19 @@ export const Home = () => {
 
     return (
         <div className="ml-65 p-4 bg-gray-100 min-h-screen">
-            <div className="flex items-center gap-2">
-                <img src={Pincalogo} className="w-20" alt="Logo" />
-                <div>
+            <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <img src={Pincalogo} className="w-20" alt="Logo" />
                     <h5 className="text-xl font-bold text-gray-800 mb-2 flex items-center">
                         GESTOR PINCA - PINTURAS INDUSTRIALES DEL CARIBE S.A.S
                     </h5>
                 </div>
+                <button
+                    onClick={() => setShowCreate(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                    >
+                    <FaBuilding size={14} /> Nueva Instalación
+                </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {instalaciones.map((instalacion) => (
@@ -40,7 +49,12 @@ export const Home = () => {
                                 className="ml-auto p-1 rounded hover:bg-blue-100 transition-colors absolute top-2 right-2"
                                 title="Editar instalación"
                                 type="button"
-                                onClick={e => { e.stopPropagation(); setShowEdit(true); setInstalacionEdit(instalacion); }}
+                                onClick={e => {
+                                    e.preventDefault(); // Evita la navegación del NavLink
+                                    e.stopPropagation(); // Evita que el evento burbujee al NavLink
+                                    setShowEdit(true);
+                                    setInstalacionEdit(instalacion);
+                                }}
                             >
                                 <FaEdit className="text-blue-500" />
                             </button>
@@ -143,6 +157,13 @@ export const Home = () => {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {/* Modal para crear sede */}
+            {showCreate && (
+                <InstalacionesForm
+                    onSubmit={setShowCreate(false)}
+                />
             )}
         </div>
     );

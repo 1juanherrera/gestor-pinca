@@ -1,9 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { fetchItems } from '../Connection/getApi';
+import { useApiResource } from "../Connection/getApi";
 
-export function useItems() {
-  return useQuery({
-    queryKey: ['items'],
-    queryFn: fetchItems,
-  });
+export const useItems = () => {
+  return useApiResource('/items', 'items', 'Error al obtener los items');
 }

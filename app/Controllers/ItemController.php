@@ -7,12 +7,7 @@ use App\Models\ItemModel;
 
 class ItemController extends ResourceController 
 {
-    protected $model;
-
-    public function __construct()
-    {
-        $this->model = new ItemModel();
-    }
+    protected $modelName = ItemModel::class;
 
     public function item_general()
     {

@@ -1,37 +1,40 @@
 import axios from 'axios';
+import { useMutation, useQuery } from '@tanstack/react-query';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/gestorpinca/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-})
+});
 
-// ITEMS
-export async function fetchItems() {
+export async function apiRequest({ endpoint, data = null, errorMsg, method = 'get' }) {
   try {
-    const response = await api.get('/items');
+    const response = await api.request({
+      url: endpoint,
+      method,
+      data,
+    });
     return response.data;
   } catch (error) {
-    throw new Error('Error al obtener los items: ' + error.message);
+    throw new Error(errorMsg + ': ' + error.message);
   }
 }
 
-// ITEMS CON FORMULACIONES
-export async function fetchFormulaciones() {
-  try {
-    const response = await api.get('/formulaciones');
-    return response.data;
-  } catch (error) {
-    throw new Error('Error al obtener las formulaciones: ' + error.message);
-  }
+export function useApiResource(endpoint, queryKey, errorMsg, method) {
+  return useQuery({
+    queryKey: [queryKey],
+    queryFn: () => apiRequest({ method, endpoint, errorMsg }),
+  });
 }
 
-// INSTALACIONES
-export async function fetchInstalaciones() {
-  try {
-    const response = await api.get('/instalaciones');
-    return response.data;
-  } catch (error) {
-    throw new Error('Error al obtener las instalaciones: ' + error.message);
-  }
+export function useApiMutation(endpoint, errorMsg, method = 'post') {
+  return useMutation({
+    mutationFn: (data) =>
+      apiRequest({
+        method,
+        endpoint,
+        data,
+        errorMsg,
+      }),
+  });
 }

@@ -1,8 +1,6 @@
 <?php
 namespace App\Models;
 
-use CodeIgniter\Model;
-
 class ItemModel extends BaseModel
 {
     protected $table = 'item_general';
@@ -103,26 +101,6 @@ class ItemModel extends BaseModel
             }
 
         return $datos;
-    }
-    
-    public function get_item($id, $table)
-    {                    
-        return $this->get($id, $table);
-    }
-
-    public function create_item($data, $table)
-    {
-        return $this->create_table($data, $table);
-    }
-
-    public function update_item($id, $data)
-    {    
-        return $this->update_table($id, $data);
-    }
-
-    public function delete_item($id, $table)
-    {  
-        return $this->delete_table($id);
     }
 }
 

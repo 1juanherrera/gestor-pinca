@@ -1,45 +1,31 @@
 <?php
 namespace App\Models;
 
-use CodeIgniter\Model;
+class BodegasModel extends BaseModel{
+    
 
-class BodegasModel extends BaseModel
-{
-    protected $table         = 'bodega';
-    protected $primaryKey    = 'id_bodega';
-    protected $allowedFields = [
-        'nombre',
-        'descripcion',
-        'estado',
-        'instalaciones_id'
-    ];
+    public function __construct(){
 
-    public function __construct()
-    {
         parent::__construct();
     }
 
-    public function get_bodegas_all(){
-        return $this->get_all($this->table);
-    }
-
-    public function get_bodega($id, $table)
-    {                    
-        return $this->get($id, $table);
-    }
-
-    public function create_bodega($data, $table)
+    public function migrar_inventario()
     {
-        return $this->create_table($data, $table);
+        // Inicializa la tabla antes de usar get_all
+        $this->setTable('item_general');
+        $datos = $this->findAll();
+        if (!empty($datos)) {
+            foreach ($datos as $item) {
+                $data = [
+                    'cantidad'        => random_int(1, 100),
+                    'estado'          => 1,
+                    'bodegas_id'      => 1,
+                    'item_general_id' => $item['id_item_general']
+                ];
+                $this->qbInsert('inventario', $data);
+            }
+        }
+        return true;
     }
 
-    public function update_bodega($id, $data)
-    {
-        return $this->update_table($id, $data, $this->table);
-    }
-
-    public function delete_bodega($id)
-    {
-        return $this->delete_table($id);
-    }
 }

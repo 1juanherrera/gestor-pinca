@@ -1,9 +1,17 @@
-import { useQuery } from '@tanstack/react-query';
-import { fetchInstalaciones } from '../Connection/getApi';
+import { useApiMutation, useApiResource } from "../Connection/getApi";
 
-export function useInstalaciones() {
-  return useQuery({
-    queryKey: ['instalaciones'],
-    queryFn: fetchInstalaciones ,
-  });
+export const useInstalaciones = () => {
+
+  const query = useApiResource('/instalaciones');
+  const mutation = useApiMutation('/instalaciones');
+  const data = query.data ?? [];
+
+  return {
+    ...query,
+    data,
+    refreshData: query.refetch,
+    create: mutation.mutate,
+    isCreating: mutation.isLoading,
+    createError: mutation.error,
+  };
 }

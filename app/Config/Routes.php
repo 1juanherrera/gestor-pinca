@@ -27,9 +27,8 @@ $routes->group('api', function ($routes) {
     // BODEGAS
     $routes->get('bodegas', 'BodegasController::bodegas');
     $routes->get('bodegas/(:num)', 'BodegasController::show/$1');
-    $routes->get('bodegas/instalacion', 'BodegasController::bodegas_by_instalacion');
-    $routes->post('bodegas', 'BodegasController::create');
-    $routes->put('bodegas/(:num)', 'BodegasController::update/$1');
-    $routes->delete('bodegas/(:num)', 'BodegasController::delete/$1');
+    $routes->post('bodegas/add', 'BodegasController::create');
+    $routes->put('bodegas/update/(:num)', 'BodegasController::update/$1');
+    $routes->delete('bodegas/delete/(:num)', 'BodegasController::delete/$1');
 });
 
