@@ -7,6 +7,9 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 $routes->group('api', function ($routes) {
+    // EMPRESA
+    $routes->get('empresa', 'EmpresaController::empresa');
+
     // ITEMS
     $routes->get('item_general', 'ItemController::item_general');
     $routes->get('formulaciones', 'ItemController::item_formulaciones');

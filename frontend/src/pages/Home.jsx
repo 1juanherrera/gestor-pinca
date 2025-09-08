@@ -9,7 +9,7 @@ import { NavLink } from "react-router-dom";
 
 export const Home = () => {
 
-    const { data: instalaciones, isLoading, error } = useInstalaciones();
+    const { data: instalaciones, isLoading, error, refreshData, create, isCreating, createError } = useInstalaciones();
     const [showEdit, setShowEdit] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
     const [instalacionEdit, setInstalacionEdit] = useState(null);
@@ -35,10 +35,10 @@ export const Home = () => {
                 </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {instalaciones.map((instalacion) => (
+                {instalaciones.map((instalacion, index) => (
                     <NavLink
                         to={`/instalaciones/${instalacion.id_instalaciones}/bodega`}
-                        key={instalacion.id_instalaciones}
+                        key={`${instalacion.id_instalaciones}-${index}`}
                         className="bg-white cursor-pointer rounded-lg shadow-md p-4 border border-gray-200 scale-hover relative"
                         type="button"
                     >
@@ -160,11 +160,18 @@ export const Home = () => {
             )}
 
             {/* Modal para crear sede */}
-            {showCreate && (
-                <InstalacionesForm
-                    onSubmit={setShowCreate(false)}
-                />
+           {showCreate && (
+            <InstalacionesForm
+                onSubmit={() => {
+                setShowCreate(false);
+                refreshData(); 
+                }}
+                setShowCreate={setShowCreate}
+                create={create}
+                isCreating={isCreating}
+                createError={createError}
+            />
             )}
         </div>
     );
-};
+}

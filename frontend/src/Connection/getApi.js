@@ -7,7 +7,7 @@ const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-export async function apiRequest({ endpoint, data = null, errorMsg, method = 'get' }) {
+export async function apiRequest({ endpoint, data = null, errorMsg, method }) {
   try {
     const response = await api.request({
       url: endpoint,
@@ -20,7 +20,7 @@ export async function apiRequest({ endpoint, data = null, errorMsg, method = 'ge
   }
 }
 
-export function useApiResource(endpoint, queryKey, errorMsg, method) {
+export function useApiResource(endpoint, queryKey = endpoint, errorMsg, method = 'get') {
   return useQuery({
     queryKey: [queryKey],
     queryFn: () => apiRequest({ method, endpoint, errorMsg }),

@@ -7,10 +7,7 @@ use App\Models\InstalacionesModel;
 
 class InstalacionesController extends ResourceController 
 {
-    public function __construct(){
-
-        $this->model = new InstalacionesModel();
-    }
+    protected $modelName = InstalacionesModel::class;
 
     public function instalaciones()
     {

@@ -1,9 +1,8 @@
 <?php
 namespace App\Models;
 
-class BodegasModel extends BaseModel{
-    
-
+class BodegasModel extends BaseModel
+{
     public function __construct(){
 
         parent::__construct();

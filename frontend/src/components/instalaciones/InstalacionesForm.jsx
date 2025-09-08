@@ -1,30 +1,50 @@
 import { useState } from 'react';
+import { useEmpresa } from "../../hooks/useEmpresa";
 
-const initialState = {
-  nombre: '',
-  descripcion: '',
-  ciudad: '',
-  direccion: '',
-  telefono: '',
-  id_empresa: '',
-};
+export default function InstalacionesForm({ onSubmit, setShowCreate, create, isCreating, createError }) {
 
-export default function InstalacionesForm({ onSubmit }) {
-    
-  const [form, setForm] = useState(initialState);
+  const { data: empresas } = useEmpresa();
+
+  const [form, setForm] = useState({
+    nombre: '',
+    descripcion: '',
+    ciudad: '',
+    direccion: '',
+    telefono: '',
+    id_empresa: '',
+  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
+    setForm((prev) => ({ 
+      ...prev, 
+      [name]: value 
+    }))
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (onSubmit) onSubmit(form);
+    create(form, {
+      onSuccess: () => {
+        onSubmit();
+        setShowCreate(false);
+        setForm({
+          nombre: '',
+          descripcion: '',
+          ciudad: '',
+          direccion: '',
+          telefono: '',
+          id_empresa: '',
+        });
+      }
+    });
   };
+  
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-lg mx-auto bg-white p-6 rounded shadow space-y-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+    onClick={() => setShowCreate(false)}>
+      <form onSubmit={handleSubmit} className="w-100 mx-auto bg-white p-6 rounded shadow space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700">Nombre</label>
         <input
@@ -32,9 +52,8 @@ export default function InstalacionesForm({ onSubmit }) {
           name="nombre"
           value={form.nombre}
           onChange={handleChange}
-          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          required
-        />
+          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+           focus:outline-none focus:ring-2 block w-full p-2.5"/>
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700">Descripción</label>
@@ -43,8 +62,9 @@ export default function InstalacionesForm({ onSubmit }) {
           name="descripcion"
           value={form.descripcion}
           onChange={handleChange}
-          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          required
+          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+           focus:outline-none focus:ring-2 block w-full p-2.5"
+          
         />
       </div>
       <div>
@@ -54,8 +74,9 @@ export default function InstalacionesForm({ onSubmit }) {
           name="ciudad"
           value={form.ciudad}
           onChange={handleChange}
-          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          required
+          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+           focus:outline-none focus:ring-2 block w-full p-2.5"
+          
         />
       </div>
       <div>
@@ -65,8 +86,9 @@ export default function InstalacionesForm({ onSubmit }) {
           name="direccion"
           value={form.direccion}
           onChange={handleChange}
-          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          required
+          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+           focus:outline-none focus:ring-2 block w-full p-2.5"
+          
         />
       </div>
       <div>
@@ -76,27 +98,41 @@ export default function InstalacionesForm({ onSubmit }) {
           name="telefono"
           value={form.telefono}
           onChange={handleChange}
-          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          required
+          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+           focus:outline-none focus:ring-2 block w-full p-2.5"
+          
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700">ID Empresa</label>
-        <input
-          type="text"
-          name="id_empresa"
-          value={form.id_empresa}
-          onChange={handleChange}
-          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          required
-        />
+        <label className="block text-sm font-medium text-gray-700">Empresa</label>
+          <select
+            name="id_empresa"
+            value={form.id_empresa}
+            onChange={handleChange}
+            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+              focus:outline-none focus:ring-2 block w-full p-2.5"
+          >
+            <option value="">Seleccionar empresa</option>
+            {empresas.map((e, index) => (
+              <option key={`${e.id_empresa}-${index}`} value={e.id_empresa}>
+                {e.razon_social}
+              </option>
+            ))}
+          </select>
       </div>
       <button
         type="submit"
+        disabled={!form.nombre && !form.descripcion && !form.ciudad && !form.direccion && !form.telefono && !form.id_empresa}
         className="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-md shadow hover:bg-blue-700 transition"
       >
-        Guardar
+        {isCreating ? "Guardando..." : "Crear Instalación"}
       </button>
+      {createError && (
+        <p className="text-red-500 mt-2">
+          Error: {createError.message || "No se pudo crear"}
+        </p>
+      )}
     </form>
-  );
+    </div>
+  )
 }
