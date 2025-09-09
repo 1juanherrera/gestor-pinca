@@ -31,7 +31,7 @@ export const Home = () => {
                     onClick={() => setShowCreate(true)}
                     className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 transition-colors"
                     >
-                    <FaBuilding size={14} /> Nueva Instalación
+                    <FaBuilding size={14} /> Nueva Sede
                 </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useEmpresa } from "../../hooks/useEmpresa";
+import { FaBuilding } from "react-icons/fa";
 
 export default function InstalacionesForm({ onSubmit, setShowCreate, create, isCreating, createError }) {
 
@@ -44,7 +45,11 @@ export default function InstalacionesForm({ onSubmit, setShowCreate, create, isC
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
     onClick={() => setShowCreate(false)}>
-      <form onSubmit={handleSubmit} className="w-100 mx-auto bg-white p-6 rounded shadow space-y-4">
+      <form onClick={e => e.stopPropagation()} onSubmit={handleSubmit} className="w-100 mx-auto bg-white p-6 rounded-xl shadow space-y-4">
+      <div className="flex items-center space-x-2 mb-4">
+        <FaBuilding className="h-6 w-6 text-blue-500" />
+        <h1 className="text-2xl font-bold">Nueva Sede</h1>
+      </div>
       <div>
         <label className="block text-sm font-medium text-gray-700">Nombre</label>
         <input
@@ -53,7 +58,7 @@ export default function InstalacionesForm({ onSubmit, setShowCreate, create, isC
           value={form.nombre}
           onChange={handleChange}
           className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
-           focus:outline-none focus:ring-2 block w-full p-2.5"/>
+           focus:outline-none focus:ring-2 block w-full p-2"/>
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700">Descripción</label>
@@ -63,7 +68,7 @@ export default function InstalacionesForm({ onSubmit, setShowCreate, create, isC
           value={form.descripcion}
           onChange={handleChange}
           className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
-           focus:outline-none focus:ring-2 block w-full p-2.5"
+           focus:outline-none focus:ring-2 block w-full p-2"
           
         />
       </div>
@@ -75,7 +80,7 @@ export default function InstalacionesForm({ onSubmit, setShowCreate, create, isC
           value={form.ciudad}
           onChange={handleChange}
           className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
-           focus:outline-none focus:ring-2 block w-full p-2.5"
+           focus:outline-none focus:ring-2 block w-full p-2"
           
         />
       </div>
@@ -87,7 +92,7 @@ export default function InstalacionesForm({ onSubmit, setShowCreate, create, isC
           value={form.direccion}
           onChange={handleChange}
           className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
-           focus:outline-none focus:ring-2 block w-full p-2.5"
+           focus:outline-none focus:ring-2 block w-full p-2"
           
         />
       </div>
@@ -99,7 +104,7 @@ export default function InstalacionesForm({ onSubmit, setShowCreate, create, isC
           value={form.telefono}
           onChange={handleChange}
           className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
-           focus:outline-none focus:ring-2 block w-full p-2.5"
+           focus:outline-none focus:ring-2 block w-full p-2"
           
         />
       </div>
@@ -110,9 +115,8 @@ export default function InstalacionesForm({ onSubmit, setShowCreate, create, isC
             value={form.id_empresa}
             onChange={handleChange}
             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
-              focus:outline-none focus:ring-2 block w-full p-2.5"
+              focus:outline-none focus:ring-2 block w-full p-2"
           >
-            <option value="">Seleccionar empresa</option>
             {empresas.map((e, index) => (
               <option key={`${e.id_empresa}-${index}`} value={e.id_empresa}>
                 {e.razon_social}
@@ -128,7 +132,7 @@ export default function InstalacionesForm({ onSubmit, setShowCreate, create, isC
         {isCreating ? "Guardando..." : "Crear Instalación"}
       </button>
       {createError && (
-        <p className="text-red-500 mt-2">
+        <p className="text-red-500">
           Error: {createError.message || "No se pudo crear"}
         </p>
       )}
