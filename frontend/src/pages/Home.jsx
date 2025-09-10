@@ -1,15 +1,50 @@
 import { FaBoxOpen, FaMapMarkerAlt, FaCity, FaPhoneAlt, FaBuilding, FaEdit } from "react-icons/fa";
+import { MdDelete } from "react-icons/md";
 import InstalacionesForm from "../components/instalaciones/InstalacionesForm";
 import { useState } from "react";
 import { useInstalaciones } from "../hooks/useInstalaciones";
 import { IoCloseSharp } from "react-icons/io5";
 import Pincalogo from "../assets/pincalogo.png";
 import { NavLink } from "react-router-dom";
+import { useEmpresa } from "../hooks/useEmpresa";
 
 
 export const Home = () => {
 
-    const { data: instalaciones, isLoading, error, refreshData, create, isCreating, createError } = useInstalaciones();
+    const { data: empresas } = useEmpresa();
+
+    const [form, setForm] = useState({
+        nombre: '',
+        descripcion: '',
+        ciudad: '',
+        direccion: '',
+        telefono: '',
+        id_empresa: '',
+    });
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setForm((prev) => ({ 
+        ...prev, 
+        [name]: value 
+        }))
+    }
+
+    const { 
+        data: instalaciones, 
+        isLoading, 
+        error, 
+        refreshData, 
+        create, 
+        isCreating, 
+        createError,
+        remove,
+        isDeleting: isRemoving,
+        update,
+        isUpdating,
+        updateError,
+     } = useInstalaciones();
+
     const [showEdit, setShowEdit] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
     const [instalacionEdit, setInstalacionEdit] = useState(null);
@@ -17,6 +52,12 @@ export const Home = () => {
     if (isLoading) return <p>Cargando instalaciones...</p>;
     if (error) return <p>Error al cargar instalaciones</p>;
     if (!instalaciones || instalaciones.length === 0) return <p>No hay instalaciones registradas</p>;
+
+    const handle = (id) => {
+        if (window.confirm("¿Seguro que deseas eliminar esta instalación?")) {
+            remove(id);
+        }
+    }
 
     return (
         <div className="ml-65 p-4 bg-gray-100 min-h-screen">
@@ -46,12 +87,24 @@ export const Home = () => {
                             <FaBuilding className="text-blue-400" />
                             {instalacion.nombre}
                             <button
-                                className="ml-auto p-1 rounded hover:bg-blue-100 transition-colors absolute top-2 right-2"
+                                type="button"
+                                onClick={e => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    handle(instalacion.id_instalaciones)
+                                }}
+                                className="ml-auto cursor-pointer p-1 rounded hover:bg-red-100 transition-colors absolute top-2 right-2"
+                                disabled={isRemoving}
+                            >
+                            <MdDelete className="text-red-500" size={20}/>
+                            </button>
+                            <button
+                                className="ml-auto p-1 rounded hover:bg-blue-100 transition-colors absolute top-2 right-8"
                                 title="Editar instalación"
                                 type="button"
                                 onClick={e => {
-                                    e.preventDefault(); // Evita la navegación del NavLink
-                                    e.stopPropagation(); // Evita que el evento burbujee al NavLink
+                                    e.preventDefault();
+                                    e.stopPropagation(); 
                                     setShowEdit(true);
                                     setInstalacionEdit(instalacion);
                                 }}
@@ -81,79 +134,104 @@ export const Home = () => {
 
             {/* Modal de edición */}
             {showEdit && (
-                <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowEdit(false)}>
+                    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative" onClick={e => e.stopPropagation()}>
                         <button
                             className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl cursor-pointer"
                             onClick={() => setShowEdit(false)}
                         >
                             <IoCloseSharp />
                         </button>
-                        <h2 className="text-lg font-bold mb-4 text-blue-700 flex items-center gap-2">
-                            <FaEdit /> Editar Instalación
-                        </h2>
+                        <div className="flex items-center space-x-2 mb-4">
+                            <FaBuilding className="h-6 w-6 text-blue-500" />
+                            <h1 className="text-2xl font-bold">Editar Sede</h1>
+                        </div>
                         <form
                             onSubmit={e => {
                                 e.preventDefault();
-                                // Aquí iría la lógica para guardar cambios (API call)
-                                setShowEdit(false);
+                                update({ id: instalacionEdit.id_instalaciones, data: instalacionEdit }, {
+                                    onSuccess: () => {
+                                        setShowEdit(false);
+                                        refreshData();
+                                    }
+                                })
                             }}
                         >
                             <div className="mb-3">
-                                <label className="block text-xs font-semibold mb-1">Nombre</label>
+                                <label className="block text-sm font-medium text-gray-700">Nombre</label>
                                 <input
-                                    className="w-full border rounded px-2 py-1"
+                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+           focus:outline-none focus:ring-2 block w-full p-2"
                                     value={instalacionEdit?.nombre || ''}
                                     onChange={e => setInstalacionEdit({ ...instalacionEdit, nombre: e.target.value })}
                                     required
                                 />
                             </div>
                             <div className="mb-3">
-                                <label className="block text-xs font-semibold mb-1">Descripción</label>
+                                <label className="block text-sm font-medium text-gray-700">Descripción</label>
                                 <input
-                                    className="w-full border rounded px-2 py-1"
+                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+           focus:outline-none focus:ring-2 block w-full p-2"
                                     value={instalacionEdit?.descripcion || ''}
                                     onChange={e => setInstalacionEdit({ ...instalacionEdit, descripcion: e.target.value })}
                                 />
                             </div>
                             <div className="mb-3">
-                                <label className="block text-xs font-semibold mb-1">Ciudad</label>
+                                <label className="block text-sm font-medium text-gray-700">Ciudad</label>
                                 <input
-                                    className="w-full border rounded px-2 py-1"
+                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+           focus:outline-none focus:ring-2 block w-full p-2"
                                     value={instalacionEdit?.ciudad || ''}
                                     onChange={e => setInstalacionEdit({ ...instalacionEdit, ciudad: e.target.value })}
                                 />
                             </div>
                             <div className="mb-3">
-                                <label className="block text-xs font-semibold mb-1">Dirección</label>
+                                <label className="block text-sm font-medium text-gray-700">Dirección</label>
                                 <input
-                                    className="w-full border rounded px-2 py-1"
+                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+           focus:outline-none focus:ring-2 block w-full p-2"
                                     value={instalacionEdit?.direccion || ''}
                                     onChange={e => setInstalacionEdit({ ...instalacionEdit, direccion: e.target.value })}
                                 />
                             </div>
                             <div className="mb-3">
-                                <label className="block text-xs font-semibold mb-1">Teléfono</label>
+                                <label className="block text-sm font-medium text-gray-700">Teléfono</label>
                                 <input
-                                    className="w-full border rounded px-2 py-1"
+                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+           focus:outline-none focus:ring-2 block w-full p-2"
                                     value={instalacionEdit?.telefono || ''}
                                     onChange={e => setInstalacionEdit({ ...instalacionEdit, telefono: e.target.value })}
                                 />
                             </div>
                             <div className="mb-4">
-                                <label className="block text-xs font-semibold mb-1">ID Empresa</label>
-                                <input
-                                    className="w-full border rounded px-2 py-1"
+                                <label className="block text-sm font-medium text-gray-700">Empresa</label>
+                                <select
+                                    name="id_empresa"
                                     value={instalacionEdit?.id_empresa || ''}
                                     onChange={e => setInstalacionEdit({ ...instalacionEdit, id_empresa: e.target.value })}
-                                />
+                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+                                    focus:outline-none focus:ring-2 block w-full p-2"
+                                >
+                                    <option value="">Seleccionar empresa</option>
+                                    {empresas.map((e, index) => (
+                                        <option key={`${e.id_empresa}-${index}`} value={e.id_empresa}>
+                                            {e.razon_social}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                             <button
                                 type="submit"
                                 className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors font-semibold"
+                                disabled={isUpdating}
                             >
-                                Guardar Cambios
+                                {isUpdating ? "Guardando..." : "Guardar Cambios"}
                             </button>
+                            {updateError && (
+                                <p className="text-red-500 mt-2">
+                                    Error: {updateError.message || "No se pudo actualizar"}
+                                </p>
+                            )}
                         </form>
                     </div>
                 </div>
@@ -170,6 +248,10 @@ export const Home = () => {
                 create={create}
                 isCreating={isCreating}
                 createError={createError}
+                empresas={empresas}
+                form={form}
+                setForm={setForm}
+                handleChange={handleChange}
             />
             )}
         </div>

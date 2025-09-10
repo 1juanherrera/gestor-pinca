@@ -32,6 +32,6 @@ $routes->group('api', function ($routes) {
     $routes->get('bodegas/(:num)', 'BodegasController::show/$1');
     $routes->post('bodegas/add', 'BodegasController::create');
     $routes->put('bodegas/update/(:num)', 'BodegasController::update/$1');
-    $routes->delete('bodegas/delete/(:num)', 'BodegasController::delete/$1');
+    $routes->post('bodegas/delete/(:num)', 'BodegasController::delete/$1');
 });
 

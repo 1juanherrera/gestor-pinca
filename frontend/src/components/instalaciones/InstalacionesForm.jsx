@@ -1,27 +1,6 @@
-import { useState } from 'react';
-import { useEmpresa } from "../../hooks/useEmpresa";
 import { FaBuilding } from "react-icons/fa";
 
-export default function InstalacionesForm({ onSubmit, setShowCreate, create, isCreating, createError }) {
-
-  const { data: empresas } = useEmpresa();
-
-  const [form, setForm] = useState({
-    nombre: '',
-    descripcion: '',
-    ciudad: '',
-    direccion: '',
-    telefono: '',
-    id_empresa: '',
-  });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ 
-      ...prev, 
-      [name]: value 
-    }))
-  }
+export default function InstalacionesForm({ onSubmit, handleChange, setShowCreate, create, isCreating, createError, empresas, form, setForm }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -45,7 +24,7 @@ export default function InstalacionesForm({ onSubmit, setShowCreate, create, isC
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
     onClick={() => setShowCreate(false)}>
-      <form onClick={e => e.stopPropagation()} onSubmit={handleSubmit} className="w-100 mx-auto bg-white p-6 rounded-xl shadow space-y-4">
+      <form onClick={e => e.stopPropagation()} onSubmit={handleSubmit} className="w-110 mx-auto bg-white p-6 rounded-xl shadow space-y-4">
       <div className="flex items-center space-x-2 mb-4">
         <FaBuilding className="h-6 w-6 text-blue-500" />
         <h1 className="text-2xl font-bold">Nueva Sede</h1>
@@ -117,6 +96,7 @@ export default function InstalacionesForm({ onSubmit, setShowCreate, create, isC
             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
               focus:outline-none focus:ring-2 block w-full p-2"
           >
+            <option value="">Seleccionar empresa</option>
             {empresas.map((e, index) => (
               <option key={`${e.id_empresa}-${index}`} value={e.id_empresa}>
                 {e.razon_social}

@@ -20,19 +20,42 @@ export async function apiRequest({ endpoint, data = null, errorMsg, method }) {
   }
 }
 
-export function useApiResource(endpoint, queryKey = endpoint, errorMsg, method = 'get') {
+export function useApiResource(endpoint, queryKey = endpoint, errorMsg, method = 'GET') {
   return useQuery({
     queryKey: [queryKey],
     queryFn: () => apiRequest({ method, endpoint, errorMsg }),
   });
 }
 
-export function useApiMutation(endpoint, errorMsg, method = 'post') {
+export function useApiMutation(endpoint, errorMsg) {
   return useMutation({
     mutationFn: (data) =>
       apiRequest({
-        method,
+        method: "POST",
         endpoint,
+        data,
+        errorMsg,
+      }),
+  });
+}
+
+export function useApiDelete(baseEndpoint, errorMsg) {
+  return useMutation({
+    mutationFn: (id) =>
+      apiRequest({
+        method: "DELETE",
+        endpoint: `${baseEndpoint}/${id}`,
+        errorMsg,
+      }),
+  });
+}
+
+export function useApiUpdate(baseEndpoint, errorMsg) {
+  return useMutation({
+    mutationFn: ({ id, data }) =>
+      apiRequest({
+        method: "PUT",
+        endpoint: `${baseEndpoint}/${id}`,
         data,
         errorMsg,
       }),
