@@ -21,7 +21,7 @@ $routes->group('api', function ($routes) {
 
     // INSTALACIONES
     $routes->get('instalaciones', 'InstalacionesController::instalaciones');
-    $routes->get('instalaciones/bodegas', 'InstalacionesController::instalaciones_with_bodegas');
+    $routes->get('instalaciones/bodegas/(:num)', 'InstalacionesController::instalaciones_with_bodegas/$1');
     $routes->get('instalaciones/(:num)', 'InstalacionesController::show/$1');
     $routes->post('instalaciones', 'InstalacionesController::create');
     $routes->put('instalaciones/(:num)', 'InstalacionesController::update/$1');
@@ -30,8 +30,8 @@ $routes->group('api', function ($routes) {
     // BODEGAS
     $routes->get('bodegas', 'BodegasController::bodegas');
     $routes->get('bodegas/(:num)', 'BodegasController::show/$1');
-    $routes->post('bodegas/add', 'BodegasController::create');
-    $routes->put('bodegas/update/(:num)', 'BodegasController::update/$1');
-    $routes->post('bodegas/delete/(:num)', 'BodegasController::delete/$1');
+    $routes->post('bodegas', 'BodegasController::create');
+    $routes->put('bodegas/(:num)', 'BodegasController::update/$1');
+    $routes->delete('bodegas/(:num)', 'BodegasController::delete/$1');
 });
 

@@ -18,19 +18,23 @@ class InstalacionesModel extends BaseModel
         parent::__construct();
     }
 
-    public function instalaciones_with_bodegas() {
-        $sql = 'SELECT * FROM instalaciones';
-        $instalaciones = $this->db->query($sql)->getResult();
-        $datos = [];
+    public function instalacion_with_bodegas($id_instalacion = null) 
+    {
+        if ($id_instalacion === null) {
+            // Retornar todas las instalaciones con bodegas
+            return $this->instalaciones_with_bodegas();
+        } else {
+            // Retornar solo la instalación específica con bodegas
+            $sql = 'SELECT * FROM instalaciones WHERE id_instalaciones = ?';
+            $instalacion = $this->db->query($sql, [$id_instalacion])->getRow();
 
-        if (!empty($instalaciones)) {
-            foreach ($instalaciones as $instalacion) {
-
+            if ($instalacion) {
                 $sql1 = 'SELECT id_bodegas, nombre, descripcion, estado
-                                FROM bodegas
-                                WHERE instalaciones_id = ?';
-                $bodegas = $this->db->query($sql1, [$instalacion->id_instalaciones])->getResult();
-                $datos[] = [
+                        FROM bodegas
+                        WHERE instalaciones_id = ?';
+                $bodegas = $this->db->query($sql1, [$id_instalacion])->getResult();
+
+                return [
                     'id_instalaciones' => $instalacion->id_instalaciones,
                     'nombre'           => $instalacion->nombre,
                     'descripcion'      => $instalacion->descripcion,
@@ -41,8 +45,8 @@ class InstalacionesModel extends BaseModel
                     'bodegas'          => $bodegas
                 ];
             }
+            return null;
         }
-        return $datos;
     }
 
     public function get($id, $table)

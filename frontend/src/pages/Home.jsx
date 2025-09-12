@@ -78,7 +78,7 @@ export const Home = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {instalaciones.map((instalacion, index) => (
                     <NavLink
-                        to={`/instalaciones/${instalacion.id_instalaciones}/bodega`}
+                        to={`/instalaciones/bodegas/${instalacion.id_instalaciones}`}
                         key={`${instalacion.id_instalaciones}-${index}`}
                         className="bg-white cursor-pointer rounded-lg shadow-md p-4 border border-gray-200 scale-hover relative"
                         type="button"
@@ -99,7 +99,7 @@ export const Home = () => {
                             <MdDelete className="text-red-500" size={20}/>
                             </button>
                             <button
-                                className="ml-auto p-1 rounded hover:bg-blue-100 transition-colors absolute top-2 right-8"
+                                className="ml-auto p-1 rounded hover:bg-blue-100 transition-colors absolute top-2 right-8.5"
                                 title="Editar instalación"
                                 type="button"
                                 onClick={e => {
@@ -109,7 +109,7 @@ export const Home = () => {
                                     setInstalacionEdit(instalacion);
                                 }}
                             >
-                                <FaEdit className="text-blue-500" />
+                                <FaEdit className="text-blue-500" size={20}/>
                             </button>
                         </h3>
                         <p className="text-sm text-gray-600 mb-2 flex items-center gap-2">

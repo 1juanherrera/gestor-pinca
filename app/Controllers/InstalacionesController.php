@@ -15,9 +15,9 @@ class InstalacionesController extends ResourceController
         return $this->respond($instalaciones);
     }
 
-    public function instalaciones_with_bodegas() 
+    public function instalaciones_with_bodegas($id = null) 
     {
-        $data = $this->model->instalaciones_with_bodegas();
+        $data = $this->model->instalacion_with_bodegas($id);
         return $this->respond($data);
     }
 

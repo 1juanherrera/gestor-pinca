@@ -16,7 +16,7 @@ export const App = () => {
         <Route path="/" element={<Home />} />
         <Route path="/inventario" element={<Inventario />} />
          <Route path="/formulaciones" element={<Formulaciones />} />
-         <Route path="/instalaciones/:id/bodega" element={<BodegasInstalacion />} />
+         <Route path="/instalaciones/bodegas/:id" element={<BodegasInstalacion />} />
         {/*<Route path="/clientes" element={<Clientes />} />
         <Route path="/proveedores" element={<Proveedores />} /> */}
       </Routes>
