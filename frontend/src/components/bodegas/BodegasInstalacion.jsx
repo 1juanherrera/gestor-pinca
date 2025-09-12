@@ -73,7 +73,7 @@ export const BodegasInstalacion = () => {
               key={`${bodega.id_bodegas}-${index}`}
               className="bg-white rounded-lg shadow-md p-4 border border-gray-200 scale-hover relative"
             >
-              <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2 pt-5">
+              <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
                 <FaBoxOpen className="text-purple-400" />
                 {bodega.nombre}
               </h3>
