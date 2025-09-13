@@ -85,7 +85,7 @@ export const Home = () => {
                     >
                         <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
                             <FaBuilding className="text-blue-400" />
-                            {instalacion.nombre}
+                            {instalacion.nombre.toUpperCase()}
                             <button
                                 type="button"
                                 onClick={e => {

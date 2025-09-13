@@ -11,8 +11,9 @@ export const useBodegas = (idInstalacion) => {
   const remove = (id) => {
     deleteMutation.mutate(id, {
       onSuccess: () => query.refetch(),
-    });
-  };
+    })
+  }
+  
 
   return {
     ...query,
