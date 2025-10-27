@@ -25,25 +25,11 @@ class ItemModel extends BaseModel
 
     public function get_items_all($where = null){
 
-        $sql = 'SELECT
-                    ig.id_item_general as id, 
-                    ig.nombre,
-                    ig.codigo,
-                    ig.tipo,
-                    ie.viscosidad,
-                    ie.p_g,
-                    ie.color,
-                    ie.brillo_60,
-                    ie.secado,
-                    ie.cubrimiento,
-                    ie.molienda,
-                    ie.ph,
-                    ie.poder_tintoreo,
-                    ie.volumen,
+        $sql = 'SELECT 
+                    ig.*,
                     c.nombre AS categoria,
                     ci.costo_unitario
-            FROM item_especifico ie
-            INNER JOIN item_general ig ON ig.item_especifico_id = ie.id_item_especifico
+            FROM item_general ig
             LEFT JOIN categoria c ON ig.categoria_id = c.id_categoria
             LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general';
 
@@ -81,12 +67,11 @@ class ItemModel extends BaseModel
             if (!empty($data)) { 
                 foreach ($data as $item) {
                     $sql1 = 'SELECT ig.nombre, ig.codigo AS codigo_item_general,
-                                    ie.*, ci.*, ief.cantidad, ief.porcentaje
-                            FROM item_especifico_formulaciones ief 
-                            LEFT JOIN item_especifico ie ON ie.id_item_especifico = ief.item_especifico_id 
-                            LEFT JOIN item_general ig ON ig.item_especifico_id = ie.id_item_especifico
+                                    ig.*, ci.*, igf.cantidad, igf.porcentaje
+                            FROM item_general_formulaciones igf
+                            LEFT JOIN item_general ig ON ig.id_item_general = igf.item_general_id
                             LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
-                            WHERE ief.formulaciones_id = ?';
+                            WHERE igf.formulaciones_id = ?';
                     $items = $this->db->query($sql1, [$item->id_formulaciones])->getResult();
                     $datos[] = [
                         'id_formulacion' => $item->id_formulaciones,
