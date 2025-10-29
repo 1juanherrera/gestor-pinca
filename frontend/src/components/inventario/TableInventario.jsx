@@ -1,4 +1,3 @@
-
 // import { useState } from "react";
 import { FaTrash, FaEdit } from "react-icons/fa";
 import { formatoPesoColombiano } from "../../utils/formatters";
@@ -22,7 +21,7 @@ export const Table = ({ products = [], isLoading = false, error = null }) => {
             default:
                 return 'bg-gray-100 text-gray-700';
         }
-    };
+    }
 
     // const handleDeleteClick = (producto) => {
     //     setItemToDelete(producto);
@@ -70,7 +69,7 @@ export const Table = ({ products = [], isLoading = false, error = null }) => {
                                 >
                                     <td className="p-1 text-center border border-gray-200">
                                         <span className="text-xs font-medium text-gray-900">
-                                            {producto.id || '-'}
+                                            {producto.id_item_general || '-'}
                                         </span>
                                     </td>
                                     <td className="p-1 text-center border border-gray-200">

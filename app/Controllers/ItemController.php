@@ -20,12 +20,6 @@ class ItemController extends ResourceController
         return $this->respond($items);
     }
 
-    public function item_formulaciones()
-    {
-        $items = $this->model->get_items_formulaciones();
-        return $this->respond($items);
-    }
-
     public function show($id = null)
     {
         $item = $this->model->get($id, 'item_general');

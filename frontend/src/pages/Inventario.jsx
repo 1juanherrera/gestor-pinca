@@ -81,7 +81,7 @@ export const Inventario = () => {
                 </div>
             </div>
 
-                        {/* Mensaje para estados vacíos adaptado a la nueva API */}
+            {/* Mensaje para estados vacíos adaptado a la nueva API */}
             {!isLoading && !error && data && data.length === 0 && (
                 <div className="bg-white rounded-lg shadow-sm p-12 text-center mt-6 flex flex-col items-center">
                     <div className="text-gray-400 mb-4">

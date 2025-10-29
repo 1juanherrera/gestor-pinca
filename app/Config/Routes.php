@@ -12,7 +12,6 @@ $routes->group('api', function ($routes) {
 
     // ITEMS
     $routes->get('item_general', 'ItemController::item_general');
-    $routes->get('formulaciones', 'ItemController::item_formulaciones');
     $routes->get('items', 'ItemController::get_items_all');
     $routes->get('item_general/(:num)', 'ItemController::show/$1');
     $routes->post('item_general', 'ItemController::create');
@@ -33,5 +32,8 @@ $routes->group('api', function ($routes) {
     $routes->post('bodegas', 'BodegasController::create');
     $routes->put('bodegas/(:num)', 'BodegasController::update/$1');
     $routes->delete('bodegas/(:num)', 'BodegasController::delete/$1');
+
+    // FORMULACIONES
+    $routes->get('formulaciones', 'FormulacionesController::formulaciones');
 });
 
