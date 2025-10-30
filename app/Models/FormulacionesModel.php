@@ -42,4 +42,32 @@ class FormulacionesModel extends BaseModel
 
             return $datos;
         }
-}
+
+    public function calculate_costs_new_volume($itemId, $newVolume) {
+
+        $sql = `
+        SELECT 
+            ig.id_item_general,
+            ig.nombre,
+            ig.codigo,
+            ig.tipo,
+            COALESCE(cp.costo_unitario, 0) as costo_unitario,
+            COALESCE(cp.costo_mp_galon, 0) as costo_mp_galon,
+            COALESCE(cp.costo_mp_kg, 0) as costo_mp_kg,
+            COALESCE(cp.envase, 0) as envase,
+            COALESCE(cp.etiqueta, 0) as etiqueta,
+            COALESCE(cp.bandeja, 0) as bandeja,
+            COALESCE(cp.plastico, 0) as plastico,
+            COALESCE(cp.costo_total, 0) as costo_total_actual,
+            COALESCE(cp.volumen, 1) as volumen_actual,
+            COALESCE(cp.precio_venta, 0) as precio_venta_actual,
+            COALESCE(cp.cantidad_total, 0) as cantidad_total_actual,
+            COALESCE(cp.costo_mod, 0) as costo_mod,
+            cp.costo_total as costo_total_raw,
+            cp.precio_venta as precio_venta_raw
+        FROM item_general ig
+        LEFT JOIN costos_item cp ON ig.id_item_general = cp.id
+        WHERE ig.id_item_general = ?
+        `;
+    }
+}    

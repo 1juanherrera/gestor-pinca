@@ -1,4 +1,4 @@
-// import { ProductSelect } from '../components/formulaciones/ProductSelect';
+import { ProductSelect } from '../components/formulaciones/ProductSelect';
 // import { FormulacionesTable } from '../components/formulaciones/FormulacionesTable';
 // import { CostCalculator } from '../components/formulaciones/CostCalculator';
 // import { ProductSpecificationsTable } from '../components/formulaciones/ProductSpecificationsTable';
@@ -20,8 +20,6 @@ export const Formulaciones = () => {
     handleProductSelect,
     handleClearSelection,
   } = useFormulaciones();
-
-  data.forEach(item => console.log(item.nombre));
 
   if (isLoading) return <div>Cargando...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -146,18 +144,6 @@ export const Formulaciones = () => {
     </div>
   )
 }
-
-//             {/* Selector de producto compacto */}
-//             <div className="mb-4">
-//                 <ProductSelect
-//                     productos={productos}
-//                     selectedProduct={selectedProduct}
-//                     onProductSelect={handleProductSelect}
-//                     onClearSelection={handleClearSelection}
-//                     loading={loading}
-//                     compact={true} // AGREGADO: Prop para modo compacto
-//                 />
-//             </div>
 
 //             {/* Mensaje de error compacto */}
 //             {(error || calculatorError) && (
