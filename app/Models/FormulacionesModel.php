@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 
+use App\Libraries\CurrencyFormatter;
 use Exception;
 
 class FormulacionesModel extends BaseModel
@@ -45,14 +46,14 @@ class FormulacionesModel extends BaseModel
             return $datos;
         }
 
-    public function calculate_costs_new_volume($itemId, $newVolume) 
+    public function calculate_costs_new_volume($itemId, $newVolume = null) 
     {
 
-        if (empty($itemId) || empty($newVolume) || !is_numeric($newVolume) || $newVolume <= 0) {
-            throw new Exception('Parámetros inválidos: itemId o newVolume incorrectos.');
+        if (empty($itemId)) {
+            throw new Exception('Parámetro inválido: itemId requerido.');
         }
 
-        $sql = "SELECT 
+        $sql = 'SELECT 
                     ig.id_item_general,
                     ig.nombre,
                     ig.codigo,
@@ -74,15 +75,15 @@ class FormulacionesModel extends BaseModel
                 FROM item_general ig
                 LEFT JOIN costos_item cp ON ig.id_item_general = cp.id
                 WHERE ig.id_item_general = ?
-                ";
+                ';
 
          $item = $this->db->query($sql, [$itemId])->getRow();
 
         if (!$item) {
-            throw new Exception("Item con ID {$itemId} no encontrado.");
+            throw new Exception('Item con ID {$itemId} no encontrado.');
         }
 
-        $formulacionesSql = "SELECT 
+        $formulacionesSql = 'SELECT 
                                 f.id_item_general_formulaciones,
                                 f.item_general_id,
                                 f.formulaciones_id,
@@ -95,6 +96,55 @@ class FormulacionesModel extends BaseModel
                             INNER JOIN item_general ig ON f.item_general_id = ig.id_item_general
                             LEFT JOIN costos_item ci ON ig.id_item_general = ci.item_general_id
                             WHERE f.formulaciones_id = ?;
-                            ";
+                            ';
+        
+        $formulaciones = $this->db->query($formulacionesSql, [$item->id_item_general])->getResult();
+
+        if (empty($formulaciones)) {
+            throw new Exception("No se encontraron formulaciones para el item {$item->nombre}.");
+        }
+
+        // --- 3️⃣ CALCULAR NUEVO COSTO TOTAL ---
+        $totalMateriaPrima = 0;
+        foreach ($formulaciones as $row) {
+            $totalMateriaPrima += $row->costo_total_materia;
+        }
+
+        // Ajuste de volumen (escala proporcional)
+        if (!empty($newVolume) && is_numeric($newVolume) && $newVolume > 0 && $item->volumen_actual > 0) {
+            $factorVolumen = $newVolume / $item->volumen_actual;
+        } else {
+            $factorVolumen = 1;
+        }
+
+        $nuevoCostoMateriaPrima = $totalMateriaPrima * $factorVolumen;
+        $nuevoCostoTotal = $nuevoCostoMateriaPrima 
+                            + $item->envase 
+                            + $item->etiqueta 
+                            + $item->bandeja 
+                            + $item->plastico 
+                            + $item->costo_mod;
+
+        return [
+            'item' => [
+                'id' => $item->id_item_general,
+                'nombre' => $item->nombre,
+                'codigo' => $item->codigo,
+                'tipo' => $item->tipo,
+                'volumen_actual' => (float) $item->volumen_actual,
+                'nuevo_volumen' => $newVolume ?? $item->volumen_actual,
+                'factor_volumen' => round($factorVolumen, 2),
+            ],
+            'costos' => [
+                'materia_prima' => CurrencyFormatter::toCOP($nuevoCostoMateriaPrima),
+                'envase' => CurrencyFormatter::toCOP($item->envase),
+                'etiqueta' => CurrencyFormatter::toCOP($item->etiqueta),
+                'bandeja' => CurrencyFormatter::toCOP($item->bandeja),
+                'plastico' => CurrencyFormatter::toCOP($item->plastico),
+                'mod' => CurrencyFormatter::toCOP($item->costo_mod),
+                'total' => CurrencyFormatter::toCOP($nuevoCostoTotal),
+            ],
+            'formulaciones' => $formulaciones
+        ];
     }
 }    

@@ -11,100 +11,111 @@ AGREGAR BUSCADOR DE PRODUCTOS DE PROOVEDOR PARA DIFERENCIAS Y COMPARA PRECIOS
 NUEVO MODULO -> PAGOSPENDIENTES, ESPECIFICACIONES DE FACTURAS Y DE PAGOS, AGREGAR ABONOS POR CLIENTES, REMISIONES, COTIZACIONES
 
 
-
 TAREAS PENDIENTES -> SEGUIR EN get_bodegas_by_instalacion
 
-public function calculate_costs_new_volume($itemId, $newVolume)
+<?php
+
+namespace App\Models;
+
+use CodeIgniter\Model;
+use Exception;
+use App\Helpers\FormatHelper;
+
+class FormulacionesModel extends Model
 {
-    if (empty($itemId) || empty($newVolume) || !is_numeric($newVolume) || $newVolume <= 0) {
-        throw new Exception('Parámetros inválidos: itemId o newVolume incorrectos.');
+    protected $DBGroup = 'default';
+    protected $table = 'item_general';
+    protected $primaryKey = 'id_item_general';
+    protected $returnType = 'object';
+
+    public function calculate_costs_new_volume($itemId, $newVolume = null)
+    {
+        if (empty($itemId)) {
+            throw new Exception('Parámetro inválido: itemId requerido.');
+        }
+
+        // 1️⃣ Obtener item base
+        $sql = "SELECT 
+                    ig.id_item_general,
+                    ig.nombre,
+                    ig.codigo,
+                    ig.tipo,
+                    COALESCE(cp.costo_unitario, 0) as costo_unitario,
+                    COALESCE(cp.envase, 0) as envase,
+                    COALESCE(cp.etiqueta, 0) as etiqueta,
+                    COALESCE(cp.bandeja, 0) as bandeja,
+                    COALESCE(cp.plastico, 0) as plastico,
+                    COALESCE(cp.costo_mod, 0) as costo_mod,
+                    COALESCE(cp.volumen, 1) as volumen_actual
+                FROM item_general ig
+                LEFT JOIN costos_item cp ON ig.id_item_general = cp.id
+                WHERE ig.id_item_general = ?";
+
+        $item = $this->db->query($sql, [$itemId])->getRow();
+
+        if (!$item) {
+            throw new Exception("Item con ID {$itemId} no encontrado.");
+        }
+
+        // 2️⃣ Obtener formulaciones
+        $formulacionesSql = "SELECT 
+                                f.cantidad,
+                                COALESCE(ci.costo_unitario, 0) as costo_unitario
+                             FROM item_general_formulaciones f
+                             LEFT JOIN costos_item ci ON f.item_general_id = ci.item_general_id
+                             WHERE f.formulaciones_id = ?";
+
+        $formulaciones = $this->db->query($formulacionesSql, [$item->id_item_general])->getResult();
+
+        if (empty($formulaciones)) {
+            throw new Exception("No se encontraron formulaciones para el item {$item->nombre}.");
+        }
+
+        // 3️⃣ Calcular total materia prima
+        $totalMateriaPrima = 0;
+        foreach ($formulaciones as $f) {
+            $totalMateriaPrima += ($f->cantidad * $f->costo_unitario);
+        }
+
+        // 4️⃣ Escalado por volumen
+        $factorVolumen = (!empty($newVolume) && is_numeric($newVolume) && $newVolume > 0 && $item->volumen_actual > 0)
+            ? $newVolume / $item->volumen_actual
+            : 1;
+
+        $nuevoCostoMateriaPrima = $totalMateriaPrima * $factorVolumen;
+
+        // 5️⃣ Costos adicionales
+        $nuevoCostoTotal = $nuevoCostoMateriaPrima
+                            + $item->envase
+                            + $item->etiqueta
+                            + $item->bandeja
+                            + $item->plastico
+                            + $item->costo_mod;
+
+        // 6️⃣ Precio de venta (por ejemplo, +40% margen)
+        $precioVenta = $nuevoCostoTotal * 1.4;
+
+        // 7️⃣ Retorno con formato COP
+        return [
+            'item' => [
+                'id' => $item->id_item_general,
+                'nombre' => $item->nombre,
+                'codigo' => $item->codigo,
+                'tipo' => $item->tipo,
+                'volumen_actual' => $item->volumen_actual,
+                'nuevo_volumen' => $newVolume,
+                'factor_volumen' => round($factorVolumen, 2),
+            ],
+            'costos' => [
+                'materia_prima' => FormatHelper::toCOP($nuevoCostoMateriaPrima),
+                'envase' => FormatHelper::toCOP($item->envase),
+                'etiqueta' => FormatHelper::toCOP($item->etiqueta),
+                'bandeja' => FormatHelper::toCOP($item->bandeja),
+                'plastico' => FormatHelper::toCOP($item->plastico),
+                'mod' => FormatHelper::toCOP($item->costo_mod),
+                'total' => FormatHelper::toCOP($nuevoCostoTotal),
+                'precio_venta' => FormatHelper::toCOP($precioVenta),
+            ]
+        ];
     }
-
-    // --- 1️⃣ OBTENER DATOS DEL ITEM PRINCIPAL ---
-    $sql = "SELECT 
-                ig.id_item_general,
-                ig.nombre,
-                ig.codigo,
-                ig.tipo,
-                COALESCE(cp.costo_unitario, 0) AS costo_unitario,
-                COALESCE(cp.costo_mp_galon, 0) AS costo_mp_galon,
-                COALESCE(cp.costo_mp_kg, 0) AS costo_mp_kg,
-                COALESCE(cp.envase, 0) AS envase,
-                COALESCE(cp.etiqueta, 0) AS etiqueta,
-                COALESCE(cp.bandeja, 0) AS bandeja,
-                COALESCE(cp.plastico, 0) AS plastico,
-                COALESCE(cp.costo_total, 0) AS costo_total_actual,
-                COALESCE(cp.volumen, 1) AS volumen_actual,
-                COALESCE(cp.precio_venta, 0) AS precio_venta_actual,
-                COALESCE(cp.cantidad_total, 0) AS cantidad_total_actual,
-                COALESCE(cp.costo_mod, 0) AS costo_mod
-            FROM item_general ig
-            LEFT JOIN costos_item cp ON ig.id_item_general = cp.item_general_id
-            WHERE ig.id_item_general = ?";
-
-    $item = $this->db->query($sql, [$itemId])->getRow();
-
-    if (!$item) {
-        throw new Exception("Item con ID {$itemId} no encontrado.");
-    }
-
-    // --- 2️⃣ OBTENER FORMULACIÓN ---
-    $formulacionesSql = "SELECT 
-                            f.id_item_general_formulaciones,
-                            f.item_general_id,
-                            f.formulaciones_id,
-                            f.cantidad,
-                            ig.nombre AS materia_prima_nombre,
-                            ig.codigo AS materia_prima_codigo,
-                            COALESCE(ci.costo_unitario, 0) AS materia_prima_costo_unitario,
-                            (f.cantidad * COALESCE(ci.costo_unitario, 0)) AS costo_total_materia
-                        FROM item_general_formulaciones f
-                        INNER JOIN item_general ig ON f.item_general_id = ig.id_item_general
-                        LEFT JOIN costos_item ci ON ig.id_item_general = ci.item_general_id
-                        WHERE f.formulaciones_id = ?";
-
-    $formulaciones = $this->db->query($formulacionesSql, [$item->id_item_general])->getResult();
-
-    if (empty($formulaciones)) {
-        throw new Exception("No se encontraron formulaciones para el item {$item->nombre}.");
-    }
-
-    // --- 3️⃣ CALCULAR NUEVO COSTO TOTAL ---
-    $totalMateriaPrima = 0;
-    foreach ($formulaciones as $row) {
-        $totalMateriaPrima += $row->costo_total_materia;
-    }
-
-    // Ajuste de volumen (escala proporcional)
-    $factorVolumen = $newVolume / $item->volumen_actual;
-    $nuevoCostoMateriaPrima = $totalMateriaPrima * $factorVolumen;
-    $nuevoCostoTotal = $nuevoCostoMateriaPrima 
-                        + $item->envase 
-                        + $item->etiqueta 
-                        + $item->bandeja 
-                        + $item->plastico 
-                        + $item->costo_mod;
-
-    // --- 4️⃣ GENERAR RESPUESTA ---
-    return [
-        'item' => [
-            'id' => $item->id_item_general,
-            'nombre' => $item->nombre,
-            'codigo' => $item->codigo,
-            'tipo' => $item->tipo,
-            'volumen_actual' => $item->volumen_actual,
-            'nuevo_volumen' => $newVolume,
-            'factor_volumen' => $factorVolumen,
-        ],
-        'costos' => [
-            'materia_prima' => $nuevoCostoMateriaPrima,
-            'envase' => $item->envase,
-            'etiqueta' => $item->etiqueta,
-            'bandeja' => $item->bandeja,
-            'plastico' => $item->plastico,
-            'mod' => $item->costo_mod,
-            'total' => $nuevoCostoTotal,
-        ],
-        'formulaciones' => $formulaciones
-    ];
 }
