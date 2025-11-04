@@ -11,7 +11,7 @@ export const useFormulaciones = () => {
 
   const [selectedProduct, setSelectedProduct] = useState(null);
 
-  const productDetailQuery = useApiResource(selectedProduct ? `/formulaciones/calcular/${selectedProduct}` : 1);
+  const productDetailQuery = useApiResource(selectedProduct ? `/formulaciones/costos/${selectedProduct}` : 1);
   // const recalculate = useApiMutation(selectedProduct ? `/formulaciones/recalcular` : 'recalculate-disabled');
 
   const handleProductSelect = (productId) => {

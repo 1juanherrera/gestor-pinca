@@ -2,7 +2,7 @@
 
 namespace App\Libraries;
 
-class CurrencyFormatter
+class Formatter
 {
     /**
      * Formatea un número como moneda COP (pesos colombianos)
@@ -30,5 +30,21 @@ class CurrencyFormatter
         $number = (float) $number;
         
         return number_format($number, $decimals, $dec_point, $thousands_sep);
+    }
+
+    public static function ruleOfThree($cantidadOriginal, $volumenNuevo, $volumenBase, $decimales = 2)
+    {
+        $cantidad = (float) str_replace(',', '.', $cantidadOriginal);
+        $volumenNuevo = (float) str_replace(',', '.', $volumenNuevo);
+        $volumenBase  = (float) str_replace(',', '.', $volumenBase);
+
+        if ($volumenBase <= 0 || $volumenNuevo <= 0) {
+            return round(0, $decimales);
+        }
+
+        $factor = $volumenNuevo / $volumenBase;
+        $resultado = $factor * $cantidad;
+
+        return round($resultado, $decimales);
     }
 }

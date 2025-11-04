@@ -122,7 +122,7 @@ export const CostCalculator = ({
                             Nuevo Volumen (Cálculo Automático)
                         </label>
                         <div className="relative">
-                            <div className="border flex gap-2">
+                            <div className="flex gap-2">
                             <input
                                 type="number"
                                 value={volumeInput}
