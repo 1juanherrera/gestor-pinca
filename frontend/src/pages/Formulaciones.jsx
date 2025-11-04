@@ -1,11 +1,10 @@
 import { ProductSelect } from '../components/formulaciones/ProductSelect';
-// import { FormulacionesTable } from '../components/formulaciones/FormulacionesTable';
-// import { CostCalculator } from '../components/formulaciones/CostCalculator';
-// import { ProductSpecificationsTable } from '../components/formulaciones/ProductSpecificationsTable';
+import { FormulacionesTable } from '../components/formulaciones/FormulacionesTable';
+import { CostCalculator } from '../components/formulaciones/CostCalculator';
+import { ProductSpecificationsTable } from '../components/formulaciones/ProductSpecificationsTable';
 import { FaFlask, FaChartPie, FaSpinner, FaCube } from 'react-icons/fa';
 import { MdScience } from 'react-icons/md';
-// import { formatoCantidad } from '../utils/formatters';
-// import { CostProductsTable } from '../components/formulaciones/CostProductsTable';     
+import { CostProductsTable } from '../components/formulaciones/CostProductsTable';     
 import { useFormulaciones } from '../hooks/useFormulaciones';
 
 export const Formulaciones = () => {
@@ -17,6 +16,8 @@ export const Formulaciones = () => {
     insumos ,
     refreshData,
     selectedProduct,
+    productDetail,
+    loadingDetail,
     handleProductSelect,
     handleClearSelection,
   } = useFormulaciones();
@@ -106,7 +107,7 @@ export const Formulaciones = () => {
             <div>
               <p className="text-xs font-medium text-gray-600">Componentes</p>
                 <p className="text-lg font-bold text-emerald-600">
-                  0
+                  {productDetail?.formulaciones?.length || 0}
                 </p>
             </div>
             <div className="h-8 w-8 bg-emerald-100 rounded-full flex items-center justify-center">
@@ -120,7 +121,7 @@ export const Formulaciones = () => {
             <div>
               <p className="text-xs font-medium text-gray-600">Costo Total</p>
                 <p className="text-lg font-bold text-green-600">
-                  0,00
+                  {productDetail?.costos?.total_costo_materia_prima || 0}
                 </p>
             </div>
             <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -135,81 +136,52 @@ export const Formulaciones = () => {
         <ProductSelect
           productos={productos}
           selectedProduct={selectedProduct}
+          productDetail={productDetail}
           onProductSelect={handleProductSelect}
           onClearSelection={handleClearSelection}
           loading={isLoading}
-          compact={true} // AGREGADO: Prop para modo compacto
+          compact={true}
         />
+      </div>
+      <div className="grid grid-cols-1 2xl:grid-cols-3 gap-4">
+        <div className="2xl:col-span-1">
+          <CostCalculator
+              productDetail={productDetail}
+              selectedProductData={selectedProduct}
+              loadingDetail={loadingDetail}
+              compact={true}
+          />
+        </div>
+        {/* Tabla de formulaciones - Ocupa más espacio */}
+        <div className="2xl:col-span-2">
+            <FormulacionesTable
+                formulaciones={data}
+                selectedProductData={selectedProduct}
+                productDetail={productDetail}
+                loadingDetail={loadingDetail}
+                compact={true}
+            />
+        </div>
+      </div>
+      {/* Especificaciones y Costos */}
+      <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Desglose de Costos */}
+          <div>
+              <CostProductsTable
+                  selectedProductData={selectedProduct}
+                  productDetail={productDetail}
+                  compact={true}
+              />
+          </div>
+          {/* Especificaciones Técnicas */}
+          <div>
+              <ProductSpecificationsTable
+                  selectedProductData={selectedProduct}
+                  productDetail={productDetail}
+              />
+          </div>
+      
       </div>
     </div>
   )
 }
-
-//             {/* Mensaje de error compacto */}
-//             {(error || calculatorError) && (
-//                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-//                     <div className="flex items-center justify-between">
-//                         <p className="text-sm text-red-800">
-//                             Error: {error || calculatorError}
-//                         </p>
-//                         <button
-//                             onClick={() => {
-//                                 refreshData();
-//                                 clearCalculatorError();
-//                             }}
-//                             className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors"
-//                         >
-//                             Reintentar
-//                         </button>
-//                     </div>
-//                 </div>
-//             )}
-
-//             {/* Layout integrado - Todo en una vista */}
-//             <div className="grid grid-cols-1 2xl:grid-cols-3 gap-4">
-//                 {/* Calculadora de Costos - Compacta */}
-//                 <div className="2xl:col-span-1">
-//                     <CostCalculator
-//                         selectedProductData={selectedProductData}
-//                         onCalculate={handleCalculateCosts}
-//                         onSave={handleSaveCosts}
-//                         loading={calculatorLoading}
-//                         onCalculationChange={handleCalculationChange}
-//                         compact={true} // AGREGADO: Prop para modo compacto
-//                     />
-//                 </div>
-
-//                 {/* Tabla de formulaciones - Ocupa más espacio */}
-//                 <div className="2xl:col-span-2">
-//                     <FormulacionesTable
-//                         formulaciones={formulaciones}
-//                         selectedProductData={selectedProductData}
-//                         totalCantidad={totalCantidad}
-//                         totalCosto={totalCosto}
-//                         calculationResult={calculationResult}
-//                         compact={true} // AGREGADO: Prop para modo compacto
-//                     />
-//                 </div>
-//             </div>
-
-//             {/* Especificaciones y Costos */}
-//             <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-//                 {/* Desglose de Costos */}
-//                 <div>
-//                     <CostProductsTable
-//                         selectedProductData={selectedProductData}
-//                         calculationResult={calculationResult}
-//                         compact={true}
-//                     />
-//                 </div>
-//                 {/* Especificaciones Técnicas */}
-//                 <div>
-//                     <ProductSpecificationsTable
-//                         selectedProductData={selectedProductData}
-//                     />
-//                 </div>
-            
-//             </div>
-//         </div>
-//     );
-// };

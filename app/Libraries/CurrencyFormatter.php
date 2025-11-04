@@ -19,9 +19,16 @@ class CurrencyFormatter
 
     public static function parseCOP($valor) 
     {
-        // Elimina el símbolo $ y separadores de miles, cambia coma por punto
         $numero = str_replace(['$', '.', ' '], '', $valor);
         $numero = str_replace(',', '.', $numero);
         return (float)$numero;
+    }
+
+    public static function toThousands($number, $decimals = 2, $dec_point = '.', $thousands_sep = ',')
+    {
+
+        $number = (float) $number;
+        
+        return number_format($number, $decimals, $dec_point, $thousands_sep);
     }
 }

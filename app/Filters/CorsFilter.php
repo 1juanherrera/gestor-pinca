@@ -17,15 +17,15 @@ class CorsFilter implements FilterInterface
         if (strtolower($request->getMethod()) === 'options') {
             $response->setStatusCode(200);
             $response->setBody('');
-            return $response; // Devuelve la respuesta, no uses exit ni send()
+            return $response;
         }
     }
 
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
     {
-            $response->setHeader('Access-Control-Allow-Origin', '*');
-            $response->setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-            $response->setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-            return $response;
+        $response->setHeader('Access-Control-Allow-Origin', '*');
+        $response->setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        $response->setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        return $response;
     }
 }

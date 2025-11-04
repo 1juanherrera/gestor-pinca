@@ -2,7 +2,8 @@ import { FaFlask, FaVial, FaPalette, FaClock, FaEye, FaTint, FaWeight, FaPaintBr
 import { MdScience } from 'react-icons/md';
 
 export const ProductSpecificationsTable = ({ 
-    selectedProductData
+    selectedProductData,
+    productDetail = null
 }) => {
     if (!selectedProductData) {
         return (
@@ -20,93 +21,68 @@ export const ProductSpecificationsTable = ({
         );
     }
 
-    // Mapear los parámetros técnicos con sus iconos
-    const getParameterIcon = (param) => {
-        switch(param.toLowerCase()) {
-            case 'viscosidad':
-                return <FaTint className="text-blue-500" size={14} />;
-            case 'p_g':
-                return <FaWeight className="text-green-500" size={14} />;
-            case 'brillo':
-            case 'brillo_60':
-                return <FaEye className="text-yellow-500" size={14} />;
-            case 'molienda':
-                return <FaVial className="text-purple-500" size={14} />;
-            case 'secado':
-                return <FaClock className="text-orange-500" size={14} />;
-            case 'cubrimiento':
-                return <FaPaintBrush className="text-indigo-500" size={14} />;
-            case 'color':
-                return <FaPalette className="text-red-500" size={14} />;
-            case 'ph':
-                return <FaFlask className="text-teal-500" size={14} />;
-            case 'poder_tintoreo':
-                return <FaPalette className="text-pink-500" size={14} />;
-            default:
-                return <MdScience className="text-gray-500" size={14} />;
-        }
+    const PARAMETER_DEFINITIONS = {
+        viscosidad: {
+            label: 'VISCOSIDAD',
+            icon: <FaTint className="text-blue-500" size={14} />,
+            format: (v) => v || '-'
+        },
+        p_g: {
+            label: 'P / G',
+            icon: <FaWeight className="text-green-500" size={14} />,
+            format: (v) => v || '-'
+        },
+        brillo: {
+            label: 'BRILLO',
+            icon: <FaEye className="text-yellow-500" size={14} />,
+            format: (v) => (v === 'MATE' ? 'MATE' : v || '-')
+        },
+        brillo_60: {
+            label: 'BRILLO 60°',
+            icon: <FaEye className="text-yellow-500" size={14} />,
+            format: (v) => v || '-'
+        },
+        molienda: {
+            label: 'MOLIENDA',
+            icon: <FaVial className="text-purple-500" size={14} />,
+            format: (v) => (v ? `${v} H` : '-')
+        },
+        secado: {
+            label: 'SECADO',
+            icon: <FaClock className="text-orange-500" size={14} />,
+            format: (v) => v || '-'
+        },
+        cubrimiento: {
+            label: 'CUBRIMIENTO',
+            icon: <FaPaintBrush className="text-indigo-500" size={14} />,
+            format: (v) => v || '-'
+        },
+        color: {
+            label: 'COLOR',
+            icon: <FaPalette className="text-red-500" size={14} />,
+            format: (v) => (v === 'STD' ? 'STD' : v || '-')
+        },
+        ph: {
+            label: 'PH',
+            icon: <FaFlask className="text-teal-500" size={14} />,
+            format: (v) => (v === 0 ? '-' : v || '-')
+        },
+        poder_tintoreo: {
+            label: 'PODER TINTÓREO',
+            icon: <FaPalette className="text-pink-500" size={14} />,
+            format: (v) => (v === 'STD' ? 'STD' : v || '-')
+        },
     };
 
-    // Formatear el nombre del parámetro
-    const formatParameterName = (param) => {
-        const names = {
-            'viscosidad': 'VISCOSIDAD',
-            'p_g': 'P / G',
-            'brillo': 'BRILLO',
-            'brillo_60': 'BRILLO 60°',
-            'molienda': 'MOLIENDA',
-            'secado': 'SECADO',
-            'cubrimiento': 'CUBRIMIENTO',
-            'color': 'COLOR',
-            'ph': 'PH',
-            'poder_tintoreo': 'PODER TINTÓREO'
-        };
-        return names[param] || param.toUpperCase();
-    };
-
-    // Formatear el valor del parámetro
-    const formatParameterValue = (param, value) => {
+    const formatValue = (param, value) => {
         if (!value || value === 0 || value === '0') return '-';
-        
         switch(param.toLowerCase()) {
-            case 'viscosidad':
-                return `${value}`;
-            case 'p_g':
-                return `${value}`;
-            case 'brillo':
-                return value === 'MATE' ? 'MATE' : `${value}`;
-            case 'brillo_60':
-                return `${value}`;
-            case 'molienda':
-                return `${value} H`;
-            case 'secado':
-                return `${value}`;
-            case 'cubrimiento':
-                return `${value}`;
-            case 'color':
-                return value === 'STD' ? 'STD' : value;
-            case 'ph':
-                return value === 0 ? '-' : value;
-            case 'poder_tintoreo':
-                return value === 'STD' ? 'STD' : value;
-            default:
-                return value;
+            case 'molienda': return `${value} H`;
+            case 'color': return value === 'STD' ? 'STD' : value;
+            case 'poder_tintoreo': return value === 'STD' ? 'STD' : value;
+            default: return value;
         }
     };
-
-    // Extraer parámetros técnicos del producto
-    const parameters = [
-        { key: 'viscosidad', value: selectedProductData.viscosidad },
-        { key: 'p_g', value: selectedProductData.p_g },
-        { key: 'brillo', value: selectedProductData.brillo },
-        { key: 'brillo_60', value: selectedProductData.brillo_60 },
-        { key: 'molienda', value: selectedProductData.molienda },
-        { key: 'secado', value: selectedProductData.secado },
-        { key: 'cubrimiento', value: selectedProductData.cubrimiento },
-        { key: 'color', value: selectedProductData.color },
-        { key: 'ph', value: selectedProductData.ph },
-        { key: 'poder_tintoreo', value: selectedProductData.poder_tintoreo }
-    ].filter(param => param.value !== null && param.value !== undefined && param.value !== '0');
 
     return (
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -124,10 +100,10 @@ export const ProductSpecificationsTable = ({
                     </div>
                     <div className="text-right">
                         <div className="text-xs text-teal-100">
-                            {parameters.length} parámetros
+                            {productDetail?.formulaciones?.length} parámetros
                         </div>
                         <div className="text-xs text-teal-100">
-                            {selectedProductData.codigo}
+                            {productDetail?.item?.codigo}
                         </div>
                     </div>
                 </div>
@@ -150,44 +126,37 @@ export const ProductSpecificationsTable = ({
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {parameters.length > 0 ? (
-                            parameters.map((param) => (
-                                <tr key={param.key} className="hover:bg-gray-50">
-                                    <td className="px-3 py-2 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <div className="flex-shrink-0 mr-3">
-                                                {getParameterIcon(param.key)}
+                        {Object.entries(productDetail?.item || {})
+                            .filter(([key]) => PARAMETER_DEFINITIONS[key]) // solo los definidos
+                            .map(([key, value]) => {
+                                const { label, icon } = PARAMETER_DEFINITIONS[key];
+                                return (
+                                    <tr key={key} className="hover:bg-gray-50">
+                                        <td className="px-3 py-2 whitespace-nowrap">
+                                            <div className="flex items-center">
+                                                <div className="flex-shrink-0 mr-3">
+                                                    {icon}
+                                                </div>
+                                                <div className="text-sm font-medium text-gray-900">
+                                                    {label}
+                                                </div>
                                             </div>
-                                            <div className="text-sm font-medium text-gray-900">
-                                                {formatParameterName(param.key)}
+                                        </td>
+
+                                        <td className="px-3 py-2 whitespace-nowrap text-center">
+                                            <div className="text-sm font-semibold text-teal-600">
+                                                {formatValue(key, value)}
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-3 py-2 whitespace-nowrap text-center">
-                                        <div className="text-sm font-semibold text-teal-600">
-                                            {formatParameterValue(param.key, param.value)}
-                                        </div>
-                                    </td>
-                                    <td className="px-3 py-2 whitespace-nowrap text-center">
-                                        <div className="text-sm text-gray-500">
-                                            N/A
-                                        </div>
-                                    </td>
-                                    
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan="3" className="px-3 py-8 text-center text-gray-500">
-                                    <div className="flex flex-col items-center">
-                                        <MdScience size={48} className="text-gray-300 mb-2" />
-                                        <p className="text-sm">
-                                            No hay especificaciones disponibles
-                                        </p>
-                                    </div>
-                                </td>
-                            </tr>
-                        )}
+                                        </td>
+
+                                        <td className="px-3 py-2 whitespace-nowrap text-center">
+                                            <div className="text-xs text-gray-500">
+                                                N/A
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                     </tbody>
                 </table>
             </div>
@@ -196,7 +165,7 @@ export const ProductSpecificationsTable = ({
             <div className="bg-gray-50 px-4 py-3 border-t border-gray-400">
                 <div className="flex justify-between items-center">
                     <div className="text-sm text-gray-600">
-                        <span className="font-semibold">{parameters.length}</span> especificaciones técnicas
+                        <span className="font-semibold">{productDetail?.parametros?.length}</span> especificaciones técnicas
                     </div>
                     <div className="text-sm text-gray-600">
                         <span className="font-semibold">Código:</span> {selectedProductData.codigo}

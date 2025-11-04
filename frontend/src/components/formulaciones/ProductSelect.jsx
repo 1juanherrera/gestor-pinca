@@ -1,4 +1,4 @@
-import { FaFlask, FaTimes } from 'react-icons/fa';
+import { FaFlask } from 'react-icons/fa';
 import { MdArrowDropDown, MdOutlineCleaningServices  } from 'react-icons/md';
 import { AiFillAppstore } from 'react-icons/ai';
 
@@ -8,7 +8,7 @@ export const ProductSelect = ({
     onProductSelect, 
     onClearSelection, 
     loading,
-    compact = false // AGREGADO: Prop para modo compacto
+    compact = false 
 }) => {
     if (loading) {
         return (
@@ -46,16 +46,16 @@ export const ProductSelect = ({
 
             <div className="relative">
                 <select
-                    value={selectedProduct}
+                    value={selectedProduct ?? ''}
                     onChange={(e) => onProductSelect(e.target.value)}
                     className={`w-full px-3 ${compact ? 'py-2' : 'py-3'} pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white text-sm`}
                 >
                     <option value="">Selecciona un producto o insumo...</option>
                     
                     {productosOnly.length > 0 && (
-                        <optgroup label="🧪 PRODUCTOS">
+                        <optgroup label="PRODUCTOS">
                             {productosOnly.map((producto, i) => (
-                                <option key={i} value={producto.id}>
+                                <option key={i} value={producto.id_formulacion}>
                                     {producto.codigo} {producto.nombre} 
                                     ({producto.items?.length || 0} comp.)
                                 </option>
@@ -64,7 +64,7 @@ export const ProductSelect = ({
                     )}
                     
                     {insumosOnly.length > 0 && (
-                        <optgroup label="📦 INSUMOS">
+                        <optgroup label="INSUMOS">
                             {insumosOnly.map(insumo => (
                                 <option key={insumo.id} value={insumo.id}>
                                     {insumo.codigo} - {insumo.nombre} 
