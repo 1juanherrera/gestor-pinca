@@ -1,74 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Calculator, Loader2, FileDown } from 'lucide-react'; // Íconos reemplazados por lucide-react
-
-// Función de utilidad para formatear la moneda consistentemente (simulando formatoPesoColombiano)
-const formatCOP = (amount) => {
-    const value = parseFloat(amount) || 0;
-    return value.toLocaleString('es-CO', { 
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 2, 
-        maximumFractionDigits: 2 
-    });
-};
+import { Calculator, Loader2, FileDown } from 'lucide-react';
+import { FaSyncAlt } from 'react-icons/fa';
 
 export const CostCalculator = ({ 
     productDetail,
     selectedProductData,
     loadingDetail,
     compact = false,
-    // NUEVAS PROPS PARA EL RECÁLCULO
-    recalculateVolume = () => {}, // <--- CORRECCIÓN: Se añade un valor por defecto para evitar el TypeError
-    isRecalculating 
+    handleRecalcular,
+    setNuevoVolumen,
+    recalculatedData,
+    isRecalculating
 }) => {
     
-    // Estado local para el valor del input, para que el componente sea responsivo
-    const [volumeInput, setVolumeInput] = useState('');
-    const [error, setError] = useState('');
-
-    // Sincronizar volumeInput: cuando el producto cambia o se carga un nuevo detalle/cálculo
-    useEffect(() => {
-        if (productDetail && productDetail.volumenes) {
-            // Usar volumen_nuevo si está disponible, o el volumen actual del ítem
-            const currentVolume = productDetail.volumenes.volumen_nuevo || productDetail.item.volumen_actual;
-            setVolumeInput(String(currentVolume));
-        } else if (selectedProductData) {
-             // Si hay producto seleccionado pero no hay detalle (e.g., al inicio)
-             setVolumeInput(String(selectedProductData.volumen_actual || '1'));
-        } else {
-            setVolumeInput('');
-        }
-        setError('');
-    }, [productDetail, selectedProductData]);
-
-
-    const handleVolumeChange = (e) => {
-        const value = e.target.value;
-        setVolumeInput(value); // Actualiza la vista inmediatamente
-        
-        // Validación básica
-        const newVolume = parseFloat(value);
-
-        if (value === '') {
-            setError(''); // Permitir vaciar
-            return;
-        }
-
-        if (isNaN(newVolume)) {
-            setError('El volumen debe ser un número.');
-            return;
-        }
-        
-        if (newVolume <= 0) {
-            setError('El volumen debe ser mayor a 0.');
-            return;
-        }
-        
-        setError('');
-        
-        // 🚨 Llamar a la función DEBOUNCED para iniciar el recálculo
-        recalculateVolume(newVolume);
-    };
 
     // Mostrar placeholder si no hay producto seleccionado
     if (!selectedProductData) {
@@ -89,10 +32,12 @@ export const CostCalculator = ({
     
     const isProcessing = loadingDetail || isRecalculating;
 
+    console.log(recalculatedData)
+
     return (
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-4 py-3">
+            <div className="bg-linear-to-r from-purple-500 to-purple-600 text-white px-4 py-3">
                 <div className="flex items-center justify-between">
                     <div>
                         <h3 className={`${compact ? 'text-base' : 'text-lg'} font-semibold flex items-center gap-2`}>
@@ -108,7 +53,7 @@ export const CostCalculator = ({
                             Vol. Actual: {productDetail?.item?.volumen_actual || 0} L
                         </div>
                         <div className="text-xs text-purple-100">
-                            Costo Original: {formatCOP(parseFloat(productDetail?.costos_originales?.costo_total_materias_primas))}
+                            Costo Original: {parseFloat(productDetail?.costos_originales?.costo_total_materias_primas)}
                         </div>
                     </div>
                 </div>
@@ -125,15 +70,27 @@ export const CostCalculator = ({
                             <div className="flex gap-2">
                             <input
                                 type="number"
-                                value={volumeInput}
-                                onChange={handleVolumeChange}
+                                onChange={(e) => setNuevoVolumen(e.target.value)}
                                 placeholder={productDetail?.item?.volumen_actual || '1'}
                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10" // pr-10 para el spinner
                                 min="0.01"
                                 step="0.01"
                                 disabled={isProcessing}
                             />
-                            <button className="bg-blue-600 text-white px-3 py-2 rounded-lg">Calcular</button>
+                            <button 
+                            onClick={handleRecalcular}
+                            disabled={isRecalculating}
+                            className="bg-blue-600 text-white px-3 py-2 rounded-lg">
+                            {isRecalculating ? (
+                                <>
+                                    <FaSyncAlt className="animate-spin" /> Recalculando...
+                                </>
+                                ) : (
+                                <>
+                                    <FaSyncAlt /> Recalcular Costos
+                                </>
+                            )}
+                            </button>
                             </div>
                             {isProcessing && (
                                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -141,8 +98,15 @@ export const CostCalculator = ({
                                 </div>
                             )}
                         </div>
-                        {error && (
-                            <p className="mt-1 text-xs text-red-600">{error}</p>
+                        {recalculatedData && (
+                            <div className="mt-3 p-2 bg-green-50 border border-green-100 rounded-md">
+                                <p className="text-sm text-green-700">
+                                ✅ Costos recalculados correctamente.
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                Costo total: {recalculatedData.total_costo_formulado}
+                                </p>
+                            </div>
                         )}
                     </div>
                     
@@ -179,19 +143,19 @@ export const CostCalculator = ({
                                 <div className="flex justify-between">
                                     <span>Total MP:</span>
                                     <span className="font-medium">
-                                        {formatCOP(productDetail?.costos_originales?.costo_total_materias_primas || 0)}
+                                        {productDetail?.costos_originales?.costo_total_materias_primas || 0}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Costo C/U:</span>
                                     <span className="font-medium">
-                                        {formatCOP(productDetail?.costos_originales?.costo_unitario_total || 0)}
+                                        {productDetail?.costos_originales?.costo_unitario_total || 0}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Venta C/U:</span>
                                     <span className="font-medium">
-                                        {formatCOP(productDetail?.costos_originales?.precio_venta || 0)}
+                                        {productDetail?.costos_originales?.precio_venta || 0}
                                     </span>
                                 </div>
                             </div>
@@ -217,19 +181,19 @@ export const CostCalculator = ({
                                 <div className="flex justify-between">
                                     <span>Total MP:</span>
                                     <span className="font-medium text-green-600">
-                                        {formatCOP(productDetail.costos_nuevos?.costo_total_materias_primas || 0)}
+                                        {productDetail.costos_nuevos?.costo_total_materias_primas || 0}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Costo C/U:</span>
                                     <span className="font-medium text-green-600">
-                                        {formatCOP(productDetail.costos_nuevos?.costo_unitario_total || 0)}
+                                        {productDetail.costos_nuevos?.costo_unitario_total || 0}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Venta C/U:</span>
                                     <span className="font-medium text-green-600">
-                                        {formatCOP(productDetail.costos_nuevos?.precio_venta || 0)}
+                                        {productDetail.costos_nuevos?.precio_venta || 0}
                                     </span>
                                 </div>
                             </div>
@@ -242,7 +206,7 @@ export const CostCalculator = ({
                             Factor Venta: **{productDetail.config?.factor_venta || '1.4'}x**
                         </p>
                         <p>
-                            MP Total Original: {formatCOP(productDetail.costos_originales?.costo_total_materias_primas || 0)}
+                            MP Total Original: {productDetail.costos_originales?.costo_total_materias_primas || 0}
                         </p>
                     </div>
 

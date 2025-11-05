@@ -20,6 +20,10 @@ export const Formulaciones = () => {
     loadingDetail,
     handleProductSelect,
     handleClearSelection,
+    handleRecalcular,
+    setNuevoVolumen,
+    recalculatedData,
+    isRecalculating
   } = useFormulaciones();
 
   if (isLoading) return <div>Cargando...</div>;
@@ -150,6 +154,10 @@ export const Formulaciones = () => {
               selectedProductData={selectedProduct}
               loadingDetail={loadingDetail}
               compact={true}
+              handleRecalcular={handleRecalcular}
+              setNuevoVolumen={setNuevoVolumen}
+              recalculatedData={recalculatedData}
+              isRecalculating={isRecalculating}
           />
         </div>
         {/* Tabla de formulaciones - Ocupa más espacio */}

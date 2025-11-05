@@ -30,7 +30,7 @@ export const FormulacionesTable = ({
     return (
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3">
+            <div className="bg-linear-to-r from-blue-500 to-blue-600 text-white px-4 py-3">
                 <div className="flex items-center justify-between">
                     <div>
                         <h3 className={`${compact ? 'text-base' : 'text-lg'} font-semibold flex items-center gap-2`}>
@@ -105,7 +105,7 @@ export const FormulacionesTable = ({
                                 {/* MATERIA PRIMA */}
                                 <td className="px-3 py-2 whitespace-nowrap">
                                 <div className="flex items-center">
-                                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <div className="shrink-0 h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center">
                                     <MdScience className="h-3 w-3 text-blue-600" />
                                     </div>
                                     <div className="ml-3">

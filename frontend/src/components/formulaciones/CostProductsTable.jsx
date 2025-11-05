@@ -36,7 +36,7 @@ export const CostProductsTable = ({
     return (
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-3">
+            <div className="bg-linear-to-r from-emerald-500 to-emerald-600 text-white px-4 py-3">
                 <div className="flex items-center justify-between">
                     <div>
                         <h3 className={`${compact ? 'text-base' : 'text-lg'} font-semibold flex items-center gap-2`}>
@@ -96,7 +96,7 @@ export const CostProductsTable = ({
                             <tr key={key} className="hover:bg-gray-50">
                                 <td className="px-3 py-2 whitespace-nowrap">
                                     <div className="flex items-center">
-                                        <div className="flex-shrink-0 mr-3">
+                                        <div className="shrink-0 mr-3">
                                         {icon}
                                         </div>
                                         <div className="text-sm font-medium text-gray-900">
@@ -130,7 +130,7 @@ export const CostProductsTable = ({
                             <tr className="bg-gray-100 font-semibold border-t-2 border-gray-300">
                             <td className="px-3 py-3 whitespace-nowrap">
                                 <div className="flex items-center">
-                                    <div className="flex-shrink-0 mr-3">
+                                    <div className="shrink-0 mr-3">
                                         <FaDollarSign className="text-emerald-600" size={16} />
                                     </div>
                                     <div className="text-sm font-bold text-gray-900">

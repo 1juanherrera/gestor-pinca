@@ -120,8 +120,8 @@ class FormulacionesModel extends BaseModel
 
         $totalMateriaPrima = 0;
         $totalCantidad = 0;
+        $totalCantidadMateria = 0;
 
-        // Si hay nuevo volumen válido, calcular el factor
         if (!empty($newVolume) && is_numeric($newVolume) && $newVolume > 0 && $item->volumen_base > 0) {
             $factorVolumen = $newVolume / $item->volumen_base;
             $usarNuevoVolumen = true;
@@ -138,6 +138,8 @@ class FormulacionesModel extends BaseModel
                 $cantidadRecalculada = $row->cantidad;
                 $costoTotalMateria = $row->costo_total_materia;
             }
+
+            $totalCantidadMateria += $row->cantidad;
 
             $totalMateriaPrima += $costoTotalMateria;
             $totalCantidad += $cantidadRecalculada;
@@ -189,7 +191,7 @@ class FormulacionesModel extends BaseModel
                 'cantidad' => (float) $item->cantidad,
                 'volumen_base' => (float) $item->volumen_base,
                 'volumen_nuevo' => $newVolume ?? (float) $item->volumen_base,
-                'factor_volumen' => round($factorVolumen, 2),
+                'factor_volumen' => $factorVolumen
             ],
             'costos' => [
                 'total_costo_materia_prima' => Formatter::toCOP($nuevoCostoMateriaPrima),
@@ -225,14 +227,16 @@ class FormulacionesModel extends BaseModel
         $item['factor_volumen'] = round($newVolume / ($item['volumen_base']), 3);
 
         $formulacionesCombinadas = [];
-        foreach ($currentData['formulaciones'] as $index => $f) {
-            $recalculada = $newData['formulaciones'][$index] ?? null;
+        foreach ($currentData['formulaciones'] as $f) {
+
+            $cantidad_recalculada = $item['volumen_nuevo'] / $item['volumen_base'] * $f['cantidad'];
+
             $formulacionesCombinadas[] = [
                 'id_item_general_formulaciones' => $f['id_item_general_formulaciones'],
                 'item_general_id' => $f['item_general_id'],
                 'formulaciones_id' => $f['formulaciones_id'],
                 'cantidad' => $f['cantidad'],
-                'cantidad_recalculada' => Formatter::ruleOfThree($f['cantidad'], $item['volumen_nuevo'], $item['volumen_base'], 2),
+                'cantidad_recalculada' => round($cantidad_recalculada, 2),
                 'inventario_cantidad' => $f['inventario_cantidad'],
                 'fecha_calculo' => $f['fecha_calculo'],
                 'materia_prima_nombre' => $f['materia_prima_nombre'],
@@ -240,8 +244,7 @@ class FormulacionesModel extends BaseModel
                 'materia_prima_costo_unitario' => $f['materia_prima_costo_unitario'],
                 'costo_total_materia' => $f['costo_total_materia'],
                 'inventario_valor_total' => $f['inventario_valor_total'],
-                'costo_total_materia_recalculado' => $recalculada['costo_total_materia'] ?? $f['costo_total_materia'],
-                'inventario_valor_total_recalculado' => $recalculada['inventario_valor_total'] ?? $f['inventario_valor_total']
+                'costo_total_materia_recalculado' => Formatter::toCOP(Formatter::fromCOP($f['materia_prima_costo_unitario']) * $cantidad_recalculada)
             ];
         }
 
