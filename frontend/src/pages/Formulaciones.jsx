@@ -139,6 +139,7 @@ export const Formulaciones = () => {
       <div className="mb-4">
         <ProductSelect
           productos={productos}
+          insumos={insumos}
           selectedProduct={selectedProduct}
           productDetail={productDetail}
           onProductSelect={handleProductSelect}

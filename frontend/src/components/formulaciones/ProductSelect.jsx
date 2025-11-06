@@ -4,6 +4,7 @@ import { AiFillAppstore } from 'react-icons/ai';
 
 export const ProductSelect = ({ 
     productos, 
+    insumos,
     selectedProduct, 
     onProductSelect, 
     onClearSelection, 
@@ -22,7 +23,9 @@ export const ProductSelect = ({
     }
 
     const productosOnly = productos.filter(item => item.tipo === 'PRODUCTO');
-    const insumosOnly = productos.filter(item => item.tipo === 'INSUMO');
+    const insumosOnly = insumos.filter(item => item.tipo === 'INSUMO');
+
+    console.log(productos)
 
     return (
         <div className={`bg-white rounded-lg shadow-sm ${compact ? 'p-4' : 'p-6'}`}>
@@ -53,7 +56,7 @@ export const ProductSelect = ({
                     <option value="">Selecciona un producto o insumo...</option>
                     
                     {productosOnly.length > 0 && (
-                        <optgroup label="PRODUCTOS">
+                        <optgroup label={`${productosOnly.length} PRODUCTOS`}>
                             {productosOnly.map((producto, i) => (
                                 <option key={i} value={producto.id_formulacion}>
                                     {producto.codigo} {producto.nombre} 
@@ -64,9 +67,9 @@ export const ProductSelect = ({
                     )}
                     
                     {insumosOnly.length > 0 && (
-                        <optgroup label="INSUMOS">
-                            {insumosOnly.map(insumo => (
-                                <option key={insumo.id} value={insumo.id}>
+                        <optgroup label={`${insumosOnly.length} INSUMOS`}>
+                            {insumosOnly.map((insumo, i) => (
+                                <option key={i} value={insumo.id}>
                                     {insumo.codigo} - {insumo.nombre} 
                                     ({insumo.formulaciones?.length || 0} comp.)
                                 </option>
@@ -85,14 +88,14 @@ export const ProductSelect = ({
                         {productos.find(p => p.id === parseInt(selectedProduct))?.tipo === 'PRODUCTO' ? (
                             <FaFlask className="text-blue-600" size={12} />
                         ) : (
-                            <AiFillAppstore className="text-yellow-600" size={12} />
+                            <AiFillAppstore className="text-blue-600" size={12} />
                         )}
                         <p className="text-xs text-blue-800">
-                            ✓ {productos.find(p => p.id === parseInt(selectedProduct))?.tipo} seleccionado: {productos.find(p => p.id === parseInt(selectedProduct))?.nombre}
+                            ✓ {productos.find(p => p.id_formulacion === selectedProduct)?.tipo} seleccionado: {productos.find(p => p.id_formulacion === selectedProduct)?.nombre_item_general}
                         </p>
                     </div>
                 </div>
             )}
         </div>
-    );
-};
+    )
+}

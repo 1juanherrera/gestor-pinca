@@ -43,11 +43,11 @@ export const CostProductsTable = ({
                         <h3 className={`${compact ? 'text-base' : 'text-lg'} font-semibold flex items-center gap-2`}>
                             <MdCalculate size={compact ? 16 : 20} />
                             Desglose de Costos
-                            {/* {esCalculado && (
+                            {recalculatedData && (
                                 <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-sm">
                                     Calculado
                                 </span>
-                            )} */}
+                            )}
                         </h3>
                         <p className="text-emerald-100 text-xs">
                             {productDetail?.item?.nombre}
@@ -55,7 +55,7 @@ export const CostProductsTable = ({
                     </div>
                     <div className="text-right">
                         <div className="text-xs text-emerald-100"> 
-                            Vol: {productDetail?.item?.volumen_base || 0}
+                            Vol: {recalculatedData ? recalculatedData?.item?.volumen_nuevo : productDetail?.item?.volumen_base || 0}
                         </div>
                         <div className="text-xs text-emerald-100">
                             {productDetail?.item?.codigo}
@@ -124,32 +124,53 @@ export const CostProductsTable = ({
                             </tr>
                             )})}
                         </tbody>
-
-                        
+              
                         {/* Fila del total */}
                         <tfoot>
                             <tr className="bg-gray-100 font-semibold border-t-2 border-gray-300">
-                            <td className="px-3 py-3 whitespace-nowrap">
-                                <div className="flex items-center">
-                                    <div className="shrink-0 mr-3">
-                                        <FaDollarSign className="text-emerald-600" size={16} />
+                                <td className="px-3 py-3 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                        <div className="shrink-0 mr-3">
+                                            <FaDollarSign className="text-emerald-600" size={16} />
+                                        </div>
+                                        <div className="text-sm font-bold text-gray-900">
+                                            COSTO TOTAL
+                                        </div>
                                     </div>
-                                    <div className="text-sm font-bold text-gray-900">
-                                        COSTO TOTAL
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap text-center">
+                                    <div className={`text-lg font-bold ${productDetail ? 'text-green-700' : 'text-emerald-700'}`}>
+                                        {productDetail?.costos?.total || 0}
                                     </div>
-                                </div>
-                            </td>
-                            <td className="px-3 py-3 whitespace-nowrap text-center">
-                                <div className={`text-lg font-bold ${productDetail ? 'text-green-700' : 'text-emerald-700'}`}>
-                                    {productDetail?.costos?.total || 0}
-                                </div>
-                            </td>
-                            <td className="px-3 py-3 whitespace-nowrap text-center">
-                                <div className="text-sm font-medium text-gray-600">
-                                    {recalculatedData?.recalculados?.total || 0}
-                                </div>
-                            </td>
-                        </tr>
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap text-center">
+                                    <div className="text-sm font-medium text-gray-600">
+                                        {recalculatedData?.recalculados?.total || 0}
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr className="bg-gray-100 font-semibold border-t-2 border-gray-300">
+                                <td className="px-3 py-3 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                        <div className="shrink-0 mr-3">
+                                            <FaDollarSign className="text-emerald-600" size={16} />
+                                        </div>
+                                        <div className="text-sm font-bold text-gray-900">
+                                            VENTA <span className="text-white bg-emerald-600 px-1.5 py-0.5 rounded-md">x1,4</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap text-center">
+                                    <div className={`text-lg font-bold ${productDetail ? 'text-green-700' : 'text-emerald-700'}`}>
+                                        {productDetail?.costos?.precio_venta || 0}
+                                    </div>
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap text-center">
+                                    <div className="text-sm font-medium text-gray-600">
+                                        {productDetail?.costos?.precio_venta || 0}
+                                    </div>
+                                </td>
+                            </tr>
                         </tfoot>
                 </table>
             </div>

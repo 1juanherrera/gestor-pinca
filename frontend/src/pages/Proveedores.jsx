@@ -2,8 +2,8 @@
 // import { AiFillProduct } from "react-icons/ai";
 // import { ProveedorModal } from "../components/proveedor/ProveedorModal";
 // import { ProveedorCard } from "../components/proveedor/ProveedorCard";
-// import { ItemProveedorModal } from "../components/proveedor/ItemProveedorModal"; // ← NUEVO
-// import { ItemProveedorCard } from "../components/proveedor/ItemProveedorCard"; // ← NUEVO
+// import { ItemProveedorModal } from "../components/proveedor/ItemProveedorModal";
+// import { ItemProveedorCard } from "../components/proveedor/ItemProveedorCard"; 
 
 // export const Proveedores = () => {
 

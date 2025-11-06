@@ -1,5 +1,5 @@
 import { Calculator, Loader2, FileDown } from 'lucide-react';
-import { FaSyncAlt } from 'react-icons/fa';
+import { FaSyncAlt, FaCheckSquare  } from 'react-icons/fa';
 
 export const CostCalculator = ({ 
     productDetail,
@@ -13,7 +13,6 @@ export const CostCalculator = ({
 }) => {
     
 
-    // Mostrar placeholder si no hay producto seleccionado
     if (!selectedProductData) {
         return (
             <div className="bg-white rounded-lg shadow-sm p-4 text-center">
@@ -43,16 +42,8 @@ export const CostCalculator = ({
                             Calculadora de Costos
                         </h3>
                         <p className="text-purple-100 text-xs">
-                            {productDetail?.item?.nombre || selectedProductData.nombre}
+                            {productDetail?.item?.nombre || selectedProductData.nombre} - {productDetail?.item?.codigo || selectedProductData.codigo}
                         </p>
-                    </div>
-                    <div className="text-right">
-                        <div className="text-xs text-purple-100">
-                            Vol. Base: {productDetail?.item?.volumen_base || 0}
-                        </div>
-                        <div className="text-xs text-purple-100">
-                            Vol. Actual: {recalculatedData?.item?.volumen_nuevo || 0} 
-                        </div>
                     </div>
                 </div>
             </div>
@@ -62,7 +53,7 @@ export const CostCalculator = ({
                 <div className="grid grid-cols-1 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Nuevo Volumen (Cálculo Automático)
+                            Nuevo Volumen
                         </label>
                         <div className="relative">
                             <div className="flex gap-2">
@@ -78,7 +69,7 @@ export const CostCalculator = ({
                             <button 
                             onClick={handleRecalcular}
                             disabled={isRecalculating}
-                            className="bg-blue-600 text-white px-3 py-2 rounded-lg">
+                            className="bg-purple-600 text-white px-3 py-2 rounded-lg">
                             {isRecalculating ? (
                                 <>
                                     <FaSyncAlt className="animate-spin" />
@@ -97,9 +88,10 @@ export const CostCalculator = ({
                             )}
                         </div>
                         {recalculatedData && (
-                            <div className="mt-3 p-2 bg-green-50 border border-green-100 rounded-md text-center font-semibold">
-                                <p className="text-sm text-green-700">
-                                ✅ Costo total: {recalculatedData?.recalculados?.total_costo_materia_prima}
+                            <div className="mt-3 p-2 bg-green-50 border border-green-100 flex justify-center items-center rounded-md text-center font-semibold">
+                                <FaCheckSquare className="text-green-700" />
+                                <p className="text-sm ml-1 text-green-700">
+                                 Costo total: {recalculatedData?.recalculados?.total_costo_materia_prima}
                                 </p>
                             </div>
                         )}
@@ -121,30 +113,38 @@ export const CostCalculator = ({
                         <h4 className="text-sm font-semibold text-gray-800">
                             Resultados
                         </h4>
-                        <button
-                            disabled={isProcessing}
-                            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 transition-colors shadow-md"
-                        >
-                            <FileDown size={18} />
-                            Exportar a EXCEL
-                        </button>
+                        <div className="flex gap-2">
+                            <button
+                                disabled={isProcessing}
+                                className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-800 disabled:opacity-50 shadow-md"
+                            >
+                                <FileDown size={18} />
+                                Exportar a EXCEL
+                            </button>
+                            <button
+                                disabled={isProcessing}
+                                className="flex items-center gap-1 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-800 disabled:opacity-50 shadow-md"
+                            >
+                                Preparar
+                            </button>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                         {/* Costos Originales */}
                         <div className="bg-white rounded-lg border-2 border-gray-200 p-3">
-                            <h5 className="font-semibold text-gray-700 mb-2 text-sm">Original - {productDetail.item?.volumen_base || '0'}</h5>
+                            <h5 className="font-semibold text-gray-700 mb-2 text-sm">Original - Vol {productDetail.item?.volumen_base || '0'}</h5>
                             <div className="space-y-1 text-xs">
                                 <div className="flex justify-between">
-                                    <span>Total MP:</span>
+                                    <span>Total Costos:</span>
                                     <span className="font-medium">
-                                        {productDetail?.costos.costo_mg_kg || 0}
+                                        {productDetail?.costos.total_costo_materia_prima || 0}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>Costo C/U:</span>
+                                    <span>Cantidad</span>
                                     <span className="font-medium">
-                                        {productDetail?.costos.total || 0}
+                                        {productDetail?.costos.total_cantidad_materia_prima || 0}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
@@ -166,25 +166,25 @@ export const CostCalculator = ({
                             )}
 
                             <h5 className="font-semibold text-green-700 mb-2 text-sm">
-                                Nuevo - {recalculatedData?.item?.volumen_nuevo || '0'}
+                                Nuevo - Vol {recalculatedData?.item?.volumen_nuevo || '0'}
                             </h5>
                             <div className="space-y-1 text-xs">
                                 <div className="flex justify-between">
-                                    <span>Total MP:</span>
+                                    <span>Total Costos:</span>
                                     <span className="font-medium text-green-600">
-                                        {recalculatedData?.recalculados?.costo_mg_kg || 0}
+                                        {recalculatedData?.recalculados?.total_costo_materia_prima || 0}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>Costo C/U:</span>
+                                    <span>Cantidad</span>
                                     <span className="font-medium text-green-600">
-                                        {recalculatedData?.recalculados?.total || 0}
+                                        {recalculatedData?.recalculados?.total_cantidad_materia_prima || 0}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Venta C/U:</span>
                                     <span className="font-medium text-green-600">
-                                        {recalculatedData?.recalculados?.precio_venta || 0}
+                                        {recalculatedData?.recalculados?.precio_venta || 0} 
                                     </span>
                                 </div>
                             </div>

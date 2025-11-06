@@ -1,9 +1,9 @@
 import { FaFlask, FaWeight, FaDollarSign } from 'react-icons/fa';
 import { MdScience } from 'react-icons/md';
+import { ProductSelect } from './ProductSelect';
 
 export const FormulacionesTable = ({
     selectedProductData,
-    calculationResult = null,
     compact = false,
     productDetail = null,
     recalculatedData,
@@ -25,8 +25,6 @@ export const FormulacionesTable = ({
         );
     }
 
-    const esCalculado = calculationResult && calculationResult.formulaciones_nuevas;
-
     const dataToShow = recalculatedData || productDetail;
 
     return (
@@ -38,19 +36,21 @@ export const FormulacionesTable = ({
                         <h3 className={`${compact ? 'text-base' : 'text-lg'} font-semibold flex items-center gap-2`}>
                             <FaFlask size={compact ? 16 : 20} />
                             Formulaciones
-                            {esCalculado && (
+                            
+                            {ProductSelect}
+                            {recalculatedData && (
                                 <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-sm">
                                     Calculado
                                 </span>
                             )}
                         </h3>
                         <p className="text-blue-100 text-xs">
-                            {selectedProductData.nombre}
+                            {productDetail?.item?.nombre} - {productDetail?.item?.codigo}
                         </p>
                     </div>
                     <div className="text-right">
                         <div className="text-xs text-blue-100">
-                            vol: {productDetail?.item?.volumen_base || 'N/A'}
+                            vol: {recalculatedData ? recalculatedData?.item?.volumen_nuevo : productDetail?.item?.volumen_base || 0}
                         </div>
                         <div className="text-xs text-blue-100">
                             {productDetail?.formulaciones?.length} componentes
@@ -123,28 +123,54 @@ export const FormulacionesTable = ({
 
                                 {/* ⚖️ CANTIDAD */}
                                 <td className="px-3 py-2 whitespace-nowrap text-center">
-                                <div className={`text-sm font-semibold text-blue-600 ${esCalculado ? 'text-green-600' : 'text-blue-600'}`}>
+                                <div className={`text-sm font-semibold text-blue-600 ${recalculatedData ? 'text-green-600' : 'text-blue-600'}`}>
                                     {recalculatedData == null ? formulacion.cantidad : formulacion.cantidad_recalculada ?? 0}
+                                    {recalculatedData && (
+                                        <div className="text-xs text-gray-500">
+                                            Base: {formulacion.cantidad ?? 0}
+                                        </div>
+                                    )}
                                 </div>
                                 </td>
 
                                 {/* 💲 COSTO UNITARIO */}
                                 <td className="px-3 py-2 whitespace-nowrap text-center">
-                                <div className={`text-sm font-semibold text-gray-600 ${
-                                    formulacion.inventario_cantidad > formulacion.cantidad  ? 
-                                    'text-green-600' : 'text-red-600'}`}>
-                                    {formulacion.inventario_cantidad ?? 0}
-                                    {/* Mostrar estado del stock */}
-                                        {formulacion.inventario_cantidad < formulacion.cantidad ? (
-                                            <div className="text-xs text-red-500 font-normal">
-                                                Insuficiente
-                                        </div>
-                                    ) : (
-                                        <div className="text-xs text-green-500 font-medium">
-                                            Suficiente
-                                        </div>
-                                    )}
-                                </div>
+                                {
+                                !recalculatedData ? (
+                                    <div className={`text-sm font-semibold text-gray-600 
+                                        ${formulacion.inventario_cantidad > formulacion.cantidad  ? 
+                                            'text-green-600' : 'text-red-600'}`}>
+                                            {formulacion.inventario_cantidad ?? 0}
+                                            {/* Mostrar estado del stock */}
+                                                {formulacion.inventario_cantidad < formulacion.cantidad ? (
+                                                    <div className="text-xs text-red-500 font-normal">
+                                                        Insuficiente
+                                                </div>
+                                            ) : (
+                                                <div className="text-xs text-green-500 font-medium">
+                                                    Suficiente
+                                                </div>
+                                            )}
+                                    </div>
+                                    )
+                                    : (
+                                    <div className={`text-sm font-semibold text-gray-600 
+                                        ${formulacion.inventario_cantidad > formulacion.cantidad_recalculada  ? 
+                                            'text-green-600' : 'text-red-600'}`}>
+                                            {formulacion.inventario_cantidad ?? 0}
+                                            {/* Mostrar estado del stock */}
+                                                {formulacion.inventario_cantidad < formulacion.cantidad_recalculada ? (
+                                                    <div className="text-xs text-red-500 font-normal">
+                                                        Insuficiente
+                                                </div>
+                                            ) : (
+                                                <div className="text-xs text-green-500 font-medium">
+                                                    Suficiente
+                                                </div>
+                                            )}
+                                    </div>
+                                    )
+                                }
                                 </td>
 
                                 <td className="px-3 py-2 whitespace-nowrap text-center">
@@ -157,6 +183,11 @@ export const FormulacionesTable = ({
                                 <td className="px-3 py-2 whitespace-nowrap text-center">
                                 <div className="text-sm font-semibold text-emerald-600">
                                     {recalculatedData == null ? formulacion.costo_total_materia : formulacion.costo_total_materia_recalculado ?? 0}
+                                    {recalculatedData && (
+                                        <div className="text-xs text-gray-500">
+                                            Base: {formulacion.costo_total_materia ?? 0}
+                                        </div>
+                                    )}
                                 </div>
                                 </td>
                             </tr>
@@ -179,13 +210,13 @@ export const FormulacionesTable = ({
                     <div className="flex gap-4">
                         <div className="text-sm">
                             <span className="text-gray-600">Total Cantidad: </span>
-                            <span className={`font-semibold ${esCalculado ? 'text-green-600' : 'text-blue-600'}`}>
+                            <span className={`font-semibold ${recalculatedData ? 'text-green-600' : 'text-blue-600'}`}>
                                 {!recalculatedData ? productDetail?.costos?.total_cantidad_materia_prima : recalculatedData?.recalculados?.total_cantidad_materia_prima}
                             </span>
                         </div>
                         <div className="text-sm">
                             <span className="text-gray-600">Total Costo: </span>
-                            <span className={`font-semibold ${esCalculado ? 'text-green-600' : 'text-emerald-600'}`}>
+                            <span className={`font-semibold ${recalculatedData ? 'text-green-600' : 'text-emerald-600'}`}>
                                 {!recalculatedData ? productDetail?.costos?.total_costo_materia_prima : recalculatedData?.recalculados?.total_costo_materia_prima}
                             </span>
                         </div>
