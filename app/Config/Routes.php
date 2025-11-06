@@ -35,7 +35,7 @@ $routes->group('api', function ($routes) {
 
     // FORMULACIONES
     $routes->get('formulaciones', 'FormulacionesController::formulaciones');
-    $routes->get('formulaciones/costos/(:num)', 'FormulacionesController::calcular_costos_nuevo_volumen/$1');
-    $routes->get('formulaciones/recalcular_costos/(:num)/(:num)', 'FormulacionesController::recalcular_costos_por_volumen/$1/$2');
+    $routes->get('formulaciones/costos/(:num)', 'FormulacionesController::calcular_costos_volumen/$1');
+    $routes->get('formulaciones/recalcular_costos/(:num)/(:segment)', 'FormulacionesController::recalcular_costos_por_volumen/$1/$2');
 });
 

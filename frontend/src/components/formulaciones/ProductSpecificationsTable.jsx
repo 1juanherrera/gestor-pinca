@@ -3,8 +3,9 @@ import { MdScience } from 'react-icons/md';
 
 export const ProductSpecificationsTable = ({ 
     selectedProductData,
-    productDetail = null
+    productDetail
 }) => {
+
     if (!selectedProductData) {
         return (
             <div className="bg-white rounded-lg shadow-sm p-4 text-center">
@@ -168,7 +169,7 @@ export const ProductSpecificationsTable = ({
                         <span className="font-semibold">{productDetail?.parametros?.length}</span> especificaciones técnicas
                     </div>
                     <div className="text-sm text-gray-600">
-                        <span className="font-semibold">Código:</span> {selectedProductData.codigo}
+                        <span className="font-semibold">Código:</span> {productDetail?.item?.codigo}
                     </div>
                 </div>
             </div>

@@ -15,7 +15,7 @@ class FormulacionesController extends ResourceController
         return $this->respond($items);
     }
 
-    public function calcular_costos_nuevo_volumen($itemId, $newVolume = null)
+    public function calcular_costos_volumen($itemId, $newVolume = null)
     {
         try {
             $costs = $this->model->calculate_costs_new_volume($itemId, $newVolume);

@@ -5,7 +5,8 @@ import { FaBottleWater } from "react-icons/fa6";
 export const CostProductsTable = ({ 
     selectedProductData,
     productDetail = null,
-    compact = false 
+    compact = false,
+    recalculatedData
 }) => {
     if (!selectedProductData) {
         return (
@@ -54,7 +55,7 @@ export const CostProductsTable = ({
                     </div>
                     <div className="text-right">
                         <div className="text-xs text-emerald-100"> 
-                            Vol: {productDetail?.item?.volumen_actual || 0}
+                            Vol: {productDetail?.item?.volumen_base || 0}
                         </div>
                         <div className="text-xs text-emerald-100">
                             {productDetail?.item?.codigo}
@@ -140,12 +141,12 @@ export const CostProductsTable = ({
                             </td>
                             <td className="px-3 py-3 whitespace-nowrap text-center">
                                 <div className={`text-lg font-bold ${productDetail ? 'text-green-700' : 'text-emerald-700'}`}>
-                                    {productDetail?.costos?.total_costo_materia_prima || 0}
+                                    {productDetail?.costos?.total || 0}
                                 </div>
                             </td>
                             <td className="px-3 py-3 whitespace-nowrap text-center">
                                 <div className="text-sm font-medium text-gray-600">
-                                    0
+                                    {recalculatedData?.recalculados?.total || 0}
                                 </div>
                             </td>
                         </tr>

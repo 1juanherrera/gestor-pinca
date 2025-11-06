@@ -125,7 +125,7 @@ export const Formulaciones = () => {
             <div>
               <p className="text-xs font-medium text-gray-600">Costo Total</p>
                 <p className="text-lg font-bold text-green-600">
-                  {productDetail?.costos?.total_costo_materia_prima || 0}
+                  {!recalculatedData ? productDetail?.costos?.total_costo_materia_prima : recalculatedData?.recalculados?.total_costo_materia_prima || 0}
                 </p>
             </div>
             <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -167,6 +167,7 @@ export const Formulaciones = () => {
                 selectedProductData={selectedProduct}
                 productDetail={productDetail}
                 loadingDetail={loadingDetail}
+                recalculatedData={recalculatedData}
                 compact={true}
             />
         </div>
@@ -178,6 +179,7 @@ export const Formulaciones = () => {
               <CostProductsTable
                   selectedProductData={selectedProduct}
                   productDetail={productDetail}
+                  recalculatedData={recalculatedData}
                   compact={true}
               />
           </div>
@@ -185,6 +187,7 @@ export const Formulaciones = () => {
           <div>
               <ProductSpecificationsTable
                   selectedProductData={selectedProduct}
+                  recalculatedData={recalculatedData}
                   productDetail={productDetail}
               />
           </div>

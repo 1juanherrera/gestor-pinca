@@ -5,7 +5,8 @@ export const FormulacionesTable = ({
     selectedProductData,
     calculationResult = null,
     compact = false,
-    productDetail = null
+    productDetail = null,
+    recalculatedData,
     // loadingDetail = false,
 }) => {
     if (!selectedProductData) {
@@ -26,6 +27,7 @@ export const FormulacionesTable = ({
 
     const esCalculado = calculationResult && calculationResult.formulaciones_nuevas;
 
+    const dataToShow = recalculatedData || productDetail;
 
     return (
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -48,7 +50,7 @@ export const FormulacionesTable = ({
                     </div>
                     <div className="text-right">
                         <div className="text-xs text-blue-100">
-                            vol: {productDetail?.item?.volumen_actual || 'N/A'}
+                            vol: {productDetail?.item?.volumen_base || 'N/A'}
                         </div>
                         <div className="text-xs text-blue-100">
                             {productDetail?.formulaciones?.length} componentes
@@ -96,8 +98,8 @@ export const FormulacionesTable = ({
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                     {
-                        productDetail?.formulaciones && Array.isArray(productDetail.formulaciones) && productDetail.formulaciones.length > 0 ? (
-                            productDetail.formulaciones.map((formulacion, index) => (
+                        dataToShow?.formulaciones && Array.isArray(dataToShow.formulaciones) && dataToShow.formulaciones.length > 0 ? (
+                            dataToShow.formulaciones.map((formulacion, index) => (
                             <tr key={formulacion.id_item_general_formulaciones || index} className="hover:bg-gray-50">
                                 <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                                 {index + 1}
@@ -122,7 +124,7 @@ export const FormulacionesTable = ({
                                 {/* ⚖️ CANTIDAD */}
                                 <td className="px-3 py-2 whitespace-nowrap text-center">
                                 <div className={`text-sm font-semibold text-blue-600 ${esCalculado ? 'text-green-600' : 'text-blue-600'}`}>
-                                    {formulacion.cantidad ?? 0}
+                                    {recalculatedData == null ? formulacion.cantidad : formulacion.cantidad_recalculada ?? 0}
                                 </div>
                                 </td>
 
@@ -154,7 +156,7 @@ export const FormulacionesTable = ({
                                 {/* 💰 COSTO TOTAL */}
                                 <td className="px-3 py-2 whitespace-nowrap text-center">
                                 <div className="text-sm font-semibold text-emerald-600">
-                                    {formulacion.costo_total_materia ?? 0}
+                                    {recalculatedData == null ? formulacion.costo_total_materia : formulacion.costo_total_materia_recalculado ?? 0}
                                 </div>
                                 </td>
                             </tr>
@@ -178,13 +180,13 @@ export const FormulacionesTable = ({
                         <div className="text-sm">
                             <span className="text-gray-600">Total Cantidad: </span>
                             <span className={`font-semibold ${esCalculado ? 'text-green-600' : 'text-blue-600'}`}>
-                                {productDetail?.costos?.total_cantidad_materia_prima}
+                                {!recalculatedData ? productDetail?.costos?.total_cantidad_materia_prima : recalculatedData?.recalculados?.total_cantidad_materia_prima}
                             </span>
                         </div>
                         <div className="text-sm">
                             <span className="text-gray-600">Total Costo: </span>
                             <span className={`font-semibold ${esCalculado ? 'text-green-600' : 'text-emerald-600'}`}>
-                                {productDetail?.costos?.total_costo_materia_prima}
+                                {!recalculatedData ? productDetail?.costos?.total_costo_materia_prima : recalculatedData?.recalculados?.total_costo_materia_prima}
                             </span>
                         </div>
                     </div>

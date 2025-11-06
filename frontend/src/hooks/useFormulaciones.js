@@ -14,11 +14,7 @@ export const useFormulaciones = () => {
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [nuevoVolumen, setNuevoVolumen] = useState("");
 
-  const productDetailQuery = useApiResource(
-    selectedProduct ? `/formulaciones/costos/${selectedProduct}` : null,
-    selectedProduct ? `formulaciones-${selectedProduct}` : null,
-    "Error al obtener detalle de formulación"
-  );
+  const productDetailQuery = useApiResource(selectedProduct ? `/formulaciones/costos/${selectedProduct}` : null);
 
   const recalculate = async (newVolume) => {
     if (!selectedProduct || !newVolume) return null;

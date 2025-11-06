@@ -32,8 +32,6 @@ export const CostCalculator = ({
     
     const isProcessing = loadingDetail || isRecalculating;
 
-    console.log(recalculatedData)
-
     return (
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             {/* Header */}
@@ -50,10 +48,10 @@ export const CostCalculator = ({
                     </div>
                     <div className="text-right">
                         <div className="text-xs text-purple-100">
-                            Vol. Actual: {productDetail?.item?.volumen_actual || 0} L
+                            Vol. Base: {productDetail?.item?.volumen_base || 0}
                         </div>
                         <div className="text-xs text-purple-100">
-                            Costo Original: {parseFloat(productDetail?.costos_originales?.costo_total_materias_primas)}
+                            Vol. Actual: {recalculatedData?.item?.volumen_nuevo || 0} 
                         </div>
                     </div>
                 </div>
@@ -71,7 +69,7 @@ export const CostCalculator = ({
                             <input
                                 type="number"
                                 onChange={(e) => setNuevoVolumen(e.target.value)}
-                                placeholder={productDetail?.item?.volumen_actual || '1'}
+                                placeholder={productDetail?.item?.volumen_actual || '0'}
                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10" // pr-10 para el spinner
                                 min="0.01"
                                 step="0.01"
@@ -83,11 +81,11 @@ export const CostCalculator = ({
                             className="bg-blue-600 text-white px-3 py-2 rounded-lg">
                             {isRecalculating ? (
                                 <>
-                                    <FaSyncAlt className="animate-spin" /> Recalculando...
+                                    <FaSyncAlt className="animate-spin" />
                                 </>
                                 ) : (
                                 <>
-                                    <FaSyncAlt /> Recalcular Costos
+                                    <FaSyncAlt />
                                 </>
                             )}
                             </button>
@@ -99,19 +97,16 @@ export const CostCalculator = ({
                             )}
                         </div>
                         {recalculatedData && (
-                            <div className="mt-3 p-2 bg-green-50 border border-green-100 rounded-md">
+                            <div className="mt-3 p-2 bg-green-50 border border-green-100 rounded-md text-center font-semibold">
                                 <p className="text-sm text-green-700">
-                                ✅ Costos recalculados correctamente.
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                Costo total: {recalculatedData.total_costo_formulado}
+                                ✅ Costo total: {recalculatedData?.recalculados?.total_costo_materia_prima}
                                 </p>
                             </div>
                         )}
                     </div>
                     
                     {/* Mensaje de cálculo automático */}
-                    <div className="flex justify-center items-center py-2 bg-purple-50 rounded-lg">
+                    <div className={`flex justify-center items-center py-2 bg-purple-50 rounded-lg ${!recalculatedData ? '' : 'hidden'}`}>
                         <p className="text-xs text-purple-700 font-medium">
                             Escribe un valor y el cálculo se actualizará automáticamente.
                         </p>
@@ -120,7 +115,7 @@ export const CostCalculator = ({
             </div>
 
             {/* Resultados */}
-            {productDetail && (
+            { recalculatedData && productDetail && (
                 <div className=" bg-gray-50 p-4">
                     <div className="flex items-center justify-between mb-3 border-b pb-2">
                         <h4 className="text-sm font-semibold text-gray-800">
@@ -138,24 +133,24 @@ export const CostCalculator = ({
                     <div className="grid grid-cols-2 gap-3">
                         {/* Costos Originales */}
                         <div className="bg-white rounded-lg border-2 border-gray-200 p-3">
-                            <h5 className="font-semibold text-gray-700 mb-2 text-sm">Original ({productDetail?.item?.volumen_actual || 0} L)</h5>
+                            <h5 className="font-semibold text-gray-700 mb-2 text-sm">Original - {productDetail.item?.volumen_base || '0'}</h5>
                             <div className="space-y-1 text-xs">
                                 <div className="flex justify-between">
                                     <span>Total MP:</span>
                                     <span className="font-medium">
-                                        {productDetail?.costos_originales?.costo_total_materias_primas || 0}
+                                        {productDetail?.costos.costo_mg_kg || 0}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Costo C/U:</span>
                                     <span className="font-medium">
-                                        {productDetail?.costos_originales?.costo_unitario_total || 0}
+                                        {productDetail?.costos.total || 0}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Venta C/U:</span>
                                     <span className="font-medium">
-                                        {productDetail?.costos_originales?.precio_venta || 0}
+                                        {productDetail?.costos.precio_venta || 0}
                                     </span>
                                 </div>
                             </div>
@@ -171,29 +166,25 @@ export const CostCalculator = ({
                             )}
 
                             <h5 className="font-semibold text-green-700 mb-2 text-sm">
-                                Nuevo Cálculo ({productDetail.volumenes?.volumen_nuevo || '0'} L)
+                                Nuevo - {recalculatedData?.item?.volumen_nuevo || '0'}
                             </h5>
                             <div className="space-y-1 text-xs">
                                 <div className="flex justify-between">
-                                    <span>Factor:</span>
-                                    <span className="font-medium text-green-600">{productDetail.volumenes?.factor_volumen || '1.00'}</span>
-                                </div>
-                                <div className="flex justify-between">
                                     <span>Total MP:</span>
                                     <span className="font-medium text-green-600">
-                                        {productDetail.costos_nuevos?.costo_total_materias_primas || 0}
+                                        {recalculatedData?.recalculados?.costo_mg_kg || 0}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Costo C/U:</span>
                                     <span className="font-medium text-green-600">
-                                        {productDetail.costos_nuevos?.costo_unitario_total || 0}
+                                        {recalculatedData?.recalculados?.total || 0}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Venta C/U:</span>
                                     <span className="font-medium text-green-600">
-                                        {productDetail.costos_nuevos?.precio_venta || 0}
+                                        {recalculatedData?.recalculados?.precio_venta || 0}
                                     </span>
                                 </div>
                             </div>
@@ -203,7 +194,7 @@ export const CostCalculator = ({
                     {/* Información adicional (factor y MP Total Original) */}
                     <div className="mt-4 p-2 bg-purple-100 rounded-lg flex justify-between text-xs font-semibold text-purple-800">
                         <p>
-                            Factor Venta: **{productDetail.config?.factor_venta || '1.4'}x**
+                            Factor: x{recalculatedData?.item?.factor_volumen}
                         </p>
                         <p>
                             MP Total Original: {productDetail.costos_originales?.costo_total_materias_primas || 0}

@@ -24,6 +24,8 @@ export function useApiResource(endpoint, queryKey = endpoint, errorMsg, method =
   return useQuery({
     queryKey: [queryKey],
     queryFn: () => apiRequest({ method, endpoint, errorMsg }),
+    // don't run the query when no endpoint is provided (prevents requests to baseURL)
+    enabled: !!endpoint,
   });
 }
 
