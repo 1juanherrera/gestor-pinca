@@ -42,5 +42,11 @@ $routes->group('api', function ($routes) {
     $routes->get('proveedores', 'ProveedorController::proveedores');
     $routes->get('proveedores/(:num)', 'ProveedorController::show/$1');
     $routes->post('proveedores', 'ProveedorController::create');
+    // ITEM PROVEEDORES
+    $routes->get('item_proveedores', 'ItemProveedorController::item_proveedores');
+    $routes->get('item_proveedores/(:num)', 'ItemProveedorController::show/$1');
+    $routes->post('item_proveedores', 'ItemProveedorController::create');
+    $routes->put('item_proveedores/(:num)', 'ItemProveedorController::update/$1');
+    $routes->delete('item_proveedores/(:num)', 'ItemProveedorController::delete/$1');
 });
 

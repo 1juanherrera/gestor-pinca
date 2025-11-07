@@ -3,25 +3,25 @@
 namespace App\Controllers;
 
 use CodeIgniter\RESTful\ResourceController;
-use App\Models\ProveedorModel;
+use App\Models\ItemProveedorModel;
 
-class ProveedorController extends ResourceController 
+class ItemProveedorController extends ResourceController 
 {
-    protected $modelName = ProveedorModel::class;
+    protected $modelName = ItemProveedorModel::class;
 
-    public function proveedores()
+    public function item_proveedores()
     {
-        $proveedores = $this->model->get_all('proveedor');
+        $proveedores = $this->model->get_all('item_proveedor');
         return $this->respond($proveedores);
     }
 
     public function show($id = null)
     {
-        $proveedor = $this->model->get($id, 'proveedor');
-        if (!$proveedor) {
-            return $this->failNotFound("Proveedor con ID $id no encontrado.");
+        $item_proveedor = $this->model->get($id, 'item_proveedor');
+        if (!$item_proveedor) {
+            return $this->failNotFound("Item Proveedor con ID $id no encontrado.");
         }
-        return $this->respond($proveedor);
+        return $this->respond($item_proveedor);
     }
 
     public function create()
@@ -32,14 +32,14 @@ class ProveedorController extends ResourceController
         if (!$data) {
             return $this->failValidationErrors('No se recibieron datos válidos.');
         }
-        $insert_id = $this->model->create_table($data, 'proveedor');
+        $insert_id = $this->model->create_table($data, 'item_proveedor');
         if ($insert_id) {
             return $this->respondCreated([
-                'mensaje' => 'Instalación creada correctamente',
+                'mensaje' => 'Item Proveedor creado correctamente',
                 'id'      => $insert_id,
             ]);
         }
-        return $this->fail('Error al crear la instalación');
+        return $this->fail('Error al crear el Item Proveedor');
     }
 
     public function update($id = null)
@@ -51,17 +51,17 @@ class ProveedorController extends ResourceController
             return $this->failValidationErrors('No se recibieron datos válidos.');
         }
         // Verificar que el registro exista antes de actualizar
-        if (!$this->model->get($id, 'proveedor')) {
-            return $this->failNotFound("Instalación con ID $id no encontrada.");
+        if (!$this->model->get($id, 'item_proveedor')) {
+            return $this->failNotFound("Item Proveedor con ID $id no encontrado.");
         }
         // Intentar actualizar
-        $updated = $this->model->update_table($id, $data, 'proveedor');
+        $updated = $this->model->update_table($id, $data, 'item_proveedor');
 
         if ($updated === false || (is_array($updated) && isset($updated['error']))) {
-            return $this->fail('No se pudo actualizar la instalación.');
+            return $this->fail('No se pudo actualizar el Item Proveedor.');
         }
         return $this->respond([
-            'mensaje' => "Instalación con ID $id actualizada correctamente",
+            'mensaje' => "Item Proveedor con ID $id actualizada correctamente",
             'data'    => $data
         ]);
     }
@@ -72,17 +72,17 @@ class ProveedorController extends ResourceController
         if ($id === null) {
             return $this->failValidationErrors('No se proporcionó un ID válido.');
         }
-        // Verificar que la instalación exista
-        if (!$this->model->get($id, 'proveedor')) {
-            return $this->failNotFound("Instalación con ID $id no encontrada.");
+        // Verificar que el Item Proveedor exista
+        if (!$this->model->get($id, 'item_proveedor')) {
+            return $this->failNotFound("Item Proveedor con ID $id no encontrado.");
         }
         // Intentar eliminar usando BaseModel
-        $deleted = $this->model->delete_table($id, 'proveedor');
+        $deleted = $this->model->delete_table($id, 'item_proveedor');
         if ($deleted === false || (is_array($deleted) && isset($deleted['error']))) {
-            return $this->fail("No se pudo eliminar la instalación con ID $id.");
+            return $this->fail("No se pudo eliminar el Item Proveedor con ID $id.");
         }
         return $this->respondDeleted([
-            'mensaje' => "Instalación con ID $id eliminada correctamente"
+            'mensaje' => "Item Proveedor con ID $id eliminada correctamente"
         ]);
     }
 }

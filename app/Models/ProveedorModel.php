@@ -1,15 +1,38 @@
 <?php
 namespace App\Models;
 
-use App\Libraries\Formatter;
-use Exception;
-
 class ProveedorModel extends BaseModel
 {
+
+    protected $table = 'proveedor';
+    protected $primaryKey = 'id_proveedor';
+    protected $allowedFields = [
+        'nombre_encargado',
+        'nombre_empresa',
+        'numero_documento',
+        'direccion',
+        'telefono',
+        'email'
+    ];
+
     public function __construct()
     {
         parent::__construct();
     }
+
+    // public function get_item_proveedores()
+    // {
+    //     $sql = 'SELECT p.*, ip.nombre AS item_proveedor, ip.tipo, ip.codigo AS codigo_item_proveedor
+    //     FROM proveedor p
+    //     LEFT JOIN item_proveedor ip ON ip.id_item_proveedor = p.item_general_id';
+    //     $data = $this->db->query($sql)->getResult();
+    //     $datos = [];
+
+    //     if (!empty($data)) {
+    //         foreach ($data as $item) {
+
+    //         }
+    // }
 
     public function get($id, $table)
     {

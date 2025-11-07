@@ -161,7 +161,7 @@ export const Home = () => {
                                 <label className="block text-sm font-medium text-gray-700">Nombre</label>
                                 <input
                                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
-           focus:outline-none focus:ring-2 block w-full p-2"
+                                    focus:outline-none focus:ring-2 block w-full p-2"
                                     value={instalacionEdit?.nombre || ''}
                                     onChange={e => setInstalacionEdit({ ...instalacionEdit, nombre: e.target.value })}
                                     required
@@ -171,7 +171,7 @@ export const Home = () => {
                                 <label className="block text-sm font-medium text-gray-700">Descripción</label>
                                 <input
                                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
-           focus:outline-none focus:ring-2 block w-full p-2"
+                                    focus:outline-none focus:ring-2 block w-full p-2"
                                     value={instalacionEdit?.descripcion || ''}
                                     onChange={e => setInstalacionEdit({ ...instalacionEdit, descripcion: e.target.value })}
                                 />
@@ -180,7 +180,7 @@ export const Home = () => {
                                 <label className="block text-sm font-medium text-gray-700">Ciudad</label>
                                 <input
                                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
-           focus:outline-none focus:ring-2 block w-full p-2"
+                                    focus:outline-none focus:ring-2 block w-full p-2"
                                     value={instalacionEdit?.ciudad || ''}
                                     onChange={e => setInstalacionEdit({ ...instalacionEdit, ciudad: e.target.value })}
                                 />
@@ -189,7 +189,7 @@ export const Home = () => {
                                 <label className="block text-sm font-medium text-gray-700">Dirección</label>
                                 <input
                                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
-           focus:outline-none focus:ring-2 block w-full p-2"
+                                    focus:outline-none focus:ring-2 block w-full p-2"
                                     value={instalacionEdit?.direccion || ''}
                                     onChange={e => setInstalacionEdit({ ...instalacionEdit, direccion: e.target.value })}
                                 />
@@ -198,7 +198,7 @@ export const Home = () => {
                                 <label className="block text-sm font-medium text-gray-700">Teléfono</label>
                                 <input
                                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
-           focus:outline-none focus:ring-2 block w-full p-2"
+                                    focus:outline-none focus:ring-2 block w-full p-2"
                                     value={instalacionEdit?.telefono || ''}
                                     onChange={e => setInstalacionEdit({ ...instalacionEdit, telefono: e.target.value })}
                                 />
