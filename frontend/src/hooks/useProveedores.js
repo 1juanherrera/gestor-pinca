@@ -2,12 +2,14 @@ import { useApiDelete, useApiMutation, useApiResource, useApiUpdate } from "../C
 
 export const useProveedores = () => {
 
-  const query = useApiResource('/proveedores');
+  const query = useApiResource('/proveedor_items');
   const mutation = useApiMutation('/proveedores');
   const deleteMutation = useApiDelete("/proveedores");
   const updateMutation = useApiUpdate("/proveedores");
+  const queryItem = useApiResource('/item_proveedores');
   
   const data = query.data ?? [];
+  const itemData = queryItem.data ?? {};
 
   const remove = (id) => {
     deleteMutation.mutate(id, {
@@ -18,6 +20,7 @@ export const useProveedores = () => {
   return {
     ...query,
     data,
+    itemData,
     refreshData: query.refetch,
 
     create: mutation.mutate,

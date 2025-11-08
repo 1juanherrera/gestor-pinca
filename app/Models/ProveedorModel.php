@@ -20,19 +20,29 @@ class ProveedorModel extends BaseModel
         parent::__construct();
     }
 
-    // public function get_item_proveedores()
-    // {
-    //     $sql = 'SELECT p.*, ip.nombre AS item_proveedor, ip.tipo, ip.codigo AS codigo_item_proveedor
-    //     FROM proveedor p
-    //     LEFT JOIN item_proveedor ip ON ip.id_item_proveedor = p.item_general_id';
-    //     $data = $this->db->query($sql)->getResult();
-    //     $datos = [];
+    public function get_item_proveedores($id = null)
+    {
+        $sql = 'SELECT * FROM proveedor';
+        $params = [];
 
-    //     if (!empty($data)) {
-    //         foreach ($data as $item) {
+        if ($id !== null) {
+            $sql .= ' WHERE id_proveedor = ?';
+            $params[] = $id;
+        }
 
-    //         }
-    // }
+        $proveedores = $this->db->query($sql, $params)->getResult();
+
+        if (!empty($proveedores)) {
+            foreach ($proveedores as &$proveedor) {
+                $sqlItems = 'SELECT ip.*
+                            FROM item_proveedor ip
+                            WHERE ip.proveedor_id = ?';
+                $items = $this->db->query($sqlItems, [$proveedor->id_proveedor])->getResult();
+                $proveedor->items = $items;
+            }
+        }
+        return $id !== null ? ($proveedores[0] ?? null) : $proveedores;
+    }
 
     public function get($id, $table)
     {

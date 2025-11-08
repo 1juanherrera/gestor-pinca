@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 04-11-2025 a las 19:07:59
+-- Tiempo de generación: 08-11-2025 a las 17:06:48
 -- Versión del servidor: 10.4.32-MariaDB
--- Versión de PHP: 8.1.25
+-- Versión de PHP: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -290,7 +290,7 @@ CREATE TABLE `facturas` (
 CREATE TABLE `formulaciones` (
   `id_formulaciones` int(11) NOT NULL,
   `nombre` varchar(100) DEFAULT NULL,
-  `descripcion` varchar(500) DEFAULT NULL,
+  `descripcion` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`descripcion`)),
   `estado` tinyint(4) DEFAULT NULL COMMENT '0 inactiva\\n1 activa',
   `defecto` tinyint(4) DEFAULT 0 COMMENT '1 por defecto',
   `item_general_id` int(11) DEFAULT NULL
@@ -972,6 +972,27 @@ CREATE TABLE `item_proveedor` (
   `proveedor_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 
+--
+-- Volcado de datos para la tabla `item_proveedor`
+--
+
+INSERT INTO `item_proveedor` (`id_item_proveedor`, `nombre`, `codigo`, `tipo`, `unidad_empaque`, `precio_unitario`, `precio_con_iva`, `disponible`, `descripcion`, `proveedor_id`) VALUES
+(1, 'Pintura Acrílica Blanca 1 Galón', 'PNT-BL-1G', 'Pinturas', 'Galón', 48000, 57120.0, 1, 'Pintura acrílica de alta cobertura para interiores y ex', 1),
+(2, 'Esmalte Sintético Rojo 1/4', 'ESM-RO-1/4', 'Pinturas', 'Cuarto', 16500, 19635.0, 0, 'Esmalte brillante de secado rápido para metal o madera', 1),
+(3, 'Sellador Vinílico 5 Galones', 'SLD-5G', 'Selladores', 'Balde', 125000, 148750.0, 1, 'Sellador vinílico base agua para muros y techos', 1),
+(4, 'Thinner Industrial 1 Galón', 'THN-1G', 'Solventes', 'Galón', 22000, 26180.0, 1, 'Disolvente industrial para pinturas sintéticas', 1),
+(5, 'Removedor de Pintura 1 Litro', 'RMP-1L', 'Solventes', 'Litro', 13500, 16065.0, 1, 'Removedor químico para pinturas y barnices', 1),
+(6, 'Tubería PVC 1/2\" x 6m', 'PVC-12-6', 'Fontanería', 'Unidad', 11000, 13090.0, 0, 'Tubería de PVC para conducción de agua fría', 2),
+(7, 'Codo PVC 1/2\" 90°', 'CDO-12-90', 'Fontanería', 'Unidad', 1200, 1428.0, 1, 'Codo de PVC para unión de tuberías en ángulo recto', 2),
+(8, 'Brocha 3 Pulgadas Profesional', 'BRC-3P', 'Herramientas', 'Unidad', 9500, 11305.0, 1, 'Brocha de cerdas sintéticas ideal para pintura acrílica', 2),
+(9, 'Rodillo de Lana 9\"', 'RDL-9L', 'Herramientas', 'Unidad', 11500, 13685.0, 1, 'Rodillo de lana para pintura en superficies rugosas', 2),
+(10, 'Lija de Agua 220', 'LJ-220', 'Abrasivos', 'Paquete de 10', 5500, 6545.0, 1, 'Lija fina para acabado de superficies pintadas', 2),
+(11, 'Valvula de Bola 1/2\" Bronce', 'VLV-12B', 'Fontanería', 'Unidad', 8500, 10115.0, 1, 'Válvula de bola de paso total en bronce', 3),
+(12, 'Cinta de Teflón 10m', 'TEF-10', 'Fontanería', 'Unidad', 2500, 2975.0, 0, 'Cinta de teflón para sellado de roscas metálicas', 3),
+(13, 'Calentador a Gas 10L', 'CLT-10G', 'Calefacción', 'Unidad', 520000, 618800.0, 1, 'Calentador de paso a gas natural, encendido electrónico', 3),
+(14, 'Guantes de Nitrilo Resistentes', 'GNT-RS', 'Seguridad', 'Par', 7200, 8568.0, 0, 'Guantes de nitrilo resistentes a químicos y solventes', 3),
+(15, 'Tapabocas Industrial con Filtro', 'TPB-FLT', 'Seguridad', 'Unidad', 9800, 11662.0, 1, 'Tapabocas con filtro para protección contra vapores y p', 3);
+
 -- --------------------------------------------------------
 
 --
@@ -1047,6 +1068,15 @@ CREATE TABLE `proveedor` (
   `telefono` varchar(14) DEFAULT NULL,
   `email` varchar(34) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
+
+--
+-- Volcado de datos para la tabla `proveedor`
+--
+
+INSERT INTO `proveedor` (`id_proveedor`, `nombre_encargado`, `nombre_empresa`, `numero_documento`, `direccion`, `telefono`, `email`) VALUES
+(1, 'Carlos Pérez', 'Pinturas del Norte S.A.', '900123456-7', 'Calle 45 #23-10, Bogotá', '3105678901', 'carlos.perez@pinturasnorte.com'),
+(2, 'María Gómez', 'Solventes Industriales Ltda', '800987654-2', 'Carrera 9 #12-34, Medellín', '3152345678', 'maria.gomez@solventes.co'),
+(3, 'Juan Herrera', 'Químicos Andinos SAS', '901456789-5', 'Av. Principal 45 #56-89, Cali', '3207896543', 'juan.herrera@quimicosandinos.com');
 
 -- --------------------------------------------------------
 
@@ -1226,6 +1256,12 @@ ALTER TABLE `unidad`
 --
 ALTER TABLE `inventario`
   MODIFY `id_inventario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=93;
+
+--
+-- AUTO_INCREMENT de la tabla `item_proveedor`
+--
+ALTER TABLE `item_proveedor`
+  MODIFY `id_item_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- Restricciones para tablas volcadas

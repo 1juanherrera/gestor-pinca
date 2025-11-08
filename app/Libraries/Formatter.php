@@ -14,7 +14,7 @@ class Formatter
         }
 
         $formateado = number_format((float) $value, 2, ',', '.');
-        return $conSimbolo ? '$' . $formateado : $formateado;
+        return $conSimbolo ? '$ ' . $formateado : $formateado;
     }
 
     public static function parseCOP($valor) 

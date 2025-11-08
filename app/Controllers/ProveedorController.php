@@ -15,6 +15,17 @@ class ProveedorController extends ResourceController
         return $this->respond($proveedores);
     }
 
+    public function get_item_proveedores($id = null)
+    {
+        $data = $this->model->get_item_proveedores($id);
+
+        if ($id !== null && !$data) {
+            return $this->failNotFound("Proveedor con ID $id no encontrado.");
+        }
+
+        return $this->respond($data);
+    }
+
     public function show($id = null)
     {
         $proveedor = $this->model->get($id, 'proveedor');

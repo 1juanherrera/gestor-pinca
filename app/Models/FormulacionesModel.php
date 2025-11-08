@@ -27,12 +27,12 @@ class FormulacionesModel extends BaseModel
         if (!empty($data)) {
             foreach ($data as $item) {
                 $sql1 = 'SELECT ig.nombre, ig.codigo AS codigo_item_general,
-                                        ig.*, ci.*, igf.cantidad, igf.porcentaje
-                                        
-                                FROM item_general_formulaciones igf
-                                LEFT JOIN item_general ig ON ig.id_item_general = igf.item_general_id
-                                LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
-                                WHERE igf.formulaciones_id = ?';
+                            ig.*, ci.*, igf.cantidad, igf.porcentaje
+                            FROM item_general_formulaciones igf
+                            LEFT JOIN item_general ig ON ig.id_item_general = igf.item_general_id
+                            LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
+                            WHERE igf.formulaciones_id = ?';
+                            
                 $items = $this->db->query($sql1, [$item->id_formulaciones])->getResult();
                 $datos[] = [
                     'id_formulacion' => $item->id_formulaciones,

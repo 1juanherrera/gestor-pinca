@@ -40,10 +40,11 @@ $routes->group('api', function ($routes) {
 
     // PROVEEDORES
     $routes->get('proveedores', 'ProveedorController::proveedores');
-    $routes->get('proveedores/(:num)', 'ProveedorController::show/$1');
+    $routes->get('proveedor_items', 'ProveedorController::get_item_proveedores');
+    $routes->get('proveedor_items/(:num)', 'ProveedorController::get_item_proveedores/$1');
     $routes->post('proveedores', 'ProveedorController::create');
     // ITEM PROVEEDORES
-    $routes->get('item_proveedores', 'ItemProveedorController::item_proveedores');
+    $routes->get('item_proveedores', 'ItemProveedorController::get_item_proveedores');
     $routes->get('item_proveedores/(:num)', 'ItemProveedorController::show/$1');
     $routes->post('item_proveedores', 'ItemProveedorController::create');
     $routes->put('item_proveedores/(:num)', 'ItemProveedorController::update/$1');

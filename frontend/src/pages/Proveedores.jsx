@@ -3,7 +3,7 @@ import { AiFillProduct } from "react-icons/ai";
 // import { ProveedorModal } from "../components/proveedor/ProveedorModal";
 // import { ProveedorCard } from "../components/proveedor/ProveedorCard";
 // import { ItemProveedorModal } from "../components/proveedor/ItemProveedorModal";
-// import { ItemProveedorCard } from "../components/proveedor/ItemProveedorCard"; 
+import { ItemProveedorTable } from "../components/proveedor/ItemProveedorTable"; 
 import { useState } from "react";
 import { useProveedores } from "../hooks/useProveedores";
 
@@ -11,51 +11,50 @@ export const Proveedores = () => {
 
     const { 
         data: proveedores, 
+        itemData: itemProveedores,
         isLoading, 
         error, 
-        refreshData, 
-        create, 
-        isCreating, 
-        createError,
-        remove,
-        isDeleting: isRemoving,
-        update,
-        isUpdating,
-        updateError,
+        // refreshData, 
+        // create, 
+        // isCreating, 
+        // createError,
+        // remove,
+        // isDeleting: isRemoving,
+        // update,
+        // isUpdating,
+        // updateError,
     } = useProveedores();
 
-    const [form, setForm] = useState({
-        nombre_encargado: "",
-        nombre_empresa: "",
-        numero_documento: "",
-        direccion: "",
-        telefono: "",
-        email: ""
-    })
+    // const [form, setForm] = useState({
+    //     nombre_encargado: "",
+    //     nombre_empresa: "",
+    //     numero_documento: "",
+    //     direccion: "",
+    //     telefono: "",
+    //     email: ""
+    // })
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setForm((prev) => ({ 
-        ...prev, 
-        [name]: value 
-        }))
-    }
+    // const handleChange = (e) => {
+    //     const { name, value } = e.target;
+    //     setForm((prev) => ({ 
+    //     ...prev, 
+    //     [name]: value 
+    //     }))
+    // }
 
-    const [showEdit, setShowEdit] = useState(false);
-    const [showCreate, setShowCreate] = useState(false);
-    const [proveedorEdit, setProveedorEdit] = useState(null);
+    // const [showEdit, setShowEdit] = useState(false);
+    const [show, setShow] = useState(false);
+    // const [proveedorEdit, setProveedorEdit] = useState(null);
 
     if (isLoading) return <p>Cargando proveedores...</p>;
     if (error) return <p>Error al cargar proveedores</p>;
     if (!proveedores || proveedores.length === 0) return <p>No hay proveedores registradas</p>;
 
-    console.log(proveedores);
-
-    const handle = (id) => {
-        if (window.confirm("¿Seguro que deseas eliminar este proveedor?")) {
-            remove(id);
-        }
-    }
+    // const handle = (id) => {
+    //     if (window.confirm("¿Seguro que deseas eliminar este proveedor?")) {
+    //         remove(id);
+    //     }
+    // }
 
     return (
         <div className="ml-65 p-4 bg-gray-100 min-h-screen">
@@ -71,7 +70,7 @@ export const Proveedores = () => {
                         </div>
                     </div>
                     <button
-                        onClick={() => setShowCreate(true)}
+                        onClick={() => setShow(true)}
                         className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
                     >
                         <FaPlus size={16} />
@@ -98,14 +97,14 @@ export const Proveedores = () => {
                             <div>
                                 <p className="text-gray-600 text-sm">Total Productos</p>
                                 <p className="text-2xl font-bold text-green-600">
-                                    {proveedores?.totalProductos || 0}
+                                    {itemProveedores?.length || 0}
                                 </p>
                             </div>
                             <FaUserTag className="text-green-500" size={24} />
                         </div>
                     </div>
                     
-                    <button
+                    <button onClick={() => setShow(true)}
                         className="group bg-linear-to-r from-gray-500 to-gray-600 border-none cursor-pointer hover:shadow-2xl p-4 rounded-xl shadow-lg"
                     >
                         <div className="flex items-center justify-between gap-4">
@@ -145,8 +144,8 @@ export const Proveedores = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {proveedores.map((proveedor) => (
-                                <tr key={proveedor.id} className="hover:bg-gray-50">
+                            {proveedores.map((proveedor, i) => (
+                                <tr key={i} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div>
                                             <div className="text-sm font-medium text-gray-900 uppercase">
@@ -180,7 +179,7 @@ export const Proveedores = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            {proveedor.total_productos || 0} productos
+                                            {proveedor?.items?.length || 0} productos
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -207,7 +206,7 @@ export const Proveedores = () => {
             </div>
 
             {/* ========== VISTA DE ITEM-PROVEEDORES ========== */}
-            {showCreate && (
+            {show && (
                 <div className="fixed inset-0 bg-gray-100 z-40 overflow-y-auto">
                     <div className="p-4">
                         {/* Header de Items */}
@@ -215,6 +214,7 @@ export const Proveedores = () => {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <button
+                                        onClick={() => setShow(false)}
                                         className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                                         title="Volver a proveedores"
                                     >
@@ -223,21 +223,14 @@ export const Proveedores = () => {
                                     <FaBox className="text-green-500" size={25} />
                                     <div>
                                         <h1 className="text-2xl font-bold text-gray-800">
-                                            {selectedProveedor 
-                                                ? `Items de ${selectedProveedor.nombre_empresa}`
-                                                : 'Gestión de Items'
-                                            }
+                                            Gestión de Items
                                         </h1>
                                         <p className="text-gray-600">
-                                            {selectedProveedor 
-                                                ? `Productos suministrados por ${selectedProveedor.nombre_empresa}`
-                                                : 'Administra todos los items de tus proveedores'
-                                            }
+                                            Administra todos los items de tus proveedores
                                         </p>
                                     </div>
                                 </div>
                                 <button
-                                    onClick={handleCreateItem}
                                     className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
                                 >
                                     <FaPlus size={16} />
@@ -247,11 +240,10 @@ export const Proveedores = () => {
                         </div>
 
                         {/* Manejo de errores de items */}
-                        {itemsError && (
+                        {error && (
                             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center justify-between">
-                                <span>{itemsError}</span>
+                                <span>{error}</span>
                                 <button
-                                    onClick={clearItemErrors}
                                     className="text-red-500 hover:text-red-700"
                                 >
                                     ✕
@@ -260,7 +252,7 @@ export const Proveedores = () => {
                         )}
 
                         {/* Contenido de Items */}
-                        {itemsLoading ? (
+                        {isLoading ? (
                             <div className="flex justify-center items-center py-12">
                                 <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-500 border-t-transparent"></div>
                                 <span className="ml-2 text-gray-600">Cargando items...</span>
@@ -274,13 +266,12 @@ export const Proveedores = () => {
                                             No hay items
                                         </h3>
                                         <p className="text-gray-600 mb-4">
-                                            {selectedProveedor 
-                                                ? `${selectedProveedor.nombre_empresa} aún no tiene items registrados.`
+                                            {itemProveedores.length === 0
+                                                ? 'Aún no tiene items registrados.'
                                                 : 'Comienza agregando el primer item.'
                                             }
                                         </p>
                                         <button
-                                            onClick={handleCreateItem}
                                             className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2"
                                         >
                                             <FaPlus size={16} />
@@ -304,12 +295,9 @@ export const Proveedores = () => {
                                             </thead>
                                             <tbody>
                                                 {itemProveedores.map(item => (
-                                                    <ItemProveedorCard
-                                                        key={item.id}
+                                                    <ItemProveedorTable
+                                                        key={item.id_proveedor}
                                                         itemProveedor={item}
-                                                        onEdit={handleEditItem}
-                                                        onDelete={handleDeleteItem}
-                                                        onView={handleViewItem}
                                                     />
                                                 ))}
                                             </tbody>
