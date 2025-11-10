@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 08-11-2025 a las 17:06:48
+-- Tiempo de generación: 10-11-2025 a las 19:37:05
 -- Versión del servidor: 10.4.32-MariaDB
--- Versión de PHP: 8.2.12
+-- Versión de PHP: 8.1.25
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -977,21 +977,16 @@ CREATE TABLE `item_proveedor` (
 --
 
 INSERT INTO `item_proveedor` (`id_item_proveedor`, `nombre`, `codigo`, `tipo`, `unidad_empaque`, `precio_unitario`, `precio_con_iva`, `disponible`, `descripcion`, `proveedor_id`) VALUES
-(1, 'Pintura Acrílica Blanca 1 Galón', 'PNT-BL-1G', 'Pinturas', 'Galón', 48000, 57120.0, 1, 'Pintura acrílica de alta cobertura para interiores y ex', 1),
-(2, 'Esmalte Sintético Rojo 1/4', 'ESM-RO-1/4', 'Pinturas', 'Cuarto', 16500, 19635.0, 0, 'Esmalte brillante de secado rápido para metal o madera', 1),
-(3, 'Sellador Vinílico 5 Galones', 'SLD-5G', 'Selladores', 'Balde', 125000, 148750.0, 1, 'Sellador vinílico base agua para muros y techos', 1),
-(4, 'Thinner Industrial 1 Galón', 'THN-1G', 'Solventes', 'Galón', 22000, 26180.0, 1, 'Disolvente industrial para pinturas sintéticas', 1),
-(5, 'Removedor de Pintura 1 Litro', 'RMP-1L', 'Solventes', 'Litro', 13500, 16065.0, 1, 'Removedor químico para pinturas y barnices', 1),
-(6, 'Tubería PVC 1/2\" x 6m', 'PVC-12-6', 'Fontanería', 'Unidad', 11000, 13090.0, 0, 'Tubería de PVC para conducción de agua fría', 2),
-(7, 'Codo PVC 1/2\" 90°', 'CDO-12-90', 'Fontanería', 'Unidad', 1200, 1428.0, 1, 'Codo de PVC para unión de tuberías en ángulo recto', 2),
-(8, 'Brocha 3 Pulgadas Profesional', 'BRC-3P', 'Herramientas', 'Unidad', 9500, 11305.0, 1, 'Brocha de cerdas sintéticas ideal para pintura acrílica', 2),
-(9, 'Rodillo de Lana 9\"', 'RDL-9L', 'Herramientas', 'Unidad', 11500, 13685.0, 1, 'Rodillo de lana para pintura en superficies rugosas', 2),
-(10, 'Lija de Agua 220', 'LJ-220', 'Abrasivos', 'Paquete de 10', 5500, 6545.0, 1, 'Lija fina para acabado de superficies pintadas', 2),
-(11, 'Valvula de Bola 1/2\" Bronce', 'VLV-12B', 'Fontanería', 'Unidad', 8500, 10115.0, 1, 'Válvula de bola de paso total en bronce', 3),
-(12, 'Cinta de Teflón 10m', 'TEF-10', 'Fontanería', 'Unidad', 2500, 2975.0, 0, 'Cinta de teflón para sellado de roscas metálicas', 3),
-(13, 'Calentador a Gas 10L', 'CLT-10G', 'Calefacción', 'Unidad', 520000, 618800.0, 1, 'Calentador de paso a gas natural, encendido electrónico', 3),
-(14, 'Guantes de Nitrilo Resistentes', 'GNT-RS', 'Seguridad', 'Par', 7200, 8568.0, 0, 'Guantes de nitrilo resistentes a químicos y solventes', 3),
-(15, 'Tapabocas Industrial con Filtro', 'TPB-FLT', 'Seguridad', 'Unidad', 9800, 11662.0, 1, 'Tapabocas con filtro para protección contra vapores y p', 3);
+(1, 'Pintura Acrílica Blanca 1 Galón', 'PNT-BL-1G', 'Pinturas', 'Kg', 48000, 57120.0, 1, 'Pintura acrílica de alta cobertura para interiores y ex', 1),
+(2, 'Esmalte Sintético Rojo 1/4', 'ESM-RO-1/4', 'Pinturas', 'Kg', 16500, 19635.0, 0, 'Esmalte brillante de secado rápido para metal o madera', 1),
+(3, 'Sellador Vinílico 5 Galones', 'SLD-5G', 'Selladores', 'Kg', 125000, 148750.0, 1, 'Sellador vinílico base agua para muros y techos', 1),
+(4, 'Thinner Industrial 1 Galón', 'THN-1G', 'Solventes', 'Kg', 22000, 26180.0, 1, 'Disolvente industrial para pinturas sintéticas', 1),
+(5, 'Removedor de Pintura 1 Litro', 'RMP-1L', 'Solventes', 'Kg', 13500, 16065.0, 1, 'Removedor químico para pinturas y barnices', 1),
+(6, 'Tubería PVC 1/2\" x 6m', 'PVC-12-6', 'Fontanería', 'Kg', 11000, 13090.0, 0, 'Tubería de PVC para conducción de agua fría', 2),
+(7, 'Codo PVC 1/2\" 90°', 'CDO-12-90', 'Fontanería', 'Kg', 1200, 1428.0, 1, 'Codo de PVC para unión de tuberías en ángulo recto', 2),
+(8, 'Brocha 3 Pulgadas Profesional', 'BRC-3P', 'Herramientas', 'Kg', 9500, 11305.0, 1, 'Brocha de cerdas sintéticas ideal para pintura acrílica', 2),
+(9, 'Rodillo de Lana 9\"', 'RDL-9L', 'Herramientas', 'Kg', 11500, 13685.0, 1, 'Rodillo de lana para pintura en superficies rugosas', 2),
+(10, 'Lija de Agua 220', 'LJ-220', 'Abrasivos', 'Kg', 5500, 6545.0, 1, 'Lija fina para acabado de superficies pintadas', 2);
 
 -- --------------------------------------------------------
 
@@ -1074,9 +1069,8 @@ CREATE TABLE `proveedor` (
 --
 
 INSERT INTO `proveedor` (`id_proveedor`, `nombre_encargado`, `nombre_empresa`, `numero_documento`, `direccion`, `telefono`, `email`) VALUES
-(1, 'Carlos Pérez', 'Pinturas del Norte S.A.', '900123456-7', 'Calle 45 #23-10, Bogotá', '3105678901', 'carlos.perez@pinturasnorte.com'),
-(2, 'María Gómez', 'Solventes Industriales Ltda', '800987654-2', 'Carrera 9 #12-34, Medellín', '3152345678', 'maria.gomez@solventes.co'),
-(3, 'Juan Herrera', 'Químicos Andinos SAS', '901456789-5', 'Av. Principal 45 #56-89, Cali', '3207896543', 'juan.herrera@quimicosandinos.com');
+(1, 'Carlos Pérez', 'Aquaterra S.A.1', '291288192-5', 'Calle 45 #23-10, Bogotá', '3105678901', 'carlos.perez@aquaterra.com'),
+(2, 'Camila Peñaranda', 'Solventes Industriales Ltd1', '800987654-2', 'Carrera 9 #12-34, Medellín', '3152345678', 'maria.gomez@solventes.co');
 
 -- --------------------------------------------------------
 
@@ -1252,16 +1246,112 @@ ALTER TABLE `unidad`
 --
 
 --
+-- AUTO_INCREMENT de la tabla `bodegas`
+--
+ALTER TABLE `bodegas`
+  MODIFY `id_bodegas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT de la tabla `categoria`
+--
+ALTER TABLE `categoria`
+  MODIFY `id_categoria` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `clientes`
+--
+ALTER TABLE `clientes`
+  MODIFY `id_clientes` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `costos_item`
+--
+ALTER TABLE `costos_item`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=109;
+
+--
+-- AUTO_INCREMENT de la tabla `costos_produccion`
+--
+ALTER TABLE `costos_produccion`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `detalle_facturas`
+--
+ALTER TABLE `detalle_facturas`
+  MODIFY `id_detalle_facturas` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `empresa`
+--
+ALTER TABLE `empresa`
+  MODIFY `id_empresa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT de la tabla `facturas`
+--
+ALTER TABLE `facturas`
+  MODIFY `id_facturas` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `formulaciones`
+--
+ALTER TABLE `formulaciones`
+  MODIFY `id_formulaciones` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+
+--
+-- AUTO_INCREMENT de la tabla `instalaciones`
+--
+ALTER TABLE `instalaciones`
+  MODIFY `id_instalaciones` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT de la tabla `inventario`
 --
 ALTER TABLE `inventario`
   MODIFY `id_inventario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=93;
 
 --
+-- AUTO_INCREMENT de la tabla `item_general`
+--
+ALTER TABLE `item_general`
+  MODIFY `id_item_general` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=101;
+
+--
 -- AUTO_INCREMENT de la tabla `item_proveedor`
 --
 ALTER TABLE `item_proveedor`
   MODIFY `id_item_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+
+--
+-- AUTO_INCREMENT de la tabla `movimiento_inventario`
+--
+ALTER TABLE `movimiento_inventario`
+  MODIFY `id_movimiento_inventario` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `pagos_cliente`
+--
+ALTER TABLE `pagos_cliente`
+  MODIFY `id_pagos_cliente` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `preparaciones`
+--
+ALTER TABLE `preparaciones`
+  MODIFY `id_preparaciones` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `proveedor`
+--
+ALTER TABLE `proveedor`
+  MODIFY `id_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT de la tabla `unidad`
+--
+ALTER TABLE `unidad`
+  MODIFY `id_unidad` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Restricciones para tablas volcadas
@@ -1342,7 +1432,7 @@ ALTER TABLE `item_general_formulaciones`
 -- Filtros para la tabla `item_proveedor`
 --
 ALTER TABLE `item_proveedor`
-  ADD CONSTRAINT `fk_item_proveedor_proveedores1` FOREIGN KEY (`proveedor_id`) REFERENCES `proveedor` (`id_proveedor`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+  ADD CONSTRAINT `fk_item_proveedor_proveedores1` FOREIGN KEY (`proveedor_id`) REFERENCES `proveedor` (`id_proveedor`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `pagos_cliente`
