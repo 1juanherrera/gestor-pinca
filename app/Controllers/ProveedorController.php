@@ -46,11 +46,11 @@ class ProveedorController extends ResourceController
         $insert_id = $this->model->create_table($data, 'proveedor');
         if ($insert_id) {
             return $this->respondCreated([
-                'mensaje' => 'Instalación creada correctamente',
+                'mensaje' => 'proveedor creada correctamente',
                 'id'      => $insert_id,
             ]);
         }
-        return $this->fail('Error al crear la instalación');
+        return $this->fail('Error al crear la proveedor');
     }
 
     public function update($id = null)
@@ -63,16 +63,16 @@ class ProveedorController extends ResourceController
         }
         // Verificar que el registro exista antes de actualizar
         if (!$this->model->get($id, 'proveedor')) {
-            return $this->failNotFound("Instalación con ID $id no encontrada.");
+            return $this->failNotFound("proveedor con ID $id no encontrada.");
         }
         // Intentar actualizar
         $updated = $this->model->update_table($id, $data, 'proveedor');
 
         if ($updated === false || (is_array($updated) && isset($updated['error']))) {
-            return $this->fail('No se pudo actualizar la instalación.');
+            return $this->fail('No se pudo actualizar la proveedor.');
         }
         return $this->respond([
-            'mensaje' => "Instalación con ID $id actualizada correctamente",
+            'mensaje' => "proveedor con ID $id actualizada correctamente",
             'data'    => $data
         ]);
     }
@@ -83,17 +83,17 @@ class ProveedorController extends ResourceController
         if ($id === null) {
             return $this->failValidationErrors('No se proporcionó un ID válido.');
         }
-        // Verificar que la instalación exista
+        // Verificar que la proveedor exista
         if (!$this->model->get($id, 'proveedor')) {
-            return $this->failNotFound("Instalación con ID $id no encontrada.");
+            return $this->failNotFound("proveedor con ID $id no encontrada.");
         }
         // Intentar eliminar usando BaseModel
         $deleted = $this->model->delete_table($id, 'proveedor');
         if ($deleted === false || (is_array($deleted) && isset($deleted['error']))) {
-            return $this->fail("No se pudo eliminar la instalación con ID $id.");
+            return $this->fail("No se pudo eliminar la proveedor con ID $id.");
         }
         return $this->respondDeleted([
-            'mensaje' => "Instalación con ID $id eliminada correctamente"
+            'mensaje' => "proveedor con ID $id eliminada correctamente"
         ]);
     }
 }

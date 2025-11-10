@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Models;
+use App\Libraries\Formatter;
 
 class ProveedorModel extends BaseModel
 {
@@ -34,13 +36,20 @@ class ProveedorModel extends BaseModel
 
         if (!empty($proveedores)) {
             foreach ($proveedores as &$proveedor) {
-                $sqlItems = 'SELECT ip.*
-                            FROM item_proveedor ip
-                            WHERE ip.proveedor_id = ?';
+                $sqlItems = 'SELECT ip.* FROM item_proveedor ip WHERE ip.proveedor_id = ?';
                 $items = $this->db->query($sqlItems, [$proveedor->id_proveedor])->getResult();
+
+                // 🔹 Aquí formateas los precios de los ítems
+                foreach ($items as &$item) {
+                    // Formato con 2 decimales y separadores de miles
+                    $item->precio_unitario = Formatter::toCop((float)$item->precio_unitario);
+                    $item->precio_con_iva = Formatter::toCop((float)$item->precio_con_iva);
+                }
+
                 $proveedor->items = $items;
             }
         }
+
         return $id !== null ? ($proveedores[0] ?? null) : $proveedores;
     }
 

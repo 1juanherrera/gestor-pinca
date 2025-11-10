@@ -1,25 +1,17 @@
-import { FaBox, FaEdit, FaTrash, FaEye, FaBuilding } from 'react-icons/fa';
+import { FaBox, FaEdit, FaTrash } from 'react-icons/fa';
 
-export const ItemProveedorTable = ({ itemProveedor }) => {
-
-    const getStatusColor = (disponible) => {
-        if (disponible == 1) {
-            return 'bg-green-100 text-green-800';
-        } else {
-            return 'bg-red-100 text-red-800';
-        }
-    };
-
-    const getStatusText = (disponible) => {
-        if (disponible == 1) {
-            return 'DISPONIBLE';
-        } else {
-            return 'NO DISPONIBLE';
-        }
-    };
+export const ItemProveedorTable = ({ itemProveedor, itemId, selected = false, onToggleSelect = () => {} }) => {
 
     return (
         <tr className="border-b border-gray-300 hover:bg-gray-200 transition-colors">
+            <td className="px-2 py-2 text-center border border-gray-200">
+                <input
+                    type="checkbox"
+                    className="w-4 h-4 mx-auto"
+                    checked={selected}
+                    onChange={() => onToggleSelect(itemId)}
+                />
+            </td>
             <td className="px-2 py-2 text-xs font-medium text-gray-900 border border-gray-200 max-w-40 whitespace-nowrap overflow-hidden text-ellipsis">
                 <div className="flex items-center gap-2 min-w-0">
                     <FaBox className="text-green-600 shrink-0" />
@@ -47,11 +39,6 @@ export const ItemProveedorTable = ({ itemProveedor }) => {
                     {itemProveedor.unidad_empaque || <span className="text-gray-400">No especificada</span>}
                 </span>
             </td>
-            <td className="px-2 py-2 text-center border border-gray-200 max-w-60 whitespace-nowrap overflow-hidden text-ellipsis">
-                <span className={`px-3 py-1 text-xs font-medium rounded-md ${getStatusColor(itemProveedor.disponible)}`}>
-                    {getStatusText(itemProveedor.disponible)}
-                </span>
-            </td>
             <td className="px-2 py-1 border border-gray-200 min-w-[110px]">
                 <div className="flex justify-center gap-2">
                         <button     
@@ -59,12 +46,6 @@ export const ItemProveedorTable = ({ itemProveedor }) => {
                             title="Editar"
                         >
                             <FaEdit size={14} />
-                        </button>
-                        <button
-                            className="p-2 text-white rounded-md transition-colors bg-green-600 hover:bg-green-800 cursor-pointer"
-                            title="Ver detalles"
-                        >
-                            <FaEye size={14} />
                         </button>
                         <button
                             className="p-2 bg-red-500 text-white hover:bg-red-800 rounded-md transition-colors cursor-pointer"
