@@ -56,5 +56,6 @@ export const ItemProveedorTable = ({ itemProveedor, itemId, selected = false, on
                 </div>
             </td>
         </tr>
-    );
-};
+    )
+}
+

@@ -2,11 +2,17 @@ import { useApiDelete, useApiMutation, useApiResource, useApiUpdate } from "../C
 
 export const useProveedores = () => {
 
+  // Proveedores API hooks
   const query = useApiResource('/proveedor_items');
   const mutation = useApiMutation('/proveedores');
   const deleteMutation = useApiDelete("/proveedores");
   const updateMutation = useApiUpdate("/proveedores");
+
+  // Item Proveedores API hooks
   const queryItem = useApiResource('/item_proveedores');
+  const itemMutation = useApiMutation('/item_proveedores');
+  const itemDeleteMutation = useApiDelete("/item_proveedores");
+  const itemUpdateMutation = useApiUpdate("/item_proveedores");
   
   const data = query.data ?? [];
   const itemData = queryItem.data ?? {};
@@ -34,5 +40,19 @@ export const useProveedores = () => {
     remove,
     isDeleting: deleteMutation.isLoading,
     deleteError: deleteMutation.error,
+
+
+    // Item Proveedores
+    createItem: itemMutation.mutate,
+    isCreatingItem: itemMutation.isLoading,
+    createItemError: itemMutation.error,
+
+    updateItem: itemUpdateMutation.mutate,
+    isUpdatingItem: itemUpdateMutation.isLoading,
+    updateItemError: itemUpdateMutation.error,
+    
+    removeItem: itemDeleteMutation.mutate,
+    isDeletingItem: itemDeleteMutation.isLoading,
+    deleteItemError: itemDeleteMutation.error,
   }
 }
