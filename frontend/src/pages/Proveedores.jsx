@@ -1,19 +1,21 @@
-import React from 'react';
 import { FaUserTag, FaVoicemail, FaPlus, FaEdit, FaTrash, FaBuilding, FaEnvelope, FaPhone, FaArrowLeft, FaBox, FaBarcode, FaSearch } from "react-icons/fa";
 import { AiFillProduct } from "react-icons/ai";
 import { ProveedorForm } from "../components/proveedor/ProveedorForm";
 import { ItemProveedorTable } from "../components/proveedor/ItemProveedorTable";
-import { useState } from "react";
+import React, { useState } from "react";
 import { formatoPesoColombiano, parsePesoColombiano, stableItemId } from "../utils/formatters";
 import { useProveedores } from "../hooks/useProveedores";
 import { ProveedorFormEdit } from "../components/proveedor/ProveedorFormEdit";
 import { ItemProveedorForm } from '../components/proveedor/ItemProveedorForm';
+import { Toast } from '../components/Toast';
 
 export const Proveedores = () => {
 
     const {
         data: proveedores,
         itemData: itemProveedores,
+        proveedoresData,
+
         isLoading,
         error,
         refreshData,
@@ -29,10 +31,10 @@ export const Proveedores = () => {
         createItem,
         isCreatingItem,
         createItemError,
-        // updateItem,
-        // isUpdatingItem,
-        // updateItemError,
-        // removeItem,
+        updateItem,
+        isUpdatingItem,
+        updateItemError,
+        removeItem,
         // isDeletingItem,
         // deleteItemError,
     } = useProveedores();
@@ -46,6 +48,18 @@ export const Proveedores = () => {
         email: ""
     })
 
+    const [formItem, setFormItem] = useState({
+        nombre: "",
+        codigo: "",
+        tipo: "",
+        unidad_empaque: "",
+        precio_unitario: "",
+        precio_con_iva: "",
+        disponible: "",
+        descripcion: "",
+        proveedor_id: ""
+    })
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setForm((prev) => ({
@@ -54,7 +68,14 @@ export const Proveedores = () => {
         }))
     }
 
-    // const [showEdit, setShowEdit] = useState(false);
+    const handleItemChange  = (e) => {
+        const { name, value } = e.target;
+        setFormItem((prev) => ({
+            ...prev,
+            [name]: value
+        }))
+    }
+
     const [show, setShow] = useState(false);
     const [showCreateProveedor, setShowCreateProveedor] = useState(false);
     const [openItems, setOpenItems] = useState(null);
@@ -62,21 +83,21 @@ export const Proveedores = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [proveedorEdit, setProveedorEdit] = useState(null);
     const [showEdit, setShowEdit] = useState(false);
+    const [editingItem, setEditingItem] = useState(null);
 
     const [showItemCreate, setShowItemCreate] = useState(false);
     const [itemCreate, setItemCreate] = useState(null)
 
-    if (isLoading) return <p>Cargando proveedores...</p>;
+    if (isLoading) return <Toast message="Cargando proveedores..." />;
     if (error) return <p>Error al cargar proveedores</p>;
     if (!proveedores || proveedores.length === 0) return <p>No hay proveedores registradas</p>;
 
-    const handle = (id) => {
-        if (window.confirm("¿Seguro que deseas eliminar este proveedor?")) {
-            remove(id);
+    const handle = (id, name, deleteFunc) => {
+        if (window.confirm(`¿Seguro que deseas eliminar ${name}?`)) {
+            deleteFunc(id);
         }
     }
 
-    // Filtramos los items según el texto buscado (por nombre o código, por ejemplo)
     const filteredItems = itemProveedores.filter(item =>
         item.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -107,7 +128,10 @@ export const Proveedores = () => {
                     </div>
                     <div className="flex gap-2">
                         <button
-                            onClick={() => setShowItemCreate(true)}
+                            onClick={() => {
+                                setEditingItem(null);
+                                setShowItemCreate(true);
+                            }}
                             className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
                         >
                             <FaPlus size={16} />
@@ -254,7 +278,7 @@ export const Proveedores = () => {
                                                     <FaEdit size={14} />
                                                 </button>
                                                 <button
-                                                    onClick={() => handle(proveedor.id_proveedor)}
+                                                    onClick={() => handle(proveedor.id_proveedor, proveedor.nombre_empresa, remove)}
                                                     className="p-2 bg-red-500 text-white hover:bg-red-800 rounded-md transition-colors cursor-pointer"
                                                     title="Eliminar"
                                                 >
@@ -308,12 +332,24 @@ export const Proveedores = () => {
                                                                                 <td className="py-2 gap-2 uppercase">
                                                                                     <div className="flex justify-center gap-2">
                                                                                         <button
+                                                                                            onClick={() => {
+                                                                                                setFormItem({
+                                                                                                    nombre: item.nombre,
+                                                                                                    codigo: item.codigo,
+                                                                                                    tipo: item.tipo,
+                                                                                                    unidad_empaque: item.unidad_empaque,
+                                                                                                    precio_unitario: item.precio_unitario,
+                                                                                            })
+                                                                                                setEditingItem(item);
+                                                                                                setShowItemCreate(true);
+                                                                                            }}
                                                                                             className="p-2 text-white rounded-md transition-colors bg-gray-500 hover:bg-gray-800 cursor-pointer"
                                                                                             title="Editar"
                                                                                         >
                                                                                             <FaEdit size={14} />
                                                                                         </button>
                                                                                         <button
+                                                                                            onClick={() => handle(item.id_item_proveedor, item.nombre, removeItem)}
                                                                                             className="p-2 bg-red-500 text-white hover:bg-red-800 rounded-md transition-colors cursor-pointer"
                                                                                             title="Eliminar"
                                                                                         >
@@ -429,6 +465,10 @@ export const Proveedores = () => {
                                     />
                                 </div>
                                 <button
+                                    onClick={() => {
+                                        setShowItemCreate(true);
+                                        setEditingItem(null);
+                                    }}
                                     className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
                                 >
                                     <FaPlus size={16} />
@@ -466,9 +506,15 @@ export const Proveedores = () => {
                                                 ? 'Aún no tiene items registrados.'
                                                 : 'No se encontraron coincidencias.'}
                                         </p>
-                                        <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2">
+                                        <button
+                                            onClick={() => {
+                                                setEditingItem(null);
+                                                setShowItemCreate(true);
+                                            }}
+                                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2"
+                                        >
                                             <FaPlus size={16} />
-                                            Crear Producto
+                                            Nuevo Producto
                                         </button>
                                     </div>
                                 ) : (
@@ -496,6 +542,11 @@ export const Proveedores = () => {
                                                             itemId={itemId}
                                                             selected={selectedItemIds.includes(itemId)}
                                                             onToggleSelect={toggleSelectItem}
+                                                            handle={handle}
+                                                            removeItem={removeItem}
+                                                            setEditingItem={setEditingItem}
+                                                            setShowItemCreate={setShowItemCreate}
+                                                            setFormItem={setFormItem}
                                                         />
                                                     );
                                                 })}
@@ -604,70 +655,17 @@ export const Proveedores = () => {
                     refreshData={refreshData}
                     setItemCreate={setItemCreate}
                     itemProveedores={itemProveedores}
+                    updateItem={updateItem}
+                    isUpdatingItem={isUpdatingItem}
+                    updateItemError={updateItemError}
+                    proveedoresData={proveedoresData}
+                    handleItemChange={handleItemChange}
+                    setFormItem={setFormItem}
+                    formItem={formItem}
+                    editingItem={editingItem}
+                    setEditingItem={setEditingItem}
                 />
             )}
-
-            {/* Diálogo de confirmación de proveedor (existente) */}
-            {/* {showConfirmDialog && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
-                            Eliminar Proveedor
-                        </h3>
-                        <p className="text-gray-600 mb-4">
-                            ¿Estás seguro de que deseas eliminar al proveedor "{proveedorToDelete?.nombre_empresa}"?
-                        </p>
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => {
-                                    setShowConfirmDialog(false);
-                                    setProveedorToDelete(null);
-                                }}
-                                className="px-4 py-2 text-black bg-gray-100 hover:bg-gray-200 rounded-lg"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={confirmDelete}
-                                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg"
-                            >
-                                Eliminar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )} */}
-
-            {/* Diálogo de confirmación de item (NUEVO) */}
-            {/* {showItemConfirmDialog && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
-                            Eliminar Item
-                        </h3>
-                        <p className="text-gray-600 mb-4">
-                            ¿Estás seguro de que deseas eliminar el item "{itemToDelete?.nombre_item}"?
-                        </p>
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => {
-                                    setShowItemConfirmDialog(false);
-                                    setItemToDelete(null);
-                                }}
-                                className="px-4 py-2 text-black bg-gray-100 hover:bg-gray-200 rounded-lg"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={confirmDeleteItem}
-                                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg"
-                            >
-                                Eliminar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )} */}
         </div>
-    );
-};
+    )
+}

@@ -31,7 +31,7 @@ export const useFormulaciones = () => {
       setRecalculatedData(data);
       return data;
     } catch (error) {
-      console.error("❌ Error recalculando:", error);
+      console.error("Error recalculando:", error);
       throw error;
     } finally {
       setIsRecalculating(false);

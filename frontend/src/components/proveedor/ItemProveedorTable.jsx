@@ -1,6 +1,6 @@
 import { FaBox, FaEdit, FaTrash } from 'react-icons/fa';
 
-export const ItemProveedorTable = ({ itemProveedor, itemId, selected = false, onToggleSelect = () => {} }) => {
+export const ItemProveedorTable = ({ itemProveedor, setFormItem, setEditingItem, setShowItemCreate, itemId, selected = false, handle, removeItem, onToggleSelect = () => {} }) => {
 
     return (
         <tr className="border-b border-gray-300 hover:bg-gray-200 transition-colors">
@@ -42,12 +42,24 @@ export const ItemProveedorTable = ({ itemProveedor, itemId, selected = false, on
             <td className="px-2 py-1 border border-gray-200 min-w-[110px]">
                 <div className="flex justify-center gap-2">
                         <button     
+                        onClick={() => {
+                                setFormItem({
+                                    nombre: itemProveedor.nombre,
+                                    codigo: itemProveedor.codigo,
+                                    tipo: itemProveedor.tipo,
+                                    unidad_empaque: itemProveedor.unidad_empaque,
+                                    precio_unitario: itemProveedor.precio_unitario,
+                            })
+                                setEditingItem(itemProveedor);
+                                setShowItemCreate(true);
+                            }}
                             className="p-2 text-white rounded-md transition-colors bg-gray-500 hover:bg-gray-800 cursor-pointer"
                             title="Editar"
                         >
                             <FaEdit size={14} />
                         </button>
                         <button
+                            onClick={() => handle(itemProveedor.id_item_proveedor, itemProveedor.nombre, removeItem)}
                             className="p-2 bg-red-500 text-white hover:bg-red-800 rounded-md transition-colors cursor-pointer"
                             title="Eliminar"
                         >

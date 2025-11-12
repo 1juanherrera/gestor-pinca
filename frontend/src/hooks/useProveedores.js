@@ -4,6 +4,7 @@ export const useProveedores = () => {
 
   // Proveedores API hooks
   const query = useApiResource('/proveedor_items');
+  const queryProveedores = useApiResource('/proveedores');
   const mutation = useApiMutation('/proveedores');
   const deleteMutation = useApiDelete("/proveedores");
   const updateMutation = useApiUpdate("/proveedores");
@@ -15,19 +16,32 @@ export const useProveedores = () => {
   const itemUpdateMutation = useApiUpdate("/item_proveedores");
   
   const data = query.data ?? [];
-  const itemData = queryItem.data ?? {};
+  const proveedoresData = queryProveedores.data ?? [];
+  const itemData = Array.isArray(queryItem.data) ? queryItem.data : (queryItem.data ?? []);
 
   const remove = (id) => {
     deleteMutation.mutate(id, {
       onSuccess: () => query.refetch(),
-    });
-  };
+    })
+  }
 
-  return {
+  const removeItem = (id) => {
+    itemDeleteMutation.mutate(id, {
+      onSuccess: () => {
+        queryItem.refetch();
+        queryProveedores.refetch();
+        query.refetch();
+      }
+    })
+  }
+
+  return {  
     ...query,
     data,
     itemData,
+    proveedoresData,
     refreshData: query.refetch,
+    refreshItemData: queryItem.refetch,
 
     create: mutation.mutate,
     isCreating: mutation.isLoading,
@@ -51,7 +65,7 @@ export const useProveedores = () => {
     isUpdatingItem: itemUpdateMutation.isLoading,
     updateItemError: itemUpdateMutation.error,
     
-    removeItem: itemDeleteMutation.mutate,
+    removeItem,
     isDeletingItem: itemDeleteMutation.isLoading,
     deleteItemError: itemDeleteMutation.error,
   }

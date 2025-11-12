@@ -24,6 +24,7 @@ export const BodegasInstalacion = () => {
 
   const [editingBodega, setEditingBodega] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
+  
   const [form, setForm] = useState({
     nombre: '',
     descripcion: '',
@@ -109,10 +110,12 @@ export const BodegasInstalacion = () => {
                   <MdDelete className="text-red-500" size={21} />
                 </button>
                 <button
-                  className="ml-auto p-1 rounded hover:bg-blue-100 transition-colors"
+                  className="ml-auto p-1 rounded hover:bg-blue-100 transition-colors cursor-pointer"
                   title="Editar bodega"
                   type="button"
-                  onClick={() => {
+                  onClick={e => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     setForm({
                       nombre: bodega.nombre,
                       descripcion: bodega.descripcion,
@@ -138,5 +141,5 @@ export const BodegasInstalacion = () => {
         </p>
       )}
     </div>
-  );
-};
+  )
+}
