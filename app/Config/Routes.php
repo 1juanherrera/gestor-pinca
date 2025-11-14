@@ -52,5 +52,12 @@ $routes->group('api', function ($routes) {
     $routes->post('item_proveedores', 'ItemProveedorController::create');
     $routes->put('item_proveedores/(:num)', 'ItemProveedorController::update/$1');
     $routes->delete('item_proveedores/(:num)', 'ItemProveedorController::delete/$1');
+
+    // CLIENTES
+    $routes->get('clientes', 'ClientesController::clientes');
+    $routes->get('clientes/(:num)', 'ClientesController::show/$1');
+    $routes->post('clientes', 'ClientesController::create');
+    $routes->put('clientes/(:num)', 'ClientesController::update/$1');
+    $routes->delete('clientes/(:num)', 'ClientesController::delete/$1');
 });
 

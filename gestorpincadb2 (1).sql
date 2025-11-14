@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 10-11-2025 a las 19:37:05
+-- Tiempo de generación: 14-11-2025 a las 22:50:27
 -- Versión del servidor: 10.4.32-MariaDB
--- Versión de PHP: 8.1.25
+-- Versión de PHP: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -64,14 +64,22 @@ CREATE TABLE `categoria` (
 
 CREATE TABLE `clientes` (
   `id_clientes` int(11) NOT NULL,
-  `nombre_encargado` varchar(13) DEFAULT NULL,
-  `nombre_empresa` varchar(11) DEFAULT NULL,
+  `nombre_encargado` varchar(50) DEFAULT NULL,
+  `nombre_empresa` varchar(50) DEFAULT NULL,
   `numero_documento` bigint(20) DEFAULT NULL,
-  `direccion` varchar(14) DEFAULT NULL,
+  `direccion` varchar(50) DEFAULT NULL,
   `telefono` bigint(20) DEFAULT NULL,
-  `email` varchar(29) DEFAULT NULL,
-  `facturas_id` int(11) DEFAULT NULL
+  `email` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
+
+--
+-- Volcado de datos para la tabla `clientes`
+--
+
+INSERT INTO `clientes` (`id_clientes`, `nombre_encargado`, `nombre_empresa`, `numero_documento`, `direccion`, `telefono`, `email`) VALUES
+(1, 'Carlos Mendoza', 'Distribuidora Andina S.A.S', 900123456, 'Calle 45 #32-10, Barranquilla', 3014567890, 'c.mendoza@andina.com'),
+(2, 'Juliana Pérez', 'Soluciones del Caribe Ltda', 801987654, 'Carrera 21 #55-22, Cartagena', 3157894321, 'juliana.perez@caribe.com'),
+(3, 'Mauricio Torres', 'Pinturas Torres & Cía', 1023456789, 'Av. Murillo #12-80, Barranquilla', 3001122334, 'm.torres@ptorres.com');
 
 -- --------------------------------------------------------
 
@@ -977,13 +985,8 @@ CREATE TABLE `item_proveedor` (
 --
 
 INSERT INTO `item_proveedor` (`id_item_proveedor`, `nombre`, `codigo`, `tipo`, `unidad_empaque`, `precio_unitario`, `precio_con_iva`, `disponible`, `descripcion`, `proveedor_id`) VALUES
-(1, 'Pintura Acrílica Blanca 1 Galón', 'PNT-BL-1G', 'Pinturas', 'Kg', 48000, 57120.0, 1, 'Pintura acrílica de alta cobertura para interiores y ex', 1),
-(2, 'Esmalte Sintético Rojo 1/4', 'ESM-RO-1/4', 'Pinturas', 'Kg', 16500, 19635.0, 0, 'Esmalte brillante de secado rápido para metal o madera', 1),
-(3, 'Sellador Vinílico 5 Galones', 'SLD-5G', 'Selladores', 'Kg', 125000, 148750.0, 1, 'Sellador vinílico base agua para muros y techos', 1),
-(4, 'Thinner Industrial 1 Galón', 'THN-1G', 'Solventes', 'Kg', 22000, 26180.0, 1, 'Disolvente industrial para pinturas sintéticas', 1),
-(5, 'Removedor de Pintura 1 Litro', 'RMP-1L', 'Solventes', 'Kg', 13500, 16065.0, 1, 'Removedor químico para pinturas y barnices', 1),
 (6, 'Tubería PVC 1/2\" x 6m', 'PVC-12-6', 'Fontanería', 'Kg', 11000, 13090.0, 0, 'Tubería de PVC para conducción de agua fría', 2),
-(7, 'Codo PVC 1/2\" 90°', 'CDO-12-90', 'Fontanería', 'Kg', 1200, 1428.0, 1, 'Codo de PVC para unión de tuberías en ángulo recto', 2),
+(7, 'Codo PVC 1/2\" 90°', 'CDO-12-90', 'Fontanería', 'Kg', 0, 0.0, 1, 'Codo de PVC para unión de tuberías en ángulo recto', 2),
 (8, 'Brocha 3 Pulgadas Profesional', 'BRC-3P', 'Herramientas', 'Kg', 9500, 11305.0, 1, 'Brocha de cerdas sintéticas ideal para pintura acrílica', 2),
 (9, 'Rodillo de Lana 9\"', 'RDL-9L', 'Herramientas', 'Kg', 11500, 13685.0, 1, 'Rodillo de lana para pintura en superficies rugosas', 2),
 (10, 'Lija de Agua 220', 'LJ-220', 'Abrasivos', 'Kg', 5500, 6545.0, 1, 'Lija fina para acabado de superficies pintadas', 2);
@@ -1069,8 +1072,8 @@ CREATE TABLE `proveedor` (
 --
 
 INSERT INTO `proveedor` (`id_proveedor`, `nombre_encargado`, `nombre_empresa`, `numero_documento`, `direccion`, `telefono`, `email`) VALUES
-(1, 'Carlos Pérez', 'Aquaterra S.A.1', '291288192-5', 'Calle 45 #23-10, Bogotá', '3105678901', 'carlos.perez@aquaterra.com'),
-(2, 'Camila Peñaranda', 'Solventes Industriales Ltd1', '800987654-2', 'Carrera 9 #12-34, Medellín', '3152345678', 'maria.gomez@solventes.co');
+(2, 'Camila Peñaranda', 'Solventes Industriales Ltd', '800987654-2', 'Carrera 9 #12-34, Medellín', '3152345678', 'camila.penaranda@solventes.co'),
+(8, 'Carlos Pérez', 'Aquaterra S.A.S.', '178231745-2', '', '01 8000 510 99', 'servilab@aquaterra.com.co');
 
 -- --------------------------------------------------------
 
@@ -1106,8 +1109,7 @@ ALTER TABLE `categoria`
 -- Indices de la tabla `clientes`
 --
 ALTER TABLE `clientes`
-  ADD PRIMARY KEY (`id_clientes`),
-  ADD KEY `fk_clientes_facturas1_idx` (`facturas_id`);
+  ADD PRIMARY KEY (`id_clientes`);
 
 --
 -- Indices de la tabla `costos_item`
@@ -1261,7 +1263,7 @@ ALTER TABLE `categoria`
 -- AUTO_INCREMENT de la tabla `clientes`
 --
 ALTER TABLE `clientes`
-  MODIFY `id_clientes` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_clientes` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `costos_item`
@@ -1321,7 +1323,7 @@ ALTER TABLE `item_general`
 -- AUTO_INCREMENT de la tabla `item_proveedor`
 --
 ALTER TABLE `item_proveedor`
-  MODIFY `id_item_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id_item_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT de la tabla `movimiento_inventario`
@@ -1345,7 +1347,7 @@ ALTER TABLE `preparaciones`
 -- AUTO_INCREMENT de la tabla `proveedor`
 --
 ALTER TABLE `proveedor`
-  MODIFY `id_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT de la tabla `unidad`
@@ -1362,12 +1364,6 @@ ALTER TABLE `unidad`
 --
 ALTER TABLE `bodegas`
   ADD CONSTRAINT `fk_bodegas_instalaciones1` FOREIGN KEY (`instalaciones_id`) REFERENCES `instalaciones` (`id_instalaciones`) ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `clientes`
---
-ALTER TABLE `clientes`
-  ADD CONSTRAINT `fk_clientes_facturas1` FOREIGN KEY (`facturas_id`) REFERENCES `facturas` (`id_facturas`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 --
 -- Filtros para la tabla `costos_item`
