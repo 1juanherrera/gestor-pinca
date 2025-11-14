@@ -1,104 +1,85 @@
 // import { useState } from 'react';
-// import { 
-//   FaPlus, 
-//   FaSearch, 
-//   FaUsers, 
-//   FaEye,
-//   FaEdit,
-//   FaTrash,
-//   FaBuilding,
-//   FaPhone,
-//   FaEnvelope,
-  
-// } from 'react-icons/fa';
+import { 
+  FaPlus, 
+  FaSearch, 
+  FaUsers, 
+  FaEye,
+  FaEdit,
+  FaTrash,
+  FaBuilding,
+  FaPhone,
+  FaEnvelope,
+} from 'react-icons/fa';
 // import { ClienteModal } from '../components/cliente/ClienteModal';
 // import { ClienteCard } from '../components/cliente/ClienteCard';
 // import { ClienteStats } from '../components/cliente/ClienteStats';
 // import { DeleteConfirmModal } from '../components/cliente/DeleteConfirmModal';
+import { useClientes } from "../hooks/useClientes";
+
+export const Clientes = () => {
+
+    const { 
+        data: clientes,
+        isLoading,
+        error,
+        refreshData,
+
+        createCliente,
+        isCreating,
+        createError,
+
+        updateCliente,
+        isUpdating,
+        updateError,
+
+        removeCliente,
+        isDeleting,
+        deleteError,
+    } = useClientes();
+
+    return (
+        <div className="ml-65 p-4 bg-gray-100 min-h-screen">
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-center gap-2">
+                    <FaUsers className="text-blue-600" size={25}/>
+                    <h1 className="text-xl font-bold text-gray-800">
+                        Gestión de Clientes
+                    </h1>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                    <button className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <FaPlus size={16} />
+                        Nuevo Cliente
+                    </button>
+                </div>
+            </div>
+            {/* Estadísticas */}
+            {/* <ClienteStats estadisticas={estadisticasGenerales} /> */}
+
+            {/* Filtros y búsqueda */}
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    {/* Búsqueda */}
+                    <div className="relative flex-1 max-w-md">
+                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                        <input 
+                            type="text"
+                            placeholder="Buscar por empresa, encargado, documento..."
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    {/* Controles de vista */}
+
+                </div>
+            </div>
+        </div>
+    )
+}
 
 // export const Clientes = () => {
 
-//     const {
-//     clientesFiltrados,
-//     loading,
-//     error,
-//     searchTerm,
-//     estadisticasGenerales,
-//     isModalOpen,
-//     modalMode,
-//     selectedClienteLocal,
-//     buscarClientes,
-//     crearCliente,
-//     actualizarCliente,
-//     eliminarCliente,
-//     abrirModalCrear,
-//     abrirModalEditar,
-//     abrirModalVer,
-//     cerrarModal,
-//     limpiarError,
-//     cargarDatosCompletos
-//   } = useClientes();
-
-//   const [showDeleteModal, setShowDeleteModal] = useState(false);
-//   const [clienteToDelete, setClienteToDelete] = useState(null);
-//   const [viewMode, setViewMode] = useState('grid'); // 'grid' o 'table'
-
-//   // Manejar búsqueda
-//   const handleSearch = (e) => {
-//     buscarClientes(e.target.value);
-//   };
-
-//   // Manejar eliminación
-//   const handleDeleteClick = (cliente) => {
-//     setClienteToDelete(cliente);
-//     setShowDeleteModal(true);
-//   };
-
-//   const handleDeleteConfirm = async () => {
-//     try {
-//       await eliminarCliente(clienteToDelete.id);
-//       setShowDeleteModal(false);
-//       setClienteToDelete(null);
-//     } catch (error) {
-//       console.error('Error al eliminar cliente:', error);
-//     }
-//   };
-
-//   const handleDeleteCancel = () => {
-//     setShowDeleteModal(false);
-//     setClienteToDelete(null);
-//   };
-
-//   // Manejar vista detallada
-//   const handleViewDetails = async (cliente) => {
-//     await cargarDatosCompletos(cliente.id);
-//     abrirModalVer(cliente);
-//   };
-
-//       return (
-//         <div className="ml-65 p-4 bg-gray-100 min-h-screen">
-//         {/* Header */}
-//         <div>
-//           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-//             <div className="flex items-center gap-2">
-//               <FaUsers className="text-blue-600" size={25}/>
-//               <h1 className="text-xl font-bold text-gray-800">
-                
-//                 Gestión de Clientes
-//               </h1>
-//             </div>
-            
-//             <div className="flex flex-col sm:flex-row gap-3 mb-4">
-//               <button
-//                 onClick={abrirModalCrear}
-//                 className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-//               >
-//                 <FaPlus size={16} />
-//                 Nuevo Cliente
-//               </button>
-//             </div>
-
-//         </div>
 
 //         {/* Estadísticas */}
 //         <ClienteStats estadisticas={estadisticasGenerales} />
@@ -117,32 +98,6 @@
 //                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 //               />
 //             </div>
-
-//             {/* Controles de vista */}
-//             <div className="flex items-center gap-2">
-//               <span className="text-sm text-gray-600">Vista:</span>
-//               <div className="flex rounded-lg border border-gray-300 overflow-hidden">
-//                 <button
-//                   onClick={() => setViewMode('grid')}
-//                   className={`px-3 py-1 text-sm cursor-pointer ${
-//                     viewMode === 'grid' 
-//                       ? 'bg-blue-600 text-white' 
-//                       : 'bg-white text-gray-600 hover:bg-gray-50'
-//                   }`}
-//                 >
-//                   Tarjetas
-//                 </button>
-//                 <button
-//                   onClick={() => setViewMode('table')}
-//                   className={`px-3 py-1 text-sm cursor-pointer ${
-//                     viewMode === 'table' 
-//                       ? 'bg-blue-600 text-white' 
-//                       : 'bg-white text-gray-600 hover:bg-gray-50'
-//                   }`}
-//                 >
-//                   Tabla
-//                 </button>
-//               </div>
 //             </div>
 //           </div>
 //         </div>

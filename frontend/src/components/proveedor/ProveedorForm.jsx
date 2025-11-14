@@ -1,6 +1,6 @@
 import { FaTimes, FaBuilding, FaUser, FaPhone, FaEnvelope, FaMapMarkerAlt, FaIdCard } from 'react-icons/fa';
 
-export const ProveedorForm = ({ onSubmit, handleChange, setShowCreate, create, isCreating, createError, proveedor, form, setForm }) => {
+export const ProveedorForm = ({ onSubmit, eventToast, handleChange, setShowCreate, create, isCreating, createError, proveedor, form, setForm }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -16,6 +16,7 @@ export const ProveedorForm = ({ onSubmit, handleChange, setShowCreate, create, i
                 telefono: "",
                 email: ""
             });
+            eventToast("Proveedor creado exitosamente", "success");
         }
         })
     }

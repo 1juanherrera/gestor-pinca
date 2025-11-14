@@ -7,7 +7,8 @@ import { formatoPesoColombiano, parsePesoColombiano, stableItemId } from "../uti
 import { useProveedores } from "../hooks/useProveedores";
 import { ProveedorFormEdit } from "../components/proveedor/ProveedorFormEdit";
 import { ItemProveedorForm } from '../components/proveedor/ItemProveedorForm';
-import { Toast } from '../components/Toast';
+import { Loader } from '../components/Loader';
+import { Toast } from "../components/Toast";
 
 export const Proveedores = () => {
 
@@ -84,34 +85,47 @@ export const Proveedores = () => {
     const [proveedorEdit, setProveedorEdit] = useState(null);
     const [showEdit, setShowEdit] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [toastVisible, setToastVisible] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
+    const [toastType, setToastType] = useState("info");
 
     const [showItemCreate, setShowItemCreate] = useState(false);
     const [itemCreate, setItemCreate] = useState(null)
 
-    if (isLoading) return <Toast message="Cargando proveedores..." />;
-    if (error) return <p>Error al cargar proveedores</p>;
-    if (!proveedores || proveedores.length === 0) return <p>No hay proveedores registradas</p>;
+    if(isLoading) return <Loader message="Cargando proveedores..." />;
+    if(isCreating) return <Loader message="Creando proveedor..." />;
+    if(isUpdating) return <Loader message="Actualizando proveedor..." />;
+    if(isCreatingItem) return <Loader message="Creando item de proveedor..." />;
+    if(isUpdatingItem) return <Loader message="Actualizando item de proveedor..." />;
+    if(error) return <p>Error al cargar proveedores</p>;
+    if(!proveedores || proveedores.length === 0) return <p>No hay proveedores registradas</p>;
 
     const handle = (id, name, deleteFunc) => {
         if (window.confirm(`¿Seguro que deseas eliminar ${name}?`)) {
             deleteFunc(id);
         }
+        eventToast(`${name} eliminado correctamente`, "success");
     }
 
     const filteredItems = itemProveedores.filter(item =>
         item.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.nombre_empresa?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    )
 
     const toggleProveedor = (id) => {
         setOpenItems(openItems === id ? null : id);
-    };
+    }
 
     const toggleSelectItem = (id) => {
         setSelectedItemIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
     }
 
+    const eventToast = (message, type = "info") => {
+        setToastMessage(message);
+        setToastType(type);
+        setToastVisible(true);
+    }
 
     return (
         <div className="ml-65 p-4 bg-gray-100 min-h-screen">
@@ -121,7 +135,7 @@ export const Proveedores = () => {
                     <div className="flex items-center gap-2">
                         <FaUserTag className="text-blue-500" size={25} />
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-800">
+                            <h1 className="text-xl font-bold text-gray-800">
                                 Gestión de Proveedores
                             </h1>
                         </div>
@@ -132,20 +146,29 @@ export const Proveedores = () => {
                                 setEditingItem(null);
                                 setShowItemCreate(true);
                             }}
-                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                            className="bg-green-500 cursor-pointer hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
                         >
                             <FaPlus size={16} />
                             Nuevo Producto
                         </button>
                         <button
                             onClick={() => setShowCreateProveedor(true)}
-                            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                            className="bg-blue-500 cursor-pointer hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
                         >
                             <FaPlus size={16} />
                             Nuevo Proveedor
                         </button>
                     </div>
                 </div>
+
+                {/* Toast */}           
+                {toastVisible && (
+                    <Toast 
+                        message={toastMessage} 
+                        type={toastType}
+                        onClose={() => setToastVisible(false)}
+                    />
+                )}
 
                 {/* Estadísticas */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
@@ -391,7 +414,7 @@ export const Proveedores = () => {
                                                                 <div className="text-sm font-medium">Comparar precios ({selectedItems.length})</div>
                                                                 <div className="flex items-center gap-2">
                                                                     <button
-                                                                        className="px-3 py-1 text-sm bg-gray-200 rounded-md"
+                                                                        className="px-3 cursor-pointer py-1 text-sm bg-gray-200 rounded-md"
                                                                         onClick={() => setSelectedItemIds([])}
                                                                     >Limpiar</button>
                                                                 </div>
@@ -439,7 +462,7 @@ export const Proveedores = () => {
                                 <div className="flex items-center gap-3">
                                     <button
                                         onClick={() => setShow(false)}
-                                        className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                                        className="p-2 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
                                         title="Volver a proveedores"
                                     >
                                         <FaArrowLeft className="text-gray-600" size={20} />
@@ -469,7 +492,7 @@ export const Proveedores = () => {
                                         setShowItemCreate(true);
                                         setEditingItem(null);
                                     }}
-                                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                                    className="bg-green-500 cursor-pointer hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
                                 >
                                     <FaPlus size={16} />
                                     Nuevo Producto
@@ -482,7 +505,7 @@ export const Proveedores = () => {
                             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center justify-between">
                                 <span>{error}</span>
                                 <button
-                                    className="text-red-500 hover:text-red-700"
+                                    className="text-red-500 hover:text-red-700 cursor-pointer"
                                 >
                                     ✕
                                 </button>
@@ -511,7 +534,7 @@ export const Proveedores = () => {
                                                 setEditingItem(null);
                                                 setShowItemCreate(true);
                                             }}
-                                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2"
+                                            className="bg-green-500 cursor-pointer hover:bg-green-600 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2"
                                         >
                                             <FaPlus size={16} />
                                             Nuevo Producto
@@ -576,7 +599,7 @@ export const Proveedores = () => {
                                         <div className="font-semibold">Comparador de precios ({selectedItems.length})</div>
                                         <div className="flex gap-2">
                                             <button
-                                                className="px-3 py-1 bg-gray-200 rounded-md"
+                                                className="px-3 py-1 bg-gray-200 rounded-md cursor-pointer"
                                                 onClick={() => setSelectedItemIds([])}
                                             >Limpiar</button>
                                         </div>
@@ -625,6 +648,7 @@ export const Proveedores = () => {
                     form={form}
                     setForm={setForm}
                     handleChange={handleChange}
+                    eventToast={eventToast}
                 />
             )}
 
@@ -642,6 +666,7 @@ export const Proveedores = () => {
                     updateError={updateError}
                     refreshData={refreshData}
                     setProveedorEdit={setProveedorEdit}
+                    eventToast={eventToast}
                 />
             )}
 
@@ -664,6 +689,7 @@ export const Proveedores = () => {
                     formItem={formItem}
                     editingItem={editingItem}
                     setEditingItem={setEditingItem}
+                    eventToast={eventToast}
                 />
             )}
         </div>
