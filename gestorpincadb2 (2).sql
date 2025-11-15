@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 14-11-2025 a las 22:50:27
+-- Tiempo de generación: 15-11-2025 a las 16:43:06
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -69,17 +69,19 @@ CREATE TABLE `clientes` (
   `numero_documento` bigint(20) DEFAULT NULL,
   `direccion` varchar(50) DEFAULT NULL,
   `telefono` bigint(20) DEFAULT NULL,
-  `email` varchar(50) DEFAULT NULL
+  `email` varchar(50) DEFAULT NULL,
+  `tipo` tinyint(4) NOT NULL DEFAULT 2 COMMENT '1 Empresa 2 Particular',
+  `estado` tinyint(4) NOT NULL DEFAULT 1 COMMENT '1 activo 2 inactivo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 
 --
 -- Volcado de datos para la tabla `clientes`
 --
 
-INSERT INTO `clientes` (`id_clientes`, `nombre_encargado`, `nombre_empresa`, `numero_documento`, `direccion`, `telefono`, `email`) VALUES
-(1, 'Carlos Mendoza', 'Distribuidora Andina S.A.S', 900123456, 'Calle 45 #32-10, Barranquilla', 3014567890, 'c.mendoza@andina.com'),
-(2, 'Juliana Pérez', 'Soluciones del Caribe Ltda', 801987654, 'Carrera 21 #55-22, Cartagena', 3157894321, 'juliana.perez@caribe.com'),
-(3, 'Mauricio Torres', 'Pinturas Torres & Cía', 1023456789, 'Av. Murillo #12-80, Barranquilla', 3001122334, 'm.torres@ptorres.com');
+INSERT INTO `clientes` (`id_clientes`, `nombre_encargado`, `nombre_empresa`, `numero_documento`, `direccion`, `telefono`, `email`, `tipo`, `estado`) VALUES
+(1, 'Carlos Mendoza', 'Distribuidora Andina S.A.S', 900123456, 'Calle 45 #32-10, Barranquilla', 3014567890, 'c.mendoza@andina.com', 2, 1),
+(2, 'Juliana Pérez', 'Soluciones del Caribe Ltda', 801987654, 'Carrera 21 #55-22, Cartagena', 3157894321, 'juliana.perez@caribe.com', 1, 1),
+(3, 'Mauricio Torres', 'Pinturas Torres & Cía', 1023456789, 'Av. Murillo #12-80, Barranquilla', 3001122334, 'm.torres@ptorres.com', 2, 1);
 
 -- --------------------------------------------------------
 

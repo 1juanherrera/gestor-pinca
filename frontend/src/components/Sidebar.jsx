@@ -6,7 +6,7 @@ import { IoMdExit } from "react-icons/io";
 
 export const Sidebar = () => {
   return (
-    <div className="w-3xs bg-neutral-600 opacity-30 text-white p-4 m-2 rounded-lg shadow-lg h-[97%] fixed">
+    <div className="w-3xs bg-neutral-600 text-white p-4 m-2 rounded-lg shadow-lg h-[97%] fixed">
       <ul className="mt-5 space-y-2">
         <li className="w-full">
           <NavLink
