@@ -6,21 +6,32 @@ export const Toast = ({ message, type = "info", onClose }) => {
     const [animate, setAnimate] = useState(false);
 
     const colors = {
-        success: "text-green-600 bg-green-100 border-green-300",
-        error: "text-red-600 bg-red-100 border-red-300",
-        warning: "text-yellow-600 bg-yellow-100 border-yellow-300",
-        info: "text-blue-600 bg-blue-100 border-blue-300",
+        success: "bg-green-100 text-green-800",
+        error: "bg-red-100 text-red-800",
+        warning: "bg-yellow-100  text-yellow-800",
+        info: "bg-blue-100 text-blue-800",
     };
 
-    const iconColor = colors[type] || "text-gray-600";
+    const iconWrapperColors = {
+        success: "bg-green-300",
+        error: "bg-red-200",
+        warning: "bg-yellow-200",
+        info: "bg-blue-200",
+    };
+
+    const iconColor = {
+        success: "text-green-700",
+        error: "text-red-700",
+        warning: "text-yellow-700",
+        info: "text-blue-700",
+    };
 
     useEffect(() => {
         const entryTimer = setTimeout(() => setAnimate(true), 20);
-
         const exitTimer = setTimeout(() => {
             setAnimate(false);
-            setTimeout(onClose, 300);
-        }, 3000);
+            setTimeout(onClose, 200);
+        }, 2000);
 
         return () => {
             clearTimeout(entryTimer);
@@ -31,21 +42,25 @@ export const Toast = ({ message, type = "info", onClose }) => {
     return (
         <div
             className={`
-                flex fixed top-2 left-1/2 -translate-x-1/2 z-50
-                w-full max-w-xs p-4 border rounded-xl shadow-xl
-                transition-all duration-300
-                ${colors[type]}
-                ${animate ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}
+                flex items-center w-full max-w-sm px-4 py-3 rounded-xl shadow-xl/20
+                fixed bottom-6 right-6 z-50 transition-all duration-300 transform
+                ${colors[type] || colors.info}
+                ${animate ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-95"}
             `}
         >
-            {type === "success" && <FaCheck className={`w-5 h-5 ${iconColor}`} />}
-            {type === "error" && <FaRegWindowClose className={`w-5 h-5 ${iconColor}`} />}
-            {type === "warning" && <IoWarningOutline className={`w-5 h-5 ${iconColor}`} />}
-            {type === "info" && <IoWarningOutline className={`w-5 h-5 ${iconColor}`} />}
-
-            <div className="ms-2 text-sm font-semibold text-gray-700">
-                {message}
+            <div
+                className={`flex items-center justify-center w-8 h-8 rounded-full mr-3
+                ${iconWrapperColors[type] || iconWrapperColors.info}`}
+            >
+                {type === "success" && <FaCheck className={`w-4 h-4 ${iconColor[type]}`} />}
+                {type === "error" && <FaRegWindowClose className={`w-4 h-4 ${iconColor[type]}`} />}
+                {type === "warning" && <IoWarningOutline className={`w-4 h-4 ${iconColor[type]}`} />}
+                {type === "info" && <IoWarningOutline className={`w-4 h-4 ${iconColor[type]}`} />}
             </div>
+
+            <p className="text-sm font-medium leading-tight">
+                {message}
+            </p>
         </div>
     );
 };

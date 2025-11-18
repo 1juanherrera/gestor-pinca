@@ -9,6 +9,7 @@ import { ProveedorFormEdit } from "../components/proveedor/ProveedorFormEdit";
 import { ItemProveedorForm } from '../components/proveedor/ItemProveedorForm';
 import { Loader } from '../components/Loader';
 import { Toast } from "../components/Toast";
+import { useToast } from "../hooks/useToast";
 
 export const Proveedores = () => {
 
@@ -39,6 +40,15 @@ export const Proveedores = () => {
         // isDeletingItem,
         // deleteItemError,
     } = useProveedores();
+
+    const {
+        toastVisible,
+        toastMessage,
+        toastType,
+
+        eventToast,
+        setToastVisible
+    } = useToast();
 
     const [form, setForm] = useState({
         nombre_encargado: "",
@@ -85,9 +95,6 @@ export const Proveedores = () => {
     const [proveedorEdit, setProveedorEdit] = useState(null);
     const [showEdit, setShowEdit] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
-    const [toastVisible, setToastVisible] = useState(false);
-    const [toastMessage, setToastMessage] = useState("");
-    const [toastType, setToastType] = useState("info");
 
     const [showItemCreate, setShowItemCreate] = useState(false);
     const [itemCreate, setItemCreate] = useState(null)
@@ -119,12 +126,6 @@ export const Proveedores = () => {
 
     const toggleSelectItem = (id) => {
         setSelectedItemIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-    }
-
-    const eventToast = (message, type = "info") => {
-        setToastMessage(message);
-        setToastType(type);
-        setToastVisible(true);
     }
 
     return (

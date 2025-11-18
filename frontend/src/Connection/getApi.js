@@ -53,12 +53,19 @@ export function useApiDelete(baseEndpoint, errorMsg) {
 
 export function useApiUpdate(baseEndpoint, errorMsg) {
   return useMutation({
-    mutationFn: ({ id, data }) =>
-      apiRequest({
+    mutationFn: ({ id, data }) => {
+      if (!data || Object.keys(data).length === 0) {
+        console.warn("Intentando actualizar sin datos válidos:");
+        console.table({ id, data });
+        throw new Error("No se proporcionaron datos para actualizar.");
+      }
+
+      return apiRequest({
         method: "PUT",
         endpoint: `${baseEndpoint}/${id}`,
         data,
         errorMsg,
-      }),
+      });
+    },
   });
 }

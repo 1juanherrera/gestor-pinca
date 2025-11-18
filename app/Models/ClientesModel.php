@@ -14,7 +14,9 @@ class ClientesModel extends BaseModel
         'numero_documento',
         'direccion',
         'telefono',
-        'email'
+        'email',
+        'tipo',
+        'estado',
     ];
 
     public function __construct()
@@ -28,19 +30,19 @@ class ClientesModel extends BaseModel
         return $this->find($id);
     }
 
-    public function create_proveedor($data, $table)
+    public function create_cliente($data, $table)
     {
         $this->table = $table;      
         return $this->insert($data);
     }
 
-    public function update_proveedor($id, $data, $table)
+    public function update_cliente($id, $data, $table)
     {
         $this->table = $table;      
         return $this->update($id, $data);
     }
 
-    public function delete_proveedor($id, $table)
+    public function delete_cliente($id, $table)
     {
         $this->table = $table;      
         return $this->delete($id);

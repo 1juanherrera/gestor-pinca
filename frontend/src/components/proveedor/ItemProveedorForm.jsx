@@ -88,7 +88,7 @@ export const ItemProveedorForm = ({
                         <input
                             type="text"
                             name="nombre"
-                            value={formItem.nombre}
+                            value={formItem.nombre || ""}
                             onChange={handleItemChange}
                             className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                                 createItemError ? 'border-red-300' : 'border-gray-300'
@@ -103,7 +103,7 @@ export const ItemProveedorForm = ({
                             <input
                                 type="text"
                                 name="codigo"
-                                value={formItem.codigo}
+                                value={formItem.codigo || ""}
                                 onChange={handleItemChange}
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${createItemError ? 'border-red-300' : 'border-gray-300'}`} />
                                 {createItemError && (
@@ -119,7 +119,7 @@ export const ItemProveedorForm = ({
                             <input
                                 type="text"
                                 name="tipo"
-                                value={formItem.tipo}
+                                value={formItem.tipo || ""}
                                 onChange={handleItemChange}
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                                     createItemError ? 'border-red-300' : 'border-gray-300'
@@ -134,7 +134,7 @@ export const ItemProveedorForm = ({
                             <input
                                 type="text"
                                 name="unidad_empaque"
-                                value={formItem.unidad_empaque}
+                                value={formItem.unidad_empaque || ""}
                                 onChange={handleItemChange}
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                                     createItemError ? 'border-red-300' : 'border-gray-300'
@@ -147,9 +147,9 @@ export const ItemProveedorForm = ({
                                 Precio Unitario <span className='text-red-600'>*</span>
                             </label>
                             <input
-                                type="text"
+                                type="number"
                                 name="precio_unitario"
-                                value={formItem.precio_unitario}
+                                value={formItem.precio_unitario || ""}
                                 onChange={handleItemChange}
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                                     createItemError ? 'border-red-300' : 'border-gray-300'
@@ -164,7 +164,7 @@ export const ItemProveedorForm = ({
                             <input
                                 type="text"
                                 name="precio_con_iva"
-                                value={formItem.precio_con_iva}
+                                value={formItem.precio_con_iva || ""}
                                 onChange={handleItemChange}
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                                     createItemError ? 'border-red-300' : 'border-gray-300'
@@ -176,7 +176,7 @@ export const ItemProveedorForm = ({
                                 <FaUser className="inline mr-2" size={14} />
                                 Disponible <span className='text-red-600'>*</span>
                             </label>
-                            <select name="disponible" value={formItem.disponible}
+                            <select name="disponible" value={formItem.disponible || ""}
                                 onChange={handleItemChange}
                                 className={`text-black w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                                     createItemError ? 'border-red-300' : 'border-gray-300'
@@ -194,14 +194,14 @@ export const ItemProveedorForm = ({
                             </label>
                             <select 
                                 name="proveedor_id" 
-                                value={formItem.proveedor_id}
+                                value={formItem.proveedor_id || ""}
                                 onChange={handleItemChange}
                                 className={`text-black w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                                     createItemError ? 'border-red-300' : 'border-gray-300'
                                 }`}>
                                 <option value="">Selecciona una opcion...</option>
                                 {proveedoresData.map((prov) => (
-                                    <option key={prov.id_proveedor} value={prov.id_proveedor}>
+                                    <option key={prov.id_proveedor} value={prov.id_proveedor || ""}>
                                         {prov.nombre_empresa}
                                     </option>
                                 ))}
@@ -216,7 +216,7 @@ export const ItemProveedorForm = ({
                             <input
                                 type="text"
                                 name="descripcion"
-                                value={formItem.descripcion}
+                                value={formItem.descripcion || ""}
                                 onChange={handleItemChange}
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                                     createItemError ? 'border-red-300' : 'border-gray-300'
