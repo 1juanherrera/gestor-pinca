@@ -76,7 +76,7 @@ export const ProveedorFormEdit = ({ updateError, proveedorEdit, proveedor, refre
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                                     updateError ? 'border-red-300' : 'border-gray-300'
                                 }`}
-                                placeholder="Ej: Químicos Industriales S.A.S"
+                                
                             />
                             {updateError && (
                                 <p className="text-red-500 text-xs mt-1">{updateError.message}</p>
@@ -95,7 +95,7 @@ export const ProveedorFormEdit = ({ updateError, proveedorEdit, proveedor, refre
                                 value={proveedorEdit.nombre_encargado}
                                 onChange={e => setProveedorEdit({ ...proveedorEdit, nombre_encargado: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Ej: Carlos Rodríguez"
+                                
                             />
                         </div>
 
@@ -111,7 +111,7 @@ export const ProveedorFormEdit = ({ updateError, proveedorEdit, proveedor, refre
                                 value={proveedorEdit.numero_documento}
                                 onChange={e => setProveedorEdit({ ...proveedorEdit, numero_documento: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Ej: 900123456-7"
+                                
                             />
                         </div>
 
@@ -129,7 +129,7 @@ export const ProveedorFormEdit = ({ updateError, proveedorEdit, proveedor, refre
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                                     updateError ? 'border-red-300' : 'border-gray-300'
                                 }`}
-                                placeholder="Ej: +57 1 234-5678"
+                                
                             />
                             {updateError && (
                                 <p className="text-red-500 text-xs mt-1">{updateError.message}</p>
@@ -150,7 +150,7 @@ export const ProveedorFormEdit = ({ updateError, proveedorEdit, proveedor, refre
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                                     updateError ? 'border-red-300' : 'border-gray-300'
                                 }`}
-                                placeholder="Ej: ventas@empresa.com"
+                                
                             />
                             {updateError && (
                                 <p className="text-red-500 text-xs mt-1">{updateError.message}</p>
@@ -169,7 +169,7 @@ export const ProveedorFormEdit = ({ updateError, proveedorEdit, proveedor, refre
                                 onChange={e => setProveedorEdit({ ...proveedorEdit, direccion: e.target.value })}
                                 rows="3"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Ej: Calle 45 #12-34, Zona Industrial, Bogotá D.C."
+                                
                             />
                         </div>
                     </div>

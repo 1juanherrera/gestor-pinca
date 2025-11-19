@@ -91,9 +91,9 @@ export const Clientes = () => {
 
     const handle = (id, name, deleteFunc) => {
         if (window.confirm(`¿Seguro que deseas eliminar ${name}?`)) {
+            eventToast(`${name} eliminado correctamente`, "error");
             deleteFunc(id);
         }
-        eventToast(`${name} eliminado correctamente`, "success");
     }
 
     return (
@@ -240,7 +240,8 @@ export const Clientes = () => {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex justify-center items-center">
-                                                        <span className={`inline-flex ${cliente.estado === "1" ? "bg-green-100 text-green-800 border-green-200" : "bg-red-100 text-red-800 border-red-200"} shadow-sm border  items-center px-4 py-2 rounded-full text-xs font-medium`}>
+                                                        <span className={`inline-flex ${cliente.estado === "1" ? "bg-green-100 text-green-800 border-green-200" : "bg-red-100 text-red-800 border-red-200"} 
+                                                                         shadow-sm border block w-24 items-center justify-center px-4 py-2 rounded-full text-xs font-medium`}>
                                                         {cliente.estado === "1" ? "ACTIVO" : "INACTIVO"}
                                                         </span> 
                                                     </div>

@@ -32,6 +32,7 @@ $routes->group('api', function ($routes) {
     $routes->post('bodegas', 'BodegasController::create');
     $routes->put('bodegas/(:num)', 'BodegasController::update/$1');
     $routes->delete('bodegas/(:num)', 'BodegasController::delete/$1');
+    $routes->get('bodegas/inventario/(:num)', 'BodegasController::bodega_inventario/$1');
 
     // FORMULACIONES
     $routes->get('formulaciones', 'FormulacionesController::formulaciones');
@@ -59,5 +60,12 @@ $routes->group('api', function ($routes) {
     $routes->post('clientes', 'ClientesController::create');
     $routes->put('clientes/(:num)', 'ClientesController::update/$1');
     $routes->delete('clientes/(:num)', 'ClientesController::delete/$1');
+
+    // FACTURAS
+    $routes->get('facturas', 'FacturasController::facturas');
+    $routes->get('facturas/(:num)', 'FacturasController::show/$1');
+    $routes->post('facturas', 'FacturasController::create');
+    $routes->put('facturas/(:num)', 'FacturasController::update/$1');
+    $routes->delete('facturas/(:num)', 'FacturasController::delete/$1');
 });
 

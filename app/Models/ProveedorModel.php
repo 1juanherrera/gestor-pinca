@@ -42,8 +42,8 @@ class ProveedorModel extends BaseModel
                 // 🔹 Aquí formateas los precios de los ítems
                 foreach ($items as &$item) {
                     // Formato con 2 decimales y separadores de miles
-                    $item->precio_unitario = Formatter::toCop((float)$item->precio_unitario);
-                    $item->precio_con_iva = Formatter::toCop((float)$item->precio_con_iva);
+                    $item->precio_unitario = (float) $item->precio_unitario;
+                    $item->precio_con_iva = (float) $item->precio_con_iva;
                 }
 
                 $proveedor->items = $items;

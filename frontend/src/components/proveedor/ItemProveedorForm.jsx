@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
-import { FaTimes, FaBuilding, FaUser, FaPhone, FaEnvelope, FaMapMarkerAlt, FaIdCard } from 'react-icons/fa';
+import { FaTimes, FaBuilding, FaUser, FaPhone, FaEnvelope, FaMapMarkerAlt, FaIdCard, FaSortAmountDown, FaWeightHanging   } from 'react-icons/fa';
+import { MdDescription, MdEventAvailable   } from "react-icons/md";
+import { IoPricetags } from "react-icons/io5";
 
 export const ItemProveedorForm = ({
     setShowItemCreate,
@@ -13,7 +15,8 @@ export const ItemProveedorForm = ({
     setFormItem,
     formItem,
     editingItem,
-    setEditingItem }) => {
+    setEditingItem,
+    eventToast }) => {
 
     useEffect(() => {
         if (editingItem) {
@@ -41,6 +44,7 @@ export const ItemProveedorForm = ({
                     refreshData();
                     setShowItemCreate(false);
                     setEditingItem(null);
+                    eventToast("Producto actualizado exitosamente", "success");
                 }
             });
         } else {
@@ -48,6 +52,7 @@ export const ItemProveedorForm = ({
                 onSuccess: () => {
                     refreshData();
                     setShowItemCreate(false);
+                    eventToast("Producto creado exitosamente", "success");
                 }
             });
         }
@@ -80,21 +85,22 @@ export const ItemProveedorForm = ({
                     </button>
                 </div>
                 <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            <FaUser className="inline mr-2" size={14} />
-                            Nombre <span className='text-red-600'>*</span>
-                        </label>
-                        <input
-                            type="text"
-                            name="nombre"
-                            value={formItem.nombre || ""}
-                            onChange={handleItemChange}
-                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                                createItemError ? 'border-red-300' : 'border-gray-300'
-                            }`} />
-                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <FaUser className="inline mr-2" size={14} />
+                                Nombre <span className='text-red-600'>*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="nombre"
+                                value={formItem.nombre || ""}
+                                onChange={handleItemChange}
+                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                    createItemError ? 'border-red-300' : 'border-gray-300'
+                                }`} />
+                        </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 <FaBuilding className="inline mr-2" size={14} />
@@ -113,7 +119,7 @@ export const ItemProveedorForm = ({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <FaUser className="inline mr-2" size={14} />
+                                <FaSortAmountDown  className="inline mr-2" size={14} />
                                 Tipo <span className='text-red-600'>*</span>
                             </label>
                             <input
@@ -128,7 +134,7 @@ export const ItemProveedorForm = ({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <FaUser className="inline mr-2" size={14} />
+                                <FaWeightHanging  className="inline mr-2" size={14} />
                                 Unidad <span className='text-red-600'>*</span>
                             </label>
                             <input
@@ -143,7 +149,7 @@ export const ItemProveedorForm = ({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <FaUser className="inline mr-2" size={14} />
+                                <IoPricetags className="inline mr-2" size={14} />
                                 Precio Unitario <span className='text-red-600'>*</span>
                             </label>
                             <input
@@ -158,11 +164,11 @@ export const ItemProveedorForm = ({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <FaUser className="inline mr-2" size={14} />
+                                <IoPricetags className="inline mr-2" size={14} />
                                 Precio con Iva <span className='text-red-600'>*</span>
                             </label>
                             <input
-                                type="text"
+                                type="number"
                                 name="precio_con_iva"
                                 value={formItem.precio_con_iva || ""}
                                 onChange={handleItemChange}
@@ -173,7 +179,7 @@ export const ItemProveedorForm = ({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <FaUser className="inline mr-2" size={14} />
+                                <MdEventAvailable  className="inline mr-2" size={14} />
                                 Disponible <span className='text-red-600'>*</span>
                             </label>
                             <select name="disponible" value={formItem.disponible || ""}
@@ -183,7 +189,7 @@ export const ItemProveedorForm = ({
                                 }`}>
                                 <option value="">Selecciona una opcion...</option>
                                 <option value="1">Disponible</option>
-                                <option value="0">No disponible</option>
+                                <option value="2">No disponible</option>
                             </select>
                         </div>
 
@@ -208,13 +214,12 @@ export const ItemProveedorForm = ({
                             </select>
                         </div>
 
-                        <div>
+                        <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <FaUser className="inline mr-2" size={14} />
+                                <MdDescription  className="inline mr-2" size={14} />
                                 Descripcion
                             </label>
-                            <input
-                                type="text"
+                            <textarea
                                 name="descripcion"
                                 value={formItem.descripcion || ""}
                                 onChange={handleItemChange}

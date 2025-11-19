@@ -107,12 +107,17 @@ export const Proveedores = () => {
     if(error) return <p>Error al cargar proveedores</p>;
     if(!proveedores || proveedores.length === 0) return <p>No hay proveedores registradas</p>;
 
-    const handle = (id, name, deleteFunc) => {
+    const handle = async (id, name, deleteFunc) => {
         if (window.confirm(`¿Seguro que deseas eliminar ${name}?`)) {
-            deleteFunc(id);
+            try {
+                await deleteFunc(id);
+                eventToast(`${name} eliminado correctamente`, "error");
+            } catch (e) {
+                eventToast(`Error eliminando ${name}`, "warning");
+                console.error(e);
+            }
         }
-        eventToast(`${name} eliminado correctamente`, "success");
-    }
+    };
 
     const filteredItems = itemProveedores.filter(item =>
         item.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -154,7 +159,7 @@ export const Proveedores = () => {
                         </button>
                         <button
                             onClick={() => setShowCreateProveedor(true)}
-                            className="bg-blue-500 cursor-pointer hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                            className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                         >
                             <FaPlus size={16} />
                             Nuevo Proveedor
@@ -255,11 +260,11 @@ export const Proveedores = () => {
 
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             <div className="flex items-center gap-2">
-                                                <FaUserTag />
+                                                <FaUserTag className="text-gray-400" />
                                                 {proveedor.nombre_encargado}
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <FaVoicemail />
+                                                <FaVoicemail className="text-gray-400"/>
                                                 {proveedor.email}
                                             </div>
                                         </td>
@@ -324,8 +329,8 @@ export const Proveedores = () => {
                                                                     <th className="text-left py-2">Código</th>
                                                                     <th className="text-left py-2">Nombre</th>
                                                                     <th className="text-left py-2">Tipo</th>
-                                                                    <th className="text-left py-2 pl-8">Precio</th>
-                                                                    <th className="text-left py-2">Precio + IVA</th>
+                                                                    <th className="text-center py-2">Precio</th>
+                                                                    <th className="text-center py-2">Precio + IVA</th>
                                                                     <th className="text-center py-2">Acciones</th>
                                                                 </tr>
                                                             </thead>
@@ -347,11 +352,11 @@ export const Proveedores = () => {
                                                                                     <FaBox className="text-green-500" /> {item.nombre}
                                                                                 </td>
                                                                                 <td className="py-2 uppercase">{item.tipo}</td>
-                                                                                <td className="py-2 text-left">
-                                                                                    {item.precio_unitario || 0}/{item.unidad_empaque}
+                                                                                <td className="py-2 text-center">
+                                                                                    {formatoPesoColombiano(item.precio_unitario)} / {item.unidad_empaque}
                                                                                 </td>
-                                                                                <td className="py-2 text-left">
-                                                                                    {item.precio_con_iva}
+                                                                                <td className="py-2 text-center">
+                                                                                    {formatoPesoColombiano(item.precio_con_iva)}
                                                                                 </td>
                                                                                 <td className="py-2 gap-2 uppercase">
                                                                                     <div className="flex justify-center gap-2">

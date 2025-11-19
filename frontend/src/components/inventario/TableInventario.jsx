@@ -2,12 +2,12 @@
 import { FaTrash, FaEdit } from "react-icons/fa";
 import { formatoPesoColombiano } from "../../utils/formatters";
 
-export const Table = ({ products = [], isLoading = false, error = null }) => {
+export const Table = ({ items = [], isLoadingItems, errorItems = null, refreshItems }) => {
 
-    const getNombre = (item) => item.nombre_item_general || item.nombre || '-';
-    const getCodigo = (item) => item.codigo_item_general || item.codigo || '-';
-    const getTipo = (item) => (item.nombre_tipo || item.tipo || '-').toUpperCase();
-    const getCostoUnitario = (item) => item.costo_unitario || '-';
+    const getNombre = (item) => item?.instalaciones?.nombre_item_general || item.nombre || '-';
+    const getCodigo = (item) => item?.instalaciones?.codigo_item_general || item.codigo || '-';
+    const getTipo = (item) => (item?.instalaciones?.nombre_tipo || item.tipo || '-').toUpperCase();
+    const getCostoUnitario = (item) => item?.instalaciones?.costo_unitario || '-';
 
     const handleType = (item) => {
         const tipo = getTipo(item);
@@ -23,26 +23,10 @@ export const Table = ({ products = [], isLoading = false, error = null }) => {
         }
     }
 
-    // const handleDeleteClick = (producto) => {
-    //     setItemToDelete(producto);
-    //     setShowConfirmModal(true);
-    // };
+    if (isLoadingItems) return <div>Cargando...</div>;
+    if (errorItems) return <div>Error: {errorItems.message || errorItems}</div>;
 
-    // const handleConfirmDelete = () => {
-    //     if (itemToDelete && onDelete) {
-    //         onDelete(itemToDelete.id);
-    //     }
-    //     setShowConfirmModal(false);
-    //     setItemToDelete(null);
-    // };
-
-    // const handleCancelDelete = () => {
-    //     setShowConfirmModal(false);
-    //     setItemToDelete(null);
-    // };
-
-    if (isLoading) return <div>Cargando...</div>;
-    if (error) return <div>Error: {error.message || error}</div>;
+    console.log("Items en TableInventario:", items);
 
     return (
         <>
@@ -60,7 +44,7 @@ export const Table = ({ products = [], isLoading = false, error = null }) => {
                             </tr>
                         </thead>
                         <tbody className="bg-gray-100">
-                            {products.map((producto, index) => (
+                            {items.map((producto, index) => (
                                 <tr 
                                     key={producto.id || producto.codigo_item_general || producto.codigo || index} 
                                     className={`border-b border-gray-300 hover:bg-gray-200 transition-colors ${

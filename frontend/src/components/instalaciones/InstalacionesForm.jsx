@@ -1,6 +1,16 @@
 import { FaBuilding } from "react-icons/fa";
 
-export default function InstalacionesForm({ onSubmit, handleChange, setShowCreate, create, isCreating, createError, empresas, form, setForm }) {
+export default function InstalacionesForm({ 
+  onSubmit, 
+  eventToast, 
+  handleChange, 
+  setShowCreate, 
+  create, 
+  isCreating, 
+  createError, 
+  empresas, 
+  form, 
+  setForm }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -16,6 +26,7 @@ export default function InstalacionesForm({ onSubmit, handleChange, setShowCreat
           telefono: '',
           id_empresa: '',
         });
+        eventToast("Sede creada correctamente", "success");
       }
     });
   };
@@ -23,7 +34,7 @@ export default function InstalacionesForm({ onSubmit, handleChange, setShowCreat
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
-    onClick={() => setShowCreate(false)}>
+      onClick={() => setShowCreate(false)}>
       <form onClick={e => e.stopPropagation()} onSubmit={handleSubmit} className="w-110 mx-auto bg-white p-6 rounded-xl shadow space-y-4">
       <div className="flex items-center space-x-2 mb-4">
         <FaBuilding className="h-6 w-6 text-blue-500" />
@@ -106,8 +117,8 @@ export default function InstalacionesForm({ onSubmit, handleChange, setShowCreat
       </div>
       <button
         type="submit"
-        disabled={!form.nombre && !form.descripcion && !form.ciudad && !form.direccion && !form.telefono && !form.id_empresa}
-        className="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-md shadow hover:bg-blue-700 transition"
+        disabled={!form.nombre || !form.ciudad || !form.direccion || !form.id_empresa}
+        className="w-full py-2 disabled:opacity-50 cursor-pointer px-4 bg-blue-600 text-white font-semibold rounded-md shadow hover:bg-blue-700 transition"
       >
         {isCreating ? "Guardando..." : "Crear Instalación"}
       </button>

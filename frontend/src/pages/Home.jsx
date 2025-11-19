@@ -7,11 +7,22 @@ import { IoCloseSharp } from "react-icons/io5";
 import Pincalogo from "../assets/pincalogo.png";
 import { NavLink } from "react-router-dom";
 import { useEmpresa } from "../hooks/useEmpresa";
+import { useToast } from "../hooks/useToast";
+import { Toast } from "../components/Toast";
 
 
 export const Home = () => {
 
     const { data: empresas } = useEmpresa();
+
+    const {
+        toastVisible,
+        toastMessage,
+        toastType,
+
+        eventToast,
+        setToastVisible
+    } = useToast();
 
     const [form, setForm] = useState({
         nombre: '',
@@ -53,9 +64,10 @@ export const Home = () => {
     if (error) return <p>Error al cargar instalaciones</p>;
     if (!instalaciones || instalaciones.length === 0) return <p>No hay instalaciones registradas</p>;
 
-    const handle = (id) => {
-        if (window.confirm("¿Seguro que deseas eliminar esta instalación?")) {
-            remove(id);
+    const handle = (id, name, deleteFunc) => {
+        if (window.confirm(`¿Seguro que deseas eliminar ${name}?`)) {
+            eventToast(`${name} eliminado correctamente`, "error");
+            deleteFunc(id);
         }
     }
 
@@ -70,7 +82,7 @@ export const Home = () => {
                 </div>
                 <button
                     onClick={() => setShowCreate(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                    className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                     <FaBuilding size={14} /> Nueva Sede
                 </button>
@@ -84,22 +96,22 @@ export const Home = () => {
                         type="button"
                     >
                         <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
-                            <FaBuilding className="text-blue-400" />
+                            <FaBuilding className="text-gray-400"/>
                             {instalacion.nombre.toUpperCase()}
                             <button
                                 type="button"
                                 onClick={e => {
-                                    e.preventDefault()
+                                    e.preventDefault(); 
                                     e.stopPropagation()
-                                    handle(instalacion.id_instalaciones)
+                                    handle(instalacion.id_instalaciones, instalacion.nombre, remove)
                                 }}
-                                className="ml-auto cursor-pointer p-1 rounded hover:bg-red-100 transition-colors absolute top-2 right-2"
+                                className="p-1.5 text-white hover:bg-red-200 rounded-md transition-colors cursor-pointer absolute top-2 right-2"
                                 disabled={isRemoving}
                             >
-                            <MdDelete className="text-red-500" size={20}/>
+                            <MdDelete className="text-red-500" size={25}/>
                             </button>
                             <button
-                                className="ml-auto p-1 rounded hover:bg-blue-100 transition-colors absolute top-2 right-8.5"
+                                className="p-1.5 text-white hover:bg-blue-200 rounded-md transition-colors cursor-pointer absolute top-2 right-10"
                                 title="Editar instalación"
                                 type="button"
                                 onClick={e => {
@@ -109,28 +121,37 @@ export const Home = () => {
                                     setInstalacionEdit(instalacion);
                                 }}
                             >
-                                <FaEdit className="text-blue-500" size={20}/>
+                                <FaEdit className="text-blue-500" size={25}/>
                             </button>
                         </h3>
                         <p className="text-sm text-gray-600 mb-2 flex items-center gap-2">
                             <FaBoxOpen className="text-gray-400" />
                             {instalacion.descripcion}
                         </p>
-                        <div className="text-xs text-gray-500 mb-1 flex items-center gap-2">
-                            <FaCity className="text-purple-400" />
+                        <div className="text-sm text-gray-500 mb-1 flex items-center gap-2">
+                            <FaCity className="text-gray-400" />
                             <strong>Ciudad:</strong> {instalacion.ciudad.toUpperCase()}
                         </div>
-                        <div className="text-xs text-gray-500 mb-1 flex items-center gap-2">
-                            <FaMapMarkerAlt className="text-red-400" />
+                        <div className="text-sm text-gray-500 mb-1 flex items-center gap-2">
+                            <FaMapMarkerAlt className="text-gray-400" />
                             <strong>Dirección:</strong> {instalacion.direccion}
                         </div>
-                        <div className="text-xs text-gray-500 mb-1 flex items-center gap-2">
-                            <FaPhoneAlt className="text-green-400" />
+                        <div className="text-sm text-gray-500 mb-1 flex items-center gap-2">
+                            <FaPhoneAlt className="text-gray-400" />
                             <strong>Teléfono:</strong> {instalacion.telefono}
                         </div>
                     </NavLink>
                 ))}
             </div>
+
+            {/* Toast */}           
+            {toastVisible && (
+                <Toast
+                    message={toastMessage} 
+                    type={toastType}
+                    onClose={() => setToastVisible(false)}
+                />
+            )}
 
             {/* Modal de edición */}
             {showEdit && (
@@ -222,8 +243,8 @@ export const Home = () => {
                             </div>
                             <button
                                 type="submit"
-                                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors font-semibold"
-                                disabled={isUpdating}
+                                className="w-full disabled:opacity-50 cursor-pointer bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors font-semibold"
+                                disabled={isUpdating || !instalacionEdit.id_empresa}
                             >
                                 {isUpdating ? "Guardando..." : "Guardar Cambios"}
                             </button>
@@ -241,8 +262,8 @@ export const Home = () => {
            {showCreate && (
             <InstalacionesForm
                 onSubmit={() => {
-                setShowCreate(false);
-                refreshData(); 
+                    setShowCreate(false);
+                    refreshData(); 
                 }}
                 setShowCreate={setShowCreate}
                 create={create}
@@ -252,6 +273,8 @@ export const Home = () => {
                 form={form}
                 setForm={setForm}
                 handleChange={handleChange}
+                eventToast={eventToast}
+                refreshData={refreshData}
             />
             )}
         </div>

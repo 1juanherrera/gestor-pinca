@@ -15,6 +15,15 @@ class BodegasController extends ResourceController
         return $this->respond($bodegas);
     }
 
+    public function bodega_inventario($id = null)
+    {
+        $bodega = $this->model->bodega_inventario($id);
+        if (!$bodega) {
+            return $this->failNotFound("Bodega con ID $id no encontrada.");
+        }
+        return $this->respond($bodega);
+    }
+
     public function show($id = null)
     {
         $bodega = $this->model->get($id, 'bodegas');

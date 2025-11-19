@@ -1,6 +1,15 @@
 import { FaTimes, FaBuilding, FaUser, FaPhone, FaEnvelope, FaMapMarkerAlt, FaIdCard } from 'react-icons/fa';
 
-export const ProveedorForm = ({ onSubmit, eventToast, handleChange, setShowCreate, create, isCreating, createError, proveedor, form, setForm }) => {
+export const ProveedorForm = ({ 
+    onSubmit, 
+    eventToast, 
+    handleChange, 
+    setShowCreate, 
+    create, 
+    isCreating, 
+    createError, 
+    form, 
+    setForm }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -34,10 +43,10 @@ export const ProveedorForm = ({ onSubmit, eventToast, handleChange, setShowCreat
                         </div>
                         <div>
                             <h2 className="text-xl font-semibold text-gray-900">
-                                {proveedor ? 'Editar Proveedor' : 'Nuevo Proveedor'}
+                                 Nuevo Proveedor
                             </h2>
                             <p className="text-sm text-gray-600">
-                                {proveedor ? 'Modifica la información del proveedor' : 'Ingresa los datos del nuevo proveedor'}
+                                Ingresa los datos del nuevo proveedor
                             </p>
                         </div>
                     </div>
@@ -72,7 +81,7 @@ export const ProveedorForm = ({ onSubmit, eventToast, handleChange, setShowCreat
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                                     createError ? 'border-red-300' : 'border-gray-300'
                                 }`}
-                                placeholder="Ej: Químicos Industriales S.A.S"
+                                
                             />
                             {createError && (
                                 <p className="text-red-500 text-xs mt-1">{createError.message}</p>
@@ -91,7 +100,7 @@ export const ProveedorForm = ({ onSubmit, eventToast, handleChange, setShowCreat
                                 value={form.nombre_encargado}
                                 onChange={handleChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Ej: Carlos Rodríguez"
+                                
                             />
                         </div>
 
@@ -107,7 +116,7 @@ export const ProveedorForm = ({ onSubmit, eventToast, handleChange, setShowCreat
                                 value={form.numero_documento}
                                 onChange={handleChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Ej: 900123456-7"
+                                
                             />
                         </div>
 
@@ -125,7 +134,7 @@ export const ProveedorForm = ({ onSubmit, eventToast, handleChange, setShowCreat
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                                     createError ? 'border-red-300' : 'border-gray-300'
                                 }`}
-                                placeholder="Ej: +57 1 234-5678"
+                                
                             />
                             {createError && (
                                 <p className="text-red-500 text-xs mt-1">{createError.message}</p>
@@ -146,7 +155,7 @@ export const ProveedorForm = ({ onSubmit, eventToast, handleChange, setShowCreat
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                                     createError ? 'border-red-300' : 'border-gray-300'
                                 }`}
-                                placeholder="Ej: ventas@empresa.com"
+                                
                             />
                             {createError && (
                                 <p className="text-red-500 text-xs mt-1">{createError.message}</p>
@@ -165,7 +174,7 @@ export const ProveedorForm = ({ onSubmit, eventToast, handleChange, setShowCreat
                                 onChange={handleChange}
                                 rows="3"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Ej: Calle 45 #12-34, Zona Industrial, Bogotá D.C."
+                                
                             />
                         </div>
                     </div>

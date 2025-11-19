@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 15-11-2025 a las 16:43:06
+-- Tiempo de generación: 19-11-2025 a las 22:55:16
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -41,9 +41,9 @@ CREATE TABLE `bodegas` (
 
 INSERT INTO `bodegas` (`id_bodegas`, `nombre`, `descripcion`, `estado`, `instalaciones_id`) VALUES
 (1, 'Bodega Santa Camila', 'BODEGA INSUMOS, MATERIAS PRIMAS Y PRODUCTOS', 1, 1),
-(2, 'Bodega Villa Olimpica', 'Instalación de acopio y despacho situada en la zona de Villa Olímpica, ideal para operaciones urbanas gracias a su cercanía con áreas residenciales y comerciales.', 1, 2),
-(3, 'Bodega Juan Mina', 'Punto estratégico en la Vía Cordialidad, orientado al manejo de inventarios y distribución regional, con conexiones hacia rutas intermunicipales.', 1, 3),
-(8, 'Bodega san juan', 'BODEGA INSUMOS Y MATERIAS PRIMAS', 1, 1);
+(2, 'Villa Olimpica', 'Instalación de acopio y despacho situada en la zona de Villa Olímpica, ideal para operaciones urbanas gracias a su cercanía con áreas residenciales y comerciales.', 1, 2),
+(3, 'Juan Mina', 'Punto estratégico en la Vía Cordialidad, orientado al manejo de inventarios y distribución regional, con conexiones hacia rutas intermunicipales.', 1, 3),
+(8, 'San Juan', 'BODEGA INSUMOS Y MATERIAS PRIMAS', 1, 1);
 
 -- --------------------------------------------------------
 
@@ -80,7 +80,7 @@ CREATE TABLE `clientes` (
 
 INSERT INTO `clientes` (`id_clientes`, `nombre_encargado`, `nombre_empresa`, `numero_documento`, `direccion`, `telefono`, `email`, `tipo`, `estado`) VALUES
 (1, 'Carlos Mendoza', 'Distribuidora Andina S.A.S', 900123456, 'Calle 45 #32-10, Barranquilla', 3014567890, 'c.mendoza@andina.com', 2, 1),
-(2, 'Juliana Pérez', 'Soluciones del Caribe Ltda', 801987654, 'Carrera 21 #55-22, Cartagena', 3157894321, 'juliana.perez@caribe.com', 1, 1),
+(2, 'Juliana Pérez', 'Soluciones del Caribe Ltda', 801987654, 'Carrera 21 #55-22, Cartagena', 3157894321, 'juliana.perez@caribe.com', 1, 2),
 (3, 'Mauricio Torres', 'Pinturas Torres & Cía', 1023456789, 'Av. Murillo #12-80, Barranquilla', 3001122334, 'm.torres@ptorres.com', 2, 1);
 
 -- --------------------------------------------------------
@@ -280,16 +280,24 @@ INSERT INTO `empresa` (`id_empresa`, `nit`, `razon_social`, `descripcion`, `ciud
 
 CREATE TABLE `facturas` (
   `id_facturas` int(11) NOT NULL,
-  `numero` varchar(6) DEFAULT NULL,
+  `numero` varchar(10) DEFAULT NULL,
   `cliente_id` int(11) DEFAULT NULL,
-  `fecha_emision` varchar(0) DEFAULT NULL,
+  `fecha_emision` date DEFAULT NULL,
   `total` decimal(10,2) DEFAULT NULL,
-  `estado` varchar(9) DEFAULT NULL,
+  `estado` varchar(9) DEFAULT NULL COMMENT 'Pendiente, Pagada',
   `subtotal` decimal(10,2) DEFAULT NULL,
   `impuestos` decimal(10,2) DEFAULT NULL,
   `retencion` decimal(10,2) DEFAULT NULL,
   `movimiento_inventario_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
+
+--
+-- Volcado de datos para la tabla `facturas`
+--
+
+INSERT INTO `facturas` (`id_facturas`, `numero`, `cliente_id`, `fecha_emision`, `total`, `estado`, `subtotal`, `impuestos`, `retencion`, `movimiento_inventario_id`) VALUES
+(1, 'FAC-20', 1, '2025-11-12', 350000.00, 'Pendiente', 300000.00, 57000.00, 7000.00, 6),
+(2, '89211291', 2, '2025-01-12', 750000.00, 'Pagada', 300000.00, 57000.00, 7000.00, 6);
 
 -- --------------------------------------------------------
 
@@ -515,7 +523,7 @@ CREATE TABLE `item_general` (
 --
 
 INSERT INTO `item_general` (`id_item_general`, `nombre`, `codigo`, `tipo`, `categoria_id`, `viscosidad`, `p_g`, `color`, `brillo_60`, `secado`, `cubrimiento`, `molienda`, `ph`, `poder_tintoreo`, `volumen`, `cantidad`, `unidad_id`, `costo_produccion`) VALUES
-(1, 'BARNIZ TRANSPARENTE BRILLANTE', 'BAR001', 0, 4, '95-100 KU', '3,4+/-0,05 Kg', 'STD', '>=95', '12 HORAS', NULL, NULL, NULL, NULL, '370.0', NULL, NULL, 0.00),
+(1, 'BARNIZ TRANSPARENTE BRILLANTE', 'BAR001', 0, 4, '95-100 KU', '3,4+/-0,05 Kg', 'STD', '>=95', '12 HORAS', NULL, NULL, NULL, NULL, '370.0', NULL, 1, 0.00),
 (2, 'ESMALTE BLANCO', 'ESM002', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '12 HORAS', '100+/-5 %', '7.5 H', NULL, NULL, '719.0', NULL, NULL, 7000.00),
 (3, 'ESMALTE CAOBA', 'ESM003', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '6 HORAS', '100+/-5%', '7.5 H', NULL, NULL, '398.0', NULL, NULL, 11000.00),
 (4, 'ESMALTE NEGRO MATE', 'ESM004', 0, 1, '105-110 KU', '3,9+/-0,05 Kg', NULL, '<=15', '12 HORAS', '100+/-5%', '6 H', NULL, NULL, '440.0', NULL, NULL, 34050.00),
@@ -975,9 +983,9 @@ CREATE TABLE `item_proveedor` (
   `codigo` varchar(10) DEFAULT NULL,
   `tipo` varchar(13) DEFAULT NULL,
   `unidad_empaque` varchar(13) DEFAULT NULL,
-  `precio_unitario` mediumint(9) DEFAULT NULL,
-  `precio_con_iva` decimal(7,1) DEFAULT NULL,
-  `disponible` tinyint(4) DEFAULT NULL,
+  `precio_unitario` decimal(10,2) DEFAULT NULL,
+  `precio_con_iva` decimal(10,2) DEFAULT NULL,
+  `disponible` tinyint(4) DEFAULT NULL COMMENT '1 Disponible 2 No disponible',
   `descripcion` varchar(55) DEFAULT NULL,
   `proveedor_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
@@ -987,11 +995,11 @@ CREATE TABLE `item_proveedor` (
 --
 
 INSERT INTO `item_proveedor` (`id_item_proveedor`, `nombre`, `codigo`, `tipo`, `unidad_empaque`, `precio_unitario`, `precio_con_iva`, `disponible`, `descripcion`, `proveedor_id`) VALUES
-(6, 'Tubería PVC 1/2\" x 6m', 'PVC-12-6', 'Fontanería', 'Kg', 11000, 13090.0, 0, 'Tubería de PVC para conducción de agua fría', 2),
-(7, 'Codo PVC 1/2\" 90°', 'CDO-12-90', 'Fontanería', 'Kg', 0, 0.0, 1, 'Codo de PVC para unión de tuberías en ángulo recto', 2),
-(8, 'Brocha 3 Pulgadas Profesional', 'BRC-3P', 'Herramientas', 'Kg', 9500, 11305.0, 1, 'Brocha de cerdas sintéticas ideal para pintura acrílica', 2),
-(9, 'Rodillo de Lana 9\"', 'RDL-9L', 'Herramientas', 'Kg', 11500, 13685.0, 1, 'Rodillo de lana para pintura en superficies rugosas', 2),
-(10, 'Lija de Agua 220', 'LJ-220', 'Abrasivos', 'Kg', 5500, 6545.0, 1, 'Lija fina para acabado de superficies pintadas', 2);
+(6, 'Tubería PVC 1/2\" x 6m', 'PVC-12-6', 'Fontanería', 'Kg', 0.00, 0.00, 1, 'Tubería de PVC para conducción de agua fría', 2),
+(7, 'Codo PVC 1/2\" 90°', 'CDO-12-90', 'Fontanería', 'Kg', 2000.00, 1002.00, 1, 'Codo de PVC para unión de tuberías en ángulo recto', 2),
+(8, 'Brocha 3 Pulgadas Profesional', 'BRC-3P', 'Herramientas ', 'Kg', 200.00, 500.00, 1, 'Brocha de cerdas sintéticas ideal para pintura acrílica', 2),
+(9, 'Rodillo de Lana 9\"', 'RDL-9L', 'Herramientas', 'Kg', 0.00, 0.00, 1, 'Rodillo de lana para pintura en superficies rugosas', 2),
+(10, 'Lija de Agua 220', 'LJ-220', 'Abrasivos', 'Kg', 0.00, 0.00, 1, 'Lija fina para acabado de superficies pintadas', 2);
 
 -- --------------------------------------------------------
 
@@ -1001,12 +1009,19 @@ INSERT INTO `item_proveedor` (`id_item_proveedor`, `nombre`, `codigo`, `tipo`, `
 
 CREATE TABLE `movimiento_inventario` (
   `id_movimiento_inventario` int(11) NOT NULL,
-  `tipo_movimiento` varchar(6) DEFAULT NULL,
+  `tipo_movimiento` varchar(30) DEFAULT NULL,
   `cantidad` decimal(10,2) DEFAULT NULL,
-  `fecha_movimiento` varchar(0) DEFAULT NULL,
-  `descripcion` varchar(32) DEFAULT NULL,
-  `referencia_tipo` varchar(10) DEFAULT NULL
+  `fecha_movimiento` date DEFAULT NULL,
+  `descripcion` varchar(100) DEFAULT NULL,
+  `referencia_tipo` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
+
+--
+-- Volcado de datos para la tabla `movimiento_inventario`
+--
+
+INSERT INTO `movimiento_inventario` (`id_movimiento_inventario`, `tipo_movimiento`, `cantidad`, `fecha_movimiento`, `descripcion`, `referencia_tipo`) VALUES
+(6, 'Entrada', 120.00, '2025-01-10', 'Compra de materiales para producción de pintura', 'COMPRA-2025-001');
 
 -- --------------------------------------------------------
 
@@ -1016,7 +1031,7 @@ CREATE TABLE `movimiento_inventario` (
 
 CREATE TABLE `pagos_cliente` (
   `id_pagos_cliente` int(11) NOT NULL,
-  `fecha_pago` varchar(0) DEFAULT NULL,
+  `fecha_pago` date DEFAULT NULL,
   `monto` decimal(7,1) DEFAULT NULL,
   `metodo_pago` varchar(8) DEFAULT NULL,
   `observaciones` varchar(0) DEFAULT NULL,
@@ -1089,6 +1104,20 @@ CREATE TABLE `unidad` (
   `descripcion` varchar(500) DEFAULT NULL,
   `estados` tinyint(4) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+
+--
+-- Volcado de datos para la tabla `unidad`
+--
+
+INSERT INTO `unidad` (`id_unidad`, `nombre`, `descripcion`, `estados`) VALUES
+(1, 'TAMBOR', '', 1),
+(2, 'CUÑETE', '', 1),
+(3, 'GALON', '', 1),
+(4, '1/2 GALON', '', 1),
+(5, '1/4 GALON', '', 1),
+(6, '1/8 GALON', '', 1),
+(7, '1/16 GALON', '', 1),
+(8, '1/32 GALON', '', 1);
 
 --
 -- Índices para tablas volcadas
@@ -1253,7 +1282,7 @@ ALTER TABLE `unidad`
 -- AUTO_INCREMENT de la tabla `bodegas`
 --
 ALTER TABLE `bodegas`
-  MODIFY `id_bodegas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id_bodegas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT de la tabla `categoria`
@@ -1265,7 +1294,7 @@ ALTER TABLE `categoria`
 -- AUTO_INCREMENT de la tabla `clientes`
 --
 ALTER TABLE `clientes`
-  MODIFY `id_clientes` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_clientes` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT de la tabla `costos_item`
@@ -1295,7 +1324,7 @@ ALTER TABLE `empresa`
 -- AUTO_INCREMENT de la tabla `facturas`
 --
 ALTER TABLE `facturas`
-  MODIFY `id_facturas` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_facturas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `formulaciones`
@@ -1307,7 +1336,7 @@ ALTER TABLE `formulaciones`
 -- AUTO_INCREMENT de la tabla `instalaciones`
 --
 ALTER TABLE `instalaciones`
-  MODIFY `id_instalaciones` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_instalaciones` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT de la tabla `inventario`
@@ -1325,13 +1354,13 @@ ALTER TABLE `item_general`
 -- AUTO_INCREMENT de la tabla `item_proveedor`
 --
 ALTER TABLE `item_proveedor`
-  MODIFY `id_item_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `id_item_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT de la tabla `movimiento_inventario`
 --
 ALTER TABLE `movimiento_inventario`
-  MODIFY `id_movimiento_inventario` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_movimiento_inventario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `pagos_cliente`
@@ -1349,13 +1378,13 @@ ALTER TABLE `preparaciones`
 -- AUTO_INCREMENT de la tabla `proveedor`
 --
 ALTER TABLE `proveedor`
-  MODIFY `id_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT de la tabla `unidad`
 --
 ALTER TABLE `unidad`
-  MODIFY `id_unidad` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_unidad` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Restricciones para tablas volcadas

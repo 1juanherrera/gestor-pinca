@@ -3,6 +3,7 @@ import { IoWarningOutline } from "react-icons/io5";
 import { useEffect, useState } from "react";
 
 export const Toast = ({ message, type = "info", onClose }) => {
+    console.log("🔥 Toast:", message, type);
     const [animate, setAnimate] = useState(false);
 
     const colors = {
@@ -55,7 +56,7 @@ export const Toast = ({ message, type = "info", onClose }) => {
                 {type === "success" && <FaCheck className={`w-4 h-4 ${iconColor[type]}`} />}
                 {type === "error" && <FaRegWindowClose className={`w-4 h-4 ${iconColor[type]}`} />}
                 {type === "warning" && <IoWarningOutline className={`w-4 h-4 ${iconColor[type]}`} />}
-                {type === "info" && <IoWarningOutline className={`w-4 h-4 ${iconColor[type]}`} />}
+                {type === "info" && <FaInfoCircle  className={`w-4 h-4 ${iconColor[type]}`} />}
             </div>
 
             <p className="text-sm font-medium leading-tight">

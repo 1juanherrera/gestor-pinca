@@ -12,6 +12,7 @@ export default function BodegaForm({
   update,
   setForm,
   editingBodega,
+  eventToast,
   setEditingBodega }) {
 
   useEffect(() => {
@@ -35,6 +36,7 @@ export default function BodegaForm({
           onSubmit();
           setShowCreate(false);
           setEditingBodega(null);
+          eventToast(`${form.nombre} actualizada correctamente.`, "success");
         }
       });
     } else {
@@ -42,6 +44,7 @@ export default function BodegaForm({
         onSuccess: () => {
           onSubmit();
           setShowCreate(false);
+          eventToast(`${form.nombre} creada correctamente.`, "success");
         }
       });
     }

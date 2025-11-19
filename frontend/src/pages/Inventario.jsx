@@ -10,10 +10,10 @@ import { Table } from "../components/inventario/TableInventario";
 import { useState } from "react";
 
 export const Inventario = () => {
+    
     const { data, isLoading, error } = useItems();
     const [tipoFiltro, setTipoFiltro] = useState("todos");
 
-    // Filtrar productos según el tipo seleccionado
     const productosFiltrados = tipoFiltro === "todos"
         ? data
         : data.filter(item => (item.nombre_tipo || "").toLowerCase() === tipoFiltro);

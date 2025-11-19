@@ -1,4 +1,5 @@
 import { FaBox, FaEdit, FaTrash } from 'react-icons/fa';
+import { formatoPesoColombiano } from "../../utils/formatters";
 
 export const ItemProveedorTable = ({ itemProveedor, setFormItem, setEditingItem, setShowItemCreate, itemId, selected = false, handle, removeItem, onToggleSelect = () => {} }) => {
 
@@ -29,10 +30,10 @@ export const ItemProveedorTable = ({ itemProveedor, setFormItem, setEditingItem,
                 </div>
             </td>
             <td className="px-2 py-2 text-xs font-semibold text-left text-emerald-800 border border-gray-200 max-w-[110px] whitespace-nowrap overflow-hidden text-ellipsis">
-                <p className='ml-4'>{itemProveedor.precio_unitario}</p>
+                <p className='ml-4'>{formatoPesoColombiano(itemProveedor.precio_unitario)}</p>
             </td>
             <td className="px-2 py-2 text-xs font-semibold text-emerald-800 border border-gray-200 max-w-[110px] whitespace-nowrap overflow-hidden text-ellipsis text-left">
-                <p className='ml-4'>{itemProveedor.precio_con_iva}</p>
+                <p className='ml-4'>{formatoPesoColombiano(itemProveedor.precio_con_iva)}</p>
             </td>
             <td className="px-2 py-2 text-xs text-gray-900 text-center border border-gray-200 max-w-20 whitespace-nowrap overflow-hidden text-ellipsis">
                 <span className="truncate block uppercase">

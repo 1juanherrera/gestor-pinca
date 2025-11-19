@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { FaBoxOpen, FaCalculator, FaFileInvoice, FaUserTag, FaUserFriends, FaCompressAlt } from "react-icons/fa";
+import { FaBoxOpen, FaWarehouse , FaCalculator, FaFileInvoice, FaUserTag, FaUserFriends, FaCompressAlt } from "react-icons/fa";
 import { HiOutlineViewGridAdd } from "react-icons/hi";
 import { BsFileEarmarkBarGraphFill } from "react-icons/bs";
 import { IoMdExit } from "react-icons/io";
@@ -8,6 +8,11 @@ export const Sidebar = () => {
   return (
     <div className="w-3xs bg-neutral-600 text-white p-4 m-2 rounded-lg shadow-lg h-[97%] fixed">
       <ul className="mt-5 space-y-2">
+        <li className="w-full">
+          <NavLink
+            to="/"
+            className={({ isActive }) => `flex items-center gap-2 w-full p-3 rounded-xl cursor-pointer text-left ${ isActive ? 'bg-neutral-900' : 'hover:bg-neutral-900'}`}><FaWarehouse   fontSize={25}/>Sedes</NavLink>
+        </li> 
         <li className="w-full">
           <NavLink
             to="/inventario"

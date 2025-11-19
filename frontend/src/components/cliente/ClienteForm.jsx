@@ -218,6 +218,7 @@ export const ClienteForm = ({
                                 onChange={handleChange}
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${createError ? 'border-red-300' : 'border-gray-300'
                                     }`}>
+                                <option value="">Seleccione un estado</option>
                                 <option value="1">ACTIVO</option>
                                 <option value="2">INACTIVO</option>
                             </select>
@@ -235,6 +236,7 @@ export const ClienteForm = ({
                                 onChange={handleChange}
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${createError ? 'border-red-300' : 'border-gray-300'
                                     }`}>
+                                <option value="">Seleccione un tipo</option>
                                 <option value="2">NATURAL</option>
                                 <option value="1">EMPRESA</option>
                             </select>
@@ -242,7 +244,7 @@ export const ClienteForm = ({
                     </div>
                     <button
                         type="submit"
-                        disabled={!form.nombre_encargado || !form.estado || !form.tipo}
+                        disabled={!form.nombre_encargado || !form.nombre_empresa || !form.numero_documento || !form.direccion || !form.telefono || !form.email || isCreating || !form.tipo || !form.estado  }
                         className="disabled:opacity-50 w-full cursor-pointer mt-4 py-2 px-4 bg-blue-600 text-white font-semibold rounded-md shadow hover:bg-blue-700 transition"
                         >
                         {
