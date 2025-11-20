@@ -1,12 +1,25 @@
 -- NUEVAS FUNCIONALIDADES --
-agregar unidades de medida = TAMBOR, CUÑETE, GALON, 1/2 GALON, 1/4, 1/8, 1/16, 1/32
-AGREGAR BODEGAS, TIPO DE BODEGA-> BODEGA 1, BODEGA 2(CON NOMBRES), ETC
-BODEGAS INTERNAS QUE TENGAN SECCIONES, EJ: A1, A2, ETC Y LABORATORIO
 
 AGREGAR BUSCADOR DE PRODUCTOS DE PROOVEDOR PARA DIFERENCIAS Y COMPARA PRECIOS
 
 NUEVO MODULO -> PAGOSPENDIENTES, ESPECIFICACIONES DE FACTURAS Y DE PAGOS, AGREGAR ABONOS POR CLIENTES, REMISIONES, COTIZACIONES
 
 TAREAS PENDIENTES -> SEGUIR EN get_bodegas_by_instalacion, EXPORTAR EXCEL CostCalculator
+
+
+Campos recomendados para tu tabla de inventario ->
+
+Stock mínimo / punto de reorden	Para alertar cuando hay que volver a comprar o producir.
+Stock máximo	Control de almacenamiento y prevención de exceso.
+Costo unitario	Para cálculos de rentabilidad y costos de producción.
+Fecha de última actualización	Para seguimiento de movimientos recientes.
+Proveedor principal	Para agilizar pedidos.
+Estado (Activo/Inactivo)	Para ocultar productos sin eliminarlos.
+Código interno / SKU adicional	Útil en tu industria si hay referencia técnica o de fórmula.
+Categoría secundaria / sub-clasificación	Ej: pintura exterior vs interior, solventes, herramientas.
+IVA (%)	Para cálculo automático de precio con impuestos.
+Observaciones / notas	Ej: cambios de fórmula, versión del producto, lote especial.
+Fecha de ingreso / caducidad (si aplica)	Importante para materia prima química.
+Lote / Batch (si algún día haces trazabilidad)	Sobre todo si manejas producción tipo FIFO/FEFO.
 
 

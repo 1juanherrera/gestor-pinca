@@ -13,11 +13,6 @@ export const Sidebar = () => {
             to="/"
             className={({ isActive }) => `flex items-center gap-2 w-full p-3 rounded-xl cursor-pointer text-left ${ isActive ? 'bg-neutral-900' : 'hover:bg-neutral-900'}`}><FaWarehouse   fontSize={25}/>Sedes</NavLink>
         </li> 
-        <li className="w-full">
-          <NavLink
-            to="/inventario"
-            className={({ isActive }) => `flex items-center gap-2 w-full p-3 rounded-xl cursor-pointer text-left ${ isActive ? 'bg-neutral-900' : 'hover:bg-neutral-900'}`}><FaBoxOpen fontSize={25}/> Inventario</NavLink>
-        </li> 
         <li className="w-full"> 
           <NavLink
             to="/formulaciones"

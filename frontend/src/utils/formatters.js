@@ -58,3 +58,19 @@ export const stableItemId = (item = {}, providerPrefix = '') => {
   const name = (item.nombre || 'item').toString().replace(/\s+/g, '_');
   return `${providerPrefix ? providerPrefix + '-' : ''}${name}`;
 }
+
+export const validarEntero = (valor) => {
+  // Intenta convertir a número
+  const numero = Number(valor);
+
+  // Verifica si es realmente un número
+  if (isNaN(numero)) return valor; // Si no es número, lo deja como está
+
+  // Si es número entero, lo retorna como entero
+  if (Number.isInteger(numero)) {
+    return parseInt(numero);
+  }
+
+  // Si es decimal, lo deja igual
+  return valor;
+}

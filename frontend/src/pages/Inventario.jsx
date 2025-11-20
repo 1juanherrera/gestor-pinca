@@ -6,7 +6,7 @@ import { AiFillProduct, AiFillAppstore } from "react-icons/ai";
 import { LuAtom } from "react-icons/lu";
 import { FaBoxOpen } from "react-icons/fa";
 import { useItems } from '../hooks/useItems';
-import { Table } from "../components/inventario/TableInventario";
+import { TableInventario } from "../components/inventario/TableInventario";
 import { useState } from "react";
 
 export const Inventario = () => {
@@ -73,7 +73,6 @@ export const Inventario = () => {
                             transition-all duration-200 transform hover:scale-105
                             shadow-md hover:shadow-lg cursor-pointer flex items-center gap-2
                             bg-emerald-600 text-white hover:bg-emerald-700"
-                        onClick={() => setShowForm(true)}
                     >
                         <MdAddCircleOutline size={18} />
                         Añadir
@@ -105,7 +104,6 @@ export const Inventario = () => {
                     </h3>
                     <button
                         className="bg-emerald-600 text-white px-6 py-2 rounded-lg mt-2 hover:bg-emerald-700 transition-colors flex items-center gap-2"
-                        onClick={() => setShowForm && setShowForm(true)}
                     >
                         <MdAddCircleOutline size={20} />
                         Añadir {data[0]?.nombre_tipo ? data[0].nombre_tipo.toLowerCase() : 'ítem'}
@@ -114,7 +112,7 @@ export const Inventario = () => {
             )}
 
 
-                <Table 
+                <TableInventario 
                     products={productosFiltrados}
                     isLoading={isLoading}
                     error={error}

@@ -1,6 +1,6 @@
-import { FaWarehouse, FaBoxOpen, FaEdit, FaCity, FaMapMarkerAlt, FaPhone, FaPlus } from "react-icons/fa";
+import { FaWarehouse, FaBoxOpen, FaEdit, FaCity, FaMapMarkerAlt, FaPhone, FaPlus, FaLongArrowAltLeft } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
-import { NavLink, useParams } from "react-router-dom";
+import { NavLink, useParams, useNavigate } from "react-router-dom";
 import { useBodegas } from "../../hooks/useBodegas";
 import { useState } from "react";
 import BodegaForm from "./BodegaForm";
@@ -10,6 +10,7 @@ import { Toast } from "../Toast";
 export const BodegasInstalacion = () => {
 
   const { id } = useParams();
+  const navigate = useNavigate();
   const {
     data,
     create,
@@ -83,21 +84,31 @@ export const BodegasInstalacion = () => {
           <FaBoxOpen className="text-blue-500" size={20} />
           {instalacion?.nombre} ({bodegas.length}) 
         </h2>
-        <button
+          <div className="flex gap-2">
+            <button
+            onClick={() => {
+              setShowCreate(true);
+              setEditingBodega(null); 
+              setForm({
+                  nombre: '',
+                  descripcion: '',
+                  estado: '1',
+                  instalaciones_id: id,
+              });
+            }}
+            className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <FaPlus size={16} /> Agregar Nueva Bodega
+          </button>
+          <button 
           onClick={() => {
-            setShowCreate(true);
-            setEditingBodega(null); 
-            setForm({
-                nombre: '',
-                descripcion: '',
-                estado: '1',
-                instalaciones_id: id,
-            });
+            navigate(-1);
           }}
-          className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <FaPlus size={16} /> Agregar Nueva Bodega
-        </button>
+          className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors">
+            <FaLongArrowAltLeft className="w-4 h-4" />
+            Volver
+          </button>
+        </div>
       </div>
           
       {toastVisible && (
@@ -129,7 +140,7 @@ export const BodegasInstalacion = () => {
           bodegas.map((bodega, index) => (
             <div 
                 key={`${bodega.id_bodegas}-${index}`}
-                className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-t-4 border-blue-500 flex flex-col justify-between"
+                className={`${bodega.estado === "1" ? 'bg-white' : 'bg-gray-200'} p-5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-t-4 border-blue-500 flex flex-col justify-between`}
             >
               <div>
                 <div className="flex items-center justify-between mb-3">

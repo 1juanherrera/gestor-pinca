@@ -1,0 +1,33 @@
+{
+  "nombre": "Nombre del Producto o Materia Prima",
+  "codigo": "CÓDIGO-ÚNICO",
+  "tipo": 0,
+  "categoria_id": 1,
+  "viscosidad": "Dato Técnico",
+  "p_g": 85.0,
+  "color": "Color del Item",
+  "brillo_60": 90.0,
+  "secado": "Tiempo de Secado",
+  "cubrimiento": "Nivel de Cubrimiento",
+  "molienda": 7.5,
+  "ph": 7.0,
+  "poder_tintoreo": 95.0,
+  "volumen": 4.0,
+  "unidad_id": 1,
+  "costo_produccion": 15.50,
+  "cantidad": 100,
+  "bodegas_id": 1,
+  "costo_unitario": 20.75,
+  "formulaciones": [
+    {
+      "materia_prima_id": 10,
+      "cantidad": 0.5,
+      "unidad": "KG"
+    },
+    {
+      "materia_prima_id": 12,
+      "cantidad": 150,
+      "unidad": "GR"
+    }
+  ]
+}

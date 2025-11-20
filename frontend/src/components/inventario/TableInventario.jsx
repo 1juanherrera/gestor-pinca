@@ -1,32 +1,26 @@
-// import { useState } from "react";
 import { FaTrash, FaEdit } from "react-icons/fa";
-import { formatoPesoColombiano } from "../../utils/formatters";
+import { formatoPesoColombiano, validarEntero } from "../../utils/formatters";
 
-export const Table = ({ items = [], isLoadingItems, errorItems = null, refreshItems }) => {
+export const TableInventario = ({ items = [] }) => {
 
-    const getNombre = (item) => item?.instalaciones?.nombre_item_general || item.nombre || '-';
-    const getCodigo = (item) => item?.instalaciones?.codigo_item_general || item.codigo || '-';
-    const getTipo = (item) => (item?.instalaciones?.nombre_tipo || item.tipo || '-').toUpperCase();
-    const getCostoUnitario = (item) => item?.instalaciones?.costo_unitario || '-';
+    const getNombre = (item) => item?.nombre_item_general || item.nombre || '-';
+    const getCodigo = (item) => item?.codigo_item_general || item.codigo || '-';
+    const getTipo = (item) => (item?.nombre_tipo || item.tipo || '-').toUpperCase();
+    const getPrecio = (item) => item?.precio_venta || '-';
 
     const handleType = (item) => {
         const tipo = getTipo(item);
         switch (tipo) {
-            case 'PRODUCTO':
+            case '0':
                 return 'bg-blue-100 text-blue-700';
-            case 'MATERIA PRIMA':
+            case '1':
                 return 'bg-purple-100 text-purple-700';
-            case 'INSUMO':
+            case '2':
                 return 'bg-yellow-100 text-yellow-700';
             default:
                 return 'bg-gray-100 text-gray-700';
         }
     }
-
-    if (isLoadingItems) return <div>Cargando...</div>;
-    if (errorItems) return <div>Error: {errorItems.message || errorItems}</div>;
-
-    console.log("Items en TableInventario:", items);
 
     return (
         <>
@@ -35,25 +29,27 @@ export const Table = ({ items = [], isLoadingItems, errorItems = null, refreshIt
                     <table className="w-full">
                         <thead className="sticky top-0 bg-gray-700 text-white uppercase">
                             <tr>
-                                <th className="px-4 py-2 text-center text-xs font-medium w-15">ID</th>
+                                <th className="px-4 py-2 text-center text-xs font-medium w-15">#</th>
                                 <th className="px-4 py-2 text-center text-xs font-medium w-25">Codigo</th>
                                 <th className="px-4 py-2 text-left text-xs font-medium">Nombre</th>
+                                <th className="px-4 py-2 text-center text-xs font-medium w-32">Cantidad</th>
                                 <th className="px-4 py-2 text-center text-xs font-medium w-32">Tipo</th>
-                                <th className="px-4 py-2 text-center text-xs font-medium w-28">Costo Unit.</th>
+                                <th className="px-4 py-2 text-center text-xs font-medium w-32">Unidad</th>
+                                <th className="px-4 py-2 text-center text-xs font-medium w-28">Precio</th>
                                 <th className="px-4 py-2 text-center text-xs font-medium w-32">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="bg-gray-100">
                             {items.map((producto, index) => (
                                 <tr 
-                                    key={producto.id || producto.codigo_item_general || producto.codigo || index} 
+                                    key={index} 
                                     className={`border-b border-gray-300 hover:bg-gray-200 transition-colors ${
                                         index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                                     }`}
                                 >
                                     <td className="p-1 text-center border border-gray-200">
                                         <span className="text-xs font-medium text-gray-900">
-                                            {producto.id_item_general || '-'}
+                                            {index + 1 || '-'}
                                         </span>
                                     </td>
                                     <td className="p-1 text-center border border-gray-200">
@@ -67,15 +63,30 @@ export const Table = ({ items = [], isLoadingItems, errorItems = null, refreshIt
                                         </span>
                                     </td>
                                     <td className="p-1 text-center border border-gray-200">
-                                        <span className={`px-3 py-1 block text-xs font-medium rounded-md ${handleType(producto)}`}>
-                                            {getTipo(producto)}
+                                        <span className="text-xs font-medium text-gray-900">
+                                            {validarEntero(producto.cantidad)}
                                         </span>
                                     </td>
-                                        <td className="p-1 text-left border border-gray-200">
-                                            <span className="text-xs font-semibold text-emerald-800 pl-7">
-                                                {formatoPesoColombiano(getCostoUnitario(producto))}
-                                            </span>
-                                        </td>
+                                    <td className="p-1 text-center border border-gray-200">
+                                        <span className={`px-3 py-1 block text-xs font-medium rounded-md ${handleType(producto)}`}>
+                                            {
+                                                getTipo(producto) == '0' ? 
+                                                'PRODUCTO' : getTipo(producto) == '1' ? 
+                                                'MATERIA PRIMA' : getTipo(producto) == '2' ? 
+                                                'INSUMO' : getTipo(producto)
+                                            }
+                                        </span>
+                                    </td>
+                                    <td className="p-1 text-center border border-gray-200">
+                                        <span className="text-xs font-medium text-gray-900">
+                                            {producto.unidad || '-'}
+                                        </span>
+                                    </td>
+                                    <td className="p-1 text-left border border-gray-200">
+                                        <span className="text-xs font-semibold text-emerald-800 pl-6">
+                                            {formatoPesoColombiano(getPrecio(producto))}
+                                        </span>
+                                    </td>
                                     <td className="p-1 py-1 border border-gray-200">
                                         <div className="flex justify-center gap-2">
                                                 <button 
@@ -98,41 +109,6 @@ export const Table = ({ items = [], isLoadingItems, errorItems = null, refreshIt
                     </table>
                 </div>
             </div>
-
-            {/* Modal de confirmación */}
-            {/* {showConfirmModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-                        <div className="p-6">
-                            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
-                                <FaTrash className="w-6 h-6 text-red-600" />
-                            </div>
-                            <h3 className="text-lg font-medium text-gray-900 text-center mb-2">
-                                Confirmar eliminación
-                            </h3>
-                            <p className="text-sm text-gray-500 text-center mb-6">
-                                ¿Estás seguro de que quieres eliminar <strong>"{itemToDelete?.nombre}"</strong>?
-                                <br />
-                                <span className="text-red-600">Esta acción no se puede deshacer.</span>
-                            </p>
-                            <div className="flex gap-4">
-                                <button
-                                    onClick={handleCancelDelete}
-                                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={handleConfirmDelete}
-                                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                >
-                                    Eliminar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )} */}
         </>
-    );
+    )
 }

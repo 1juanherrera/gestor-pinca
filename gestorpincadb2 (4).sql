@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 19-11-2025 a las 22:55:16
+-- Tiempo de generación: 20-11-2025 a las 22:57:08
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -40,10 +40,12 @@ CREATE TABLE `bodegas` (
 --
 
 INSERT INTO `bodegas` (`id_bodegas`, `nombre`, `descripcion`, `estado`, `instalaciones_id`) VALUES
-(1, 'Bodega Santa Camila', 'BODEGA INSUMOS, MATERIAS PRIMAS Y PRODUCTOS', 1, 1),
+(1, 'Bodega principal', 'BODEGA INSUMOS, MATERIAS PRIMAS Y PRODUCTOS', 1, 1),
 (2, 'Villa Olimpica', 'Instalación de acopio y despacho situada en la zona de Villa Olímpica, ideal para operaciones urbanas gracias a su cercanía con áreas residenciales y comerciales.', 1, 2),
 (3, 'Juan Mina', 'Punto estratégico en la Vía Cordialidad, orientado al manejo de inventarios y distribución regional, con conexiones hacia rutas intermunicipales.', 1, 3),
-(8, 'San Juan', 'BODEGA INSUMOS Y MATERIAS PRIMAS', 1, 1);
+(8, 'Laboratorio', 'Área de bodega con acondicionamiento tipo laboratorio', 1, 1),
+(15, 'Centro de insumos', 'Área destinada al almacenamiento y distribución de insumos.', 1, 1),
+(16, 'Depósito especializado', 'Espacio seguro para almacenamiento bajo condiciones controladas.', 1, 1);
 
 -- --------------------------------------------------------
 
@@ -55,6 +57,16 @@ CREATE TABLE `categoria` (
   `id_categoria` int(11) NOT NULL,
   `nombre` varchar(13) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
+
+--
+-- Volcado de datos para la tabla `categoria`
+--
+
+INSERT INTO `categoria` (`id_categoria`, `nombre`) VALUES
+(1, 'ESMALTE'),
+(2, 'PASTA'),
+(3, 'ANTICORROSIVO'),
+(4, 'BARNIZ');
 
 -- --------------------------------------------------------
 
@@ -115,7 +127,7 @@ CREATE TABLE `costos_item` (
 --
 
 INSERT INTO `costos_item` (`id`, `item_general_id`, `costo_unitario`, `costo_mp_galon`, `periodo`, `metodo_calculo`, `fecha_calculo`, `costo_mp_kg`, `envase`, `etiqueta`, `bandeja`, `plastico`, `costo_total`, `volumen`, `precio_venta`, `cantidad_total`, `costo_mod`, `estado`) VALUES
-(1, 1, 0, 0, '2025-06', 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 0, 370, 0, 0, 600, NULL),
+(1, 1, 0, 0, '2025-06', 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 0, 370, 2000, 0, 600, NULL),
 (2, 31, 7000, 0, '2025-06', 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
 (3, 32, 11000, 0, '2025-06', 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
 (4, 33, 34050, 0, '2025-06', 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
@@ -165,8 +177,8 @@ INSERT INTO `costos_item` (`id`, `item_general_id`, `costo_unitario`, `costo_mp_
 (55, 84, 22700, 0, '2025-06', 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
 (56, 85, 22700, 0, '2025-06', 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
 (57, 86, 11000, 0, '2025-06', 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(58, 2, 0, 0, '2025-06', 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 0, 719, 0, 0, 600, NULL),
-(59, 3, 0, 0, '2025-06', 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 0, 398, 0, 0, 600, NULL),
+(58, 2, 0, 0, '2025-06', 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 0, 719, 20000, 0, 600, NULL),
+(59, 3, 0, 0, '2025-06', 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 0, 398, 170000, 0, 600, NULL),
 (60, 4, 0, 0, '2025-06', 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 0, 440, 0, 0, 600, NULL),
 (61, 5, 0, 0, '2025-06', 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 0, 376, 0, 0, 600, NULL),
 (62, 6, 0, 0, '2025-06', 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 0, 397, 0, 0, 600, NULL),
@@ -524,9 +536,9 @@ CREATE TABLE `item_general` (
 
 INSERT INTO `item_general` (`id_item_general`, `nombre`, `codigo`, `tipo`, `categoria_id`, `viscosidad`, `p_g`, `color`, `brillo_60`, `secado`, `cubrimiento`, `molienda`, `ph`, `poder_tintoreo`, `volumen`, `cantidad`, `unidad_id`, `costo_produccion`) VALUES
 (1, 'BARNIZ TRANSPARENTE BRILLANTE', 'BAR001', 0, 4, '95-100 KU', '3,4+/-0,05 Kg', 'STD', '>=95', '12 HORAS', NULL, NULL, NULL, NULL, '370.0', NULL, 1, 0.00),
-(2, 'ESMALTE BLANCO', 'ESM002', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '12 HORAS', '100+/-5 %', '7.5 H', NULL, NULL, '719.0', NULL, NULL, 7000.00),
-(3, 'ESMALTE CAOBA', 'ESM003', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '6 HORAS', '100+/-5%', '7.5 H', NULL, NULL, '398.0', NULL, NULL, 11000.00),
-(4, 'ESMALTE NEGRO MATE', 'ESM004', 0, 1, '105-110 KU', '3,9+/-0,05 Kg', NULL, '<=15', '12 HORAS', '100+/-5%', '6 H', NULL, NULL, '440.0', NULL, NULL, 34050.00),
+(2, 'ESMALTE BLANCO', 'ESM002', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '12 HORAS', '100+/-5 %', '7.5 H', NULL, NULL, '719.0', NULL, 2, 7000.00),
+(3, 'ESMALTE CAOBA', 'ESM003', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '6 HORAS', '100+/-5%', '7.5 H', NULL, NULL, '398.0', NULL, 3, 11000.00),
+(4, 'ESMALTE NEGRO MATE', 'ESM004', 0, 1, '105-110 KU', '3,9+/-0,05 Kg', NULL, '<=15', '12 HORAS', '100+/-5%', '6 H', NULL, NULL, '440.0', NULL, 4, 34050.00),
 (5, 'ESMALTE ROJO FIESTA', 'ESM005', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>= 90°', '12 HORAS', '100+/-5%', '7.5 H', NULL, NULL, '376.0', NULL, NULL, 27144.00),
 (6, 'ESMALTE NEGRO BRILLANTE', 'ESM006', 0, 1, '100-105 KU', '3.4+/-0.05 Kg', NULL, '>= 90', '12 HORAS', '100+/-5%', '7.5 H', NULL, NULL, '397.0', NULL, NULL, 12691.00),
 (7, 'ESMALTE VERDE ESMERALDA', 'ESM007', 0, 1, '100-105 KU', '3.6+/-0,05 Kg', NULL, '>=90', '12 HORAS', '100+/-5%', '7.5 H', NULL, NULL, '396.0', NULL, NULL, 4372.00),
@@ -1282,13 +1294,13 @@ ALTER TABLE `unidad`
 -- AUTO_INCREMENT de la tabla `bodegas`
 --
 ALTER TABLE `bodegas`
-  MODIFY `id_bodegas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id_bodegas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT de la tabla `categoria`
 --
 ALTER TABLE `categoria`
-  MODIFY `id_categoria` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_categoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `clientes`
