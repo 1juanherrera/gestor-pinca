@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 20-11-2025 a las 22:57:08
+-- Tiempo de generación: 21-11-2025 a las 23:04:33
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -1131,6 +1131,25 @@ INSERT INTO `unidad` (`id_unidad`, `nombre`, `descripcion`, `estados`) VALUES
 (7, '1/16 GALON', '', 1),
 (8, '1/32 GALON', '', 1);
 
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `usuarios`
+--
+
+CREATE TABLE `usuarios` (
+  `id_usuarios` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `usuarios`
+--
+
+INSERT INTO `usuarios` (`id_usuarios`, `username`, `password`) VALUES
+(1, '1001914855', '$2y$10$SjJQtTSTL4DIfETaQXLtFulj0X3qakd3O9Ey1bD9nD0PuHOc6lMaC');
+
 --
 -- Índices para tablas volcadas
 --
@@ -1287,6 +1306,13 @@ ALTER TABLE `unidad`
   ADD PRIMARY KEY (`id_unidad`);
 
 --
+-- Indices de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  ADD PRIMARY KEY (`id_usuarios`),
+  ADD UNIQUE KEY `username` (`username`);
+
+--
 -- AUTO_INCREMENT de las tablas volcadas
 --
 
@@ -1397,6 +1423,12 @@ ALTER TABLE `proveedor`
 --
 ALTER TABLE `unidad`
   MODIFY `id_unidad` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  MODIFY `id_usuarios` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- Restricciones para tablas volcadas

@@ -10,6 +10,10 @@ $routes->group('api', function ($routes) {
     // EMPRESA
     $routes->get('empresa', 'EmpresaController::empresa');
 
+    // USUARIOS
+    $routes->post('login', 'UsuarioController::login');
+    $routes->post('crear', 'UsuarioController::crear');
+
     // ITEMS
     $routes->get('item_general', 'ItemController::item_general');
     $routes->get('items', 'ItemController::get_items_all');

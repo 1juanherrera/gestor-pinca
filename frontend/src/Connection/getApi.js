@@ -1,11 +1,22 @@
 import axios from 'axios';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/gestorpinca/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
 });
+
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 export async function apiRequest({ endpoint, data = null, errorMsg, method }) {
   try {

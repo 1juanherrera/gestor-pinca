@@ -1,12 +1,12 @@
 import { NavLink } from "react-router-dom";
-import { FaBoxOpen, FaWarehouse , FaCalculator, FaFileInvoice, FaUserTag, FaUserFriends, FaCompressAlt } from "react-icons/fa";
+import { FaWarehouse , FaCalculator, FaFileInvoice, FaUserTag, FaUserFriends, FaCompressAlt } from "react-icons/fa";
 import { HiOutlineViewGridAdd } from "react-icons/hi";
 import { BsFileEarmarkBarGraphFill } from "react-icons/bs";
 import { IoMdExit } from "react-icons/io";
 
 export const Sidebar = () => {
   return (
-    <div className="w-3xs bg-neutral-600 text-white p-4 m-2 rounded-lg shadow-lg h-[97%] fixed">
+    <div className="w-3xs bg-neutral-600 text-white opacity-35 p-4 m-2 rounded-lg shadow-lg h-[97%] fixed">
       <ul className="mt-5 space-y-2">
         <li className="w-full">
           <NavLink
@@ -20,7 +20,7 @@ export const Sidebar = () => {
         </li>
         <li className="w-full"> 
           <NavLink
-            to="/produccion"
+            to="/preparaciones"
             className={({ isActive }) => `flex items-center gap-2 w-full p-3 rounded-xl cursor-pointer text-left ${ isActive ? 'bg-neutral-900' : 'hover:bg-neutral-900'}`}><HiOutlineViewGridAdd fontSize={25}/> Produccion</NavLink>
         </li>
         <li className="w-full">

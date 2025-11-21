@@ -9,6 +9,7 @@ import { NavLink } from "react-router-dom";
 import { useEmpresa } from "../hooks/useEmpresa";
 import { useToast } from "../hooks/useToast";
 import { Toast } from "../components/Toast";
+import { Loader } from "../components/Loader";
 
 
 export const Home = () => {
@@ -60,7 +61,7 @@ export const Home = () => {
     const [showCreate, setShowCreate] = useState(false);
     const [instalacionEdit, setInstalacionEdit] = useState(null);
 
-    if (isLoading) return <p>Cargando instalaciones...</p>;
+    if (isLoading) return <Loader message="Cargando sedes..." />;
     if (error) return <p>Error al cargar instalaciones</p>;
     if (!instalaciones || instalaciones.length === 0) return <p>No hay instalaciones registradas</p>;
 
@@ -87,6 +88,7 @@ export const Home = () => {
                     <FaBuilding size={14} /> Nueva Sede
                 </button>
             </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {instalaciones.map((instalacion, index) => (
                     <NavLink

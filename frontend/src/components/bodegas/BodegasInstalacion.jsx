@@ -6,6 +6,7 @@ import { useState } from "react";
 import BodegaForm from "./BodegaForm";
 import { useToast } from "../../hooks/useToast";
 import { Toast } from "../Toast";
+import { Loader } from "../Loader";
 
 export const BodegasInstalacion = () => {
 
@@ -13,6 +14,7 @@ export const BodegasInstalacion = () => {
   const navigate = useNavigate();
   const {
     data,
+    isLoading,
     create,
     isCreating,
     createError,
@@ -55,6 +57,8 @@ export const BodegasInstalacion = () => {
           eventToast(`${nombre} eliminada correctamente.`, "error");
       }
   }
+
+  if(isLoading) return <Loader message="Cargando bodegas..." />;
 
 
   return (

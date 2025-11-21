@@ -3,7 +3,7 @@ import { IoWarningOutline } from "react-icons/io5";
 import { useEffect, useState } from "react";
 
 export const Toast = ({ message, type = "info", onClose }) => {
-    console.log("🔥 Toast:", message, type);
+
     const [animate, setAnimate] = useState(false);
 
     const colors = {
