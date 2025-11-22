@@ -3,10 +3,11 @@ import { FaWarehouse , FaCalculator, FaFileInvoice, FaUserTag, FaUserFriends, Fa
 import { HiOutlineViewGridAdd } from "react-icons/hi";
 import { BsFileEarmarkBarGraphFill } from "react-icons/bs";
 import { IoMdExit } from "react-icons/io";
+import { logout } from "../store/session";
 
 export const Sidebar = () => {
   return (
-    <div className="w-3xs bg-neutral-600 text-white opacity-35 p-4 m-2 rounded-lg shadow-lg h-[97%] fixed">
+    <div className="w-3xs bg-neutral-600 text-white p-4 m-2 rounded-lg shadow-lg h-[97%] fixed">
       <ul className="mt-5 space-y-2">
         <li className="w-full">
           <NavLink
@@ -50,6 +51,7 @@ export const Sidebar = () => {
         </li>
         <li className="w-full mt-15">
           <NavLink
+          onClick={logout}
             to="/salir"
             className="flex items-center gap-2 w-full p-3 rounded-xl bg-red-500 hover:bg-red-900 cursor-pointer text-left">
             <IoMdExit size={25}/>Salir</NavLink>

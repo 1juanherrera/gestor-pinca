@@ -1,3 +1,4 @@
+import { Navigate } from "react-router-dom";
 
 export function setToken(token) {
   if (!token) {
@@ -15,3 +16,8 @@ export function getToken() {
 export function clearToken() {
   localStorage.removeItem("token"); 
 }
+
+export const logout = () => {
+  clearToken();
+  window.location.href = "/login"; 
+};

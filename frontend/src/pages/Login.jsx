@@ -29,19 +29,25 @@ export const Login = () => {
         e.preventDefault();
 
         try {
-            const response = await login(credentials);
-            console.log("Login exitoso:", response);
+            const form = new FormData();
+            form.append('username', credentials.username);
+            form.append('password', credentials.password);
 
-            if (response.ok && response.token) {
-            setToken(response.token); // Guardas el token real
-            navigate('/'); // Rediriges a homepage o dashboard
+            const result = await login(form);
+
+            const data = result || {};
+
+            if (data.ok && data.token) {
+              setToken(data.token);
+              navigate('/');
             } else {
-            alert(response.msg || "Error de autenticación");
+              alert(data.msg || "Error de autenticación");
             }
 
         } catch (err) {
             console.error("Error login:", err);
-            alert("Credenciales incorrectas");
+            console.log(err);
+            alert(err?.response?.data?.msg || "Credenciales incorrectas");
         }
     }
 
@@ -49,12 +55,13 @@ export const Login = () => {
     <div className="min-h-screen flex">
       <PageTitle title="Pinca | Login" />
 
-      <div className="w-1/2 hidden md:flex items-center justify-center bg-black p-10">
+      <div className="w-1/2 hidden md:flex items-center justify-center flex-col bg-black p-10">
         <img
           src={PincaLogo}
           alt="Pinca Logo"
-          className="w-2/3 max-w-sm drop-shadow-2xl animate-fadeIn"
+          className="w-2/3 max-w-sm drop-shadow-2xl animate-fade-in" 
         />
+        <h2 className="text-white text-3xl font-bold uppercase">Pinturas Industriales del Caribe S.A.S.</h2>
       </div>
 
       <div className="w-full md:w-1/2 flex items-center justify-center bg-gray-100 px-6 rounded-l-[8rem]">

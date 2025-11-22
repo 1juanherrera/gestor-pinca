@@ -25,13 +25,12 @@ class UsuarioController extends BaseController
             return $this->response->setJSON(['ok' => false, 'msg' => 'Contraseña incorrecta']);
         }
 
-        // 🔹 Recuperar la clave secreta
         $secretKey = $_ENV['TOKEN_SECRET'] ?? 'miClaveSuperSecreta';
 
         // 🔥 Crear token JWT
         $payload = [
             'iat' => time(),
-            'exp' => time() + 3600,
+            'exp' => time() + 8*3600, // Expira en 8 horas
             'data' => [
                 'id' => $usuario['id_usuarios'],
                 'username' => $usuario['username']

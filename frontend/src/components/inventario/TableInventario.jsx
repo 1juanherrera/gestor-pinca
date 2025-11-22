@@ -24,8 +24,8 @@ export const TableInventario = ({ items = [] }) => {
 
     return (
         <>
-            <div className="overflow-hidden rounded-lg border border-gray-200">
-                <div className="max-h-[70vh] overflow-y-auto">
+            <div className="overflow-hidden rounded-lg border mt-3 border-gray-200">
+                <div className="max-h-[66vh] overflow-y-auto">
                     <table className="w-full">
                         <thead className="sticky top-0 bg-gray-700 text-white uppercase">
                             <tr>

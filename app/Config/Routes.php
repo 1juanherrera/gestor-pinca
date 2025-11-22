@@ -7,6 +7,12 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 $routes->group('api', function ($routes) {
+// USUARIOS
+    $routes->post('login', 'UsuarioController::login');
+    $routes->post('crear', 'UsuarioController::crear');
+});
+// ['filter' => 'jwt'],
+$routes->group('api', function ($routes) {
     // EMPRESA
     $routes->get('empresa', 'EmpresaController::empresa');
 

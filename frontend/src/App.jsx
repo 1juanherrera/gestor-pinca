@@ -4,7 +4,6 @@ import { Bodega } from "./pages/Bodega";
 import { Clientes } from "./pages/Clientes";
 import { Formulaciones } from "./pages/Formulaciones";
 import { Home } from "./pages/Home";
-import { Inventario } from "./pages/Inventario"
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Proveedores } from "./pages/Proveedores";
 import { PagosClientes } from "./pages/PagosClientes";
@@ -26,7 +25,6 @@ const AppContent = () => {
       {!hideSidebar && <Sidebar />}
 
       <Routes>
-
         {/* Rutas públicas */}
         <Route path="/login" element={<Login />} />
 
@@ -34,12 +32,6 @@ const AppContent = () => {
         <Route path="/" element={
           <ProtectedRoute>
             <Home />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/inventario" element={
-          <ProtectedRoute>
-            <Inventario />
           </ProtectedRoute>
         } />
 
@@ -97,8 +89,8 @@ const AppContent = () => {
           </ProtectedRoute>
         } />
 
-        {/* Si no está el token → Navigate a /error */}
-        <Route path="/error" element={<h1>Error: No autorizado</h1>} />
+        {/* Si no está el token → Navigate a /login */}
+        <Route path="/login" element={<Login />} />
 
       </Routes>
     </>

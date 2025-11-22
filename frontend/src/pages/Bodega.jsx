@@ -19,8 +19,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useBodegas } from '../hooks/useBodegas';
 import { Loader } from '../components/Loader';
 import { TableInventario } from '../components/inventario/TableInventario';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ItemForm } from '../components/inventario/ItemForm';
+import { FileDown } from 'lucide-react';
 
 export const Bodega = () => {
 
@@ -31,9 +32,35 @@ export const Bodega = () => {
   const [showForm, setShowForm] = useState(false);
   const { items, refreshItems, isLoadingItems } = useBodegas(id)
 
-  const itemsFiltrados = tipoFiltro
-    ? items.inventario?.filter(item => item.tipo == tipoFiltro)
-    : items.inventario;
+  const [filterEstado, setFilterEstado] = useState('');
+  const [search, setSearch] = useState('');
+  
+
+  const itemsFiltrados = useMemo(() => {
+    return tipoFiltro
+      ? (items?.inventario || []).filter(item => item.tipo == tipoFiltro)
+      : (items?.inventario || []);
+  }, [items, tipoFiltro]);
+
+  const filtered = useMemo(() => {
+      if (!itemsFiltrados) return [];  // <- Previene el error
+
+      return itemsFiltrados.filter(f => {
+          if (filterEstado && f.estado !== filterEstado) return false;
+          if (search) {
+              const s = search.toLowerCase();
+              return (
+                  (f.nombre || '').toLowerCase().includes(s) ||
+                  (f.codigo || '').toLowerCase().includes(s) ||
+                  (f.descripcion || '').toLowerCase().includes(s) ||
+                  (String(f.cantidad) || '').toLowerCase().includes(s) ||
+                  (String(f.precio_unitario) || '').toLowerCase().includes(s)
+              );
+          }
+          return true;
+      });
+  }, [itemsFiltrados, filterEstado, search]);
+
   
   return (
     <div className="ml-65 p-4 bg-gray-100 min-h-screen">
@@ -46,14 +73,6 @@ export const Bodega = () => {
               </h1>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
-              <button
-                  onClick={() => {
-                    navigate(-1);
-                  }}
-                  className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors">
-                  <FaLongArrowAltLeft className="w-4 h-4" />
-                  Volver
-              </button>
                 <button
                   onClick={() => {
                     refreshItems();
@@ -63,6 +82,19 @@ export const Bodega = () => {
                   <MdOutlineRefresh className="w-4 h-4" />
                   Actualizar
               </button>
+              <button
+                  className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-800 transition-colors">
+                  <FileDown className="w-4 h-4" />
+                  Insertar Excel
+              </button>
+              <button
+                  onClick={() => {
+                    navigate(-1);
+                  }}
+                  className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors">
+                  <FaLongArrowAltLeft className="w-4 h-4" />
+                  Volver
+              </button>
           </div>
       </div>
       
@@ -70,7 +102,7 @@ export const Bodega = () => {
         <Loader message="cargando..."/>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+      <div className="bg-white rounded-lg shadow-sm p-4 mb-2">
         <div className="flex flex-wrap items-center justify-between gap-4">
             {/* Botones de filtro por tipo de ítem */}
             <div className="flex items-center gap-3">
@@ -118,6 +150,45 @@ export const Bodega = () => {
             </button>
         </div>
       </div>
+
+      {/* Filters */}
+      <div className="bg-white p-4 rounded-lg shadow mb-2">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+              <div className="flex items-center gap-3 w-full md:w-1/2">
+                  <h2 className="text-xl font-semibold uppercase">
+                    {
+                      tipoFiltro === "" ? "Todos" : tipoFiltro === "0" 
+                      ? "Productos" : tipoFiltro === "1" 
+                      ?"Materia Prima" : tipoFiltro === "2" 
+                      ? "Insumos" : ""
+                    }
+                  </h2>
+                  <div className="px-3 py-1 text-sm rounded-full bg-purple-300 text-purple-700 font-medium">
+                    <span>
+                      {items?.inventario ? items?.inventario.length : 0} ítems totales
+                    </span>
+                  </div>
+                  <div className="px-3 py-1 text-sm rounded-full bg-purple-300 text-purple-700 font-medium">
+                    <span>
+                      {itemsFiltrados ? itemsFiltrados.length : 0} ítems totales
+                    </span>
+                  </div>
+              </div>
+
+              <div className="flex items-center gap-3 w-full md:w-1/3">
+                  <div className="relative w-full">
+                      <FaSearch className="absolute left-3 top-3 text-gray-400" />
+                      <input className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg" placeholder="Buscar por número, cliente o monto" value={search} onChange={e => setSearch(e.target.value)} />
+                  </div>
+              </div>
+          </div>
+
+        <TableInventario
+          items={itemsFiltrados}
+          refreshItems={refreshItems}
+        />
+      </div>
       
       {showForm && (
         <ItemForm
@@ -126,10 +197,7 @@ export const Bodega = () => {
         />
       )}
  
-      <TableInventario
-          items={itemsFiltrados}
-          refreshItems={refreshItems}
-        />
+
     </div>
   )
 }

@@ -522,7 +522,7 @@ export const Proveedores = () => {
                         {isLoading ? (
                             <div className="flex justify-center items-center py-12">
                                 <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-500 border-t-transparent"></div>
-                                <span className="ml-2 text-gray-600">Cargando items...</span>
+                                <Loader message="Cargando items de proveedores..." />
                             </div>
                         ) : (
                             <>
@@ -548,9 +548,9 @@ export const Proveedores = () => {
                                     </div>
                                 ) : (
                                     <div className="flex justify-center items-center">
-                                        <table className="table-auto max-w-350 bg-white rounded-lg shadow overflow-hidden">
-                                            <thead>
-                                                <tr>
+                                        <table className="table-auto max-w-350  rounded-lg shadow overflow-hidden">
+                                            <thead className="sticky top-0 bg-gray-100 z-10 shadow-sm border border-gray-300">
+                                                <tr className="bg-gray-100">
                                                     <th className="w-12 px-4 py-2 text-center text-sm font-semibold text-black bg-gray-100">Sel</th>
                                                     <th className="w-200 px-4 py-2 text-center text-sm font-semibold text-black bg-gray-100">Nombre</th>
                                                     <th className="px-4 py-2 text-center text-sm font-semibold text-black bg-gray-100">Código</th>
@@ -561,7 +561,7 @@ export const Proveedores = () => {
                                                     <th className="w-20 px-4 py-2 text-center text-sm font-semibold text-black bg-gray-100">Acciones</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>
+                                            <tbody className="bg-white">
                                                 {filteredItems.map((item) => {
                                                     const itemId = stableItemId(item);
                                                     return (

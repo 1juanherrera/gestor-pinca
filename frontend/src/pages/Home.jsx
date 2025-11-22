@@ -1,5 +1,5 @@
-import { FaBoxOpen, FaMapMarkerAlt, FaCity, FaPhoneAlt, FaBuilding, FaEdit } from "react-icons/fa";
-import { MdDelete } from "react-icons/md";
+import { FaBoxOpen, FaMapMarkerAlt, FaCity, FaPhoneAlt, FaBuilding, FaEdit, FaWarehouse } from "react-icons/fa";
+import { MdDelete, MdDescription   } from "react-icons/md";
 import InstalacionesForm from "../components/instalaciones/InstalacionesForm";
 import { useState } from "react";
 import { useInstalaciones } from "../hooks/useInstalaciones";
@@ -10,6 +10,7 @@ import { useEmpresa } from "../hooks/useEmpresa";
 import { useToast } from "../hooks/useToast";
 import { Toast } from "../components/Toast";
 import { Loader } from "../components/Loader";
+import { PageTitle } from "../components/PageTitle";
 
 
 export const Home = () => {
@@ -74,6 +75,7 @@ export const Home = () => {
 
     return (
         <div className="ml-65 p-4 bg-gray-100 min-h-screen">
+            <PageTitle title="Pinca | Sedes" />
             <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                     <img src={Pincalogo} className="w-20" alt="Logo" />
@@ -89,62 +91,94 @@ export const Home = () => {
                 </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {instalaciones.map((instalacion, index) => (
-                    <NavLink
-                        to={`/instalaciones/bodegas/${instalacion.id_instalaciones}`}
-                        key={`${instalacion.id_instalaciones}-${index}`}
-                        className="bg-white cursor-pointer rounded-lg shadow-md p-4 border border-gray-200 scale-hover relative"
-                        type="button"
+                    <div
+                    key={`${instalacion.id_instalaciones}-${index}`}
+                    className={`bg-white
+                                p-5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 
+                                border-t-4 border-gray-700 flex flex-col justify-between`}
                     >
-                        <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
-                            <FaBuilding className="text-gray-400"/>
-                            {instalacion.nombre.toUpperCase()}
-                            <button
-                                type="button"
-                                onClick={e => {
-                                    e.preventDefault(); 
-                                    e.stopPropagation()
-                                    handle(instalacion.id_instalaciones, instalacion.nombre, remove)
-                                }}
-                                className="p-1.5 text-white hover:bg-red-200 rounded-md transition-colors cursor-pointer absolute top-2 right-2"
-                                disabled={isRemoving}
-                            >
-                            <MdDelete className="text-red-500" size={25}/>
-                            </button>
-                            <button
-                                className="p-1.5 text-white hover:bg-blue-200 rounded-md transition-colors cursor-pointer absolute top-2 right-10"
-                                title="Editar instalación"
-                                type="button"
-                                onClick={e => {
-                                    e.preventDefault();
-                                    e.stopPropagation(); 
-                                    setShowEdit(true);
-                                    setInstalacionEdit(instalacion);
-                                }}
-                            >
-                                <FaEdit className="text-blue-500" size={25}/>
-                            </button>
+                    <div>
+                        {/* Nombre + Estado */}
+                        <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-extrabold text-gray-900 uppercase truncate">
+                            {instalacion.nombre}
                         </h3>
-                        <p className="text-sm text-gray-600 mb-2 flex items-center gap-2">
-                            <FaBoxOpen className="text-gray-400" />
-                            {instalacion.descripcion}
-                        </p>
-                        <div className="text-sm text-gray-500 mb-1 flex items-center gap-2">
-                            <FaCity className="text-gray-400" />
-                            <strong>Ciudad:</strong> {instalacion.ciudad.toUpperCase()}
                         </div>
-                        <div className="text-sm text-gray-500 mb-1 flex items-center gap-2">
-                            <FaMapMarkerAlt className="text-gray-400" />
-                            <strong>Dirección:</strong> {instalacion.direccion}
+
+                        <div className="space-y-1 mb-4">
+                            <div className="text-sm text-gray-500 flex items-center gap-2">
+                                <MdDescription  className="text-gray-400" />
+                                <strong>Descripción:</strong> {instalacion.descripcion.toUpperCase()}
+                            </div>
+                            <div className="text-sm text-gray-500 flex items-center gap-2">
+                                <FaCity className="text-gray-400" />
+                                <strong>Ciudad:</strong> {instalacion.ciudad.toUpperCase()}
+                            </div>
+                            <div className="text-sm text-gray-500 flex items-center gap-2">
+                                <FaMapMarkerAlt className="text-gray-400" />
+                                <strong>Dirección:</strong> {instalacion.direccion}
+                            </div>
+                            <div className="text-sm text-gray-500 flex items-center gap-2">
+                                <FaPhoneAlt className="text-gray-400" />
+                                <strong>Teléfono:</strong> {instalacion.telefono}
+                            </div>
                         </div>
-                        <div className="text-sm text-gray-500 mb-1 flex items-center gap-2">
-                            <FaPhoneAlt className="text-gray-400" />
-                            <strong>Teléfono:</strong> {instalacion.telefono}
-                        </div>
-                    </NavLink>
+                    </div>
+
+                    {/* Botones */}
+                    <div className="flex gap-3 pt-3 border-t border-gray-100">
+                        {/* Eliminar */}
+                        <button
+                        title="Eliminar instalación"
+                        type="button"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            handle(instalacion.id_instalaciones, instalacion.nombre, remove);
+                        }}
+                        className="flex-1 p-2 cursor-pointer flex items-center justify-center gap-1 
+                                    text-red-600 bg-red-50 rounded-lg shadow-lg border border-red-100 
+                                    hover:bg-red-100 transition-colors disabled:opacity-50"
+                        disabled={isRemoving}
+                        >
+                        <MdDelete size={18} />
+                        Eliminar
+                        </button>
+
+                        {/* Editar */}
+                        <button
+                        title="Editar instalación"
+                        type="button"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            setShowEdit(true);
+                            setInstalacionEdit(instalacion);
+                            eventToast("Sede editada correctamente", "error");
+                        }}
+                        className="flex-1 cursor-pointer p-2 flex items-center justify-center gap-1 
+                                    text-blue-600 bg-blue-50 rounded-lg shadow-lg border border-blue-100 
+                                    hover:bg-blue-100 transition-colors"
+                        >
+                        <FaEdit size={16} />
+                        Editar
+                        </button>
+
+                        {/* Navegar a bodegas / inventario */}
+                        <NavLink
+                        to={`/instalaciones/bodegas/${instalacion.id_instalaciones}`}
+                        className="flex-1 p-2 cursor-pointer flex items-center justify-center gap-1 
+                                    text-gray-600 bg-gray-100 rounded-lg shadow-lg border border-gray-200 
+                                    hover:bg-gray-200 transition-colors disabled:opacity-50"
+                        title="Ver Bodegas"
+                        >
+                        <FaWarehouse size={16} />
+                        Bodegas
+                        </NavLink>
+                    </div>
+                    </div>
                 ))}
-            </div>
+                </div>
 
             {/* Toast */}           
             {toastVisible && (
@@ -178,6 +212,7 @@ export const Home = () => {
                                         refreshData();
                                     }
                                 })
+                                eventToast("Sede actualizada correctamente", "success");
                             }}
                         >
                             <div className="mb-3">

@@ -7,6 +7,7 @@ import BodegaForm from "./BodegaForm";
 import { useToast } from "../../hooks/useToast";
 import { Toast } from "../Toast";
 import { Loader } from "../Loader";
+import { PageTitle } from "../PageTitle";
 
 export const BodegasInstalacion = () => {
 
@@ -63,6 +64,7 @@ export const BodegasInstalacion = () => {
 
   return (
     <div className="ml-65 p-6 bg-gray-50 min-h-screen">
+      <PageTitle title="Pinca | Bodegas" />
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -144,7 +146,7 @@ export const BodegasInstalacion = () => {
           bodegas.map((bodega, index) => (
             <div 
                 key={`${bodega.id_bodegas}-${index}`}
-                className={`${bodega.estado === "1" ? 'bg-white' : 'bg-gray-200'} p-5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-t-4 border-blue-500 flex flex-col justify-between`}
+                className={`${bodega.estado === "1" ? 'bg-white' : 'bg-gray-200'} p-5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-t-4 border-gray-600 flex flex-col justify-between`}
             >
               <div>
                 <div className="flex items-center justify-between mb-3">
