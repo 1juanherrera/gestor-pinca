@@ -17,7 +17,7 @@ export const CostProductsTable = ({
                 <h3 className='text-lg font-medium text-gray-900 mb-2'>
                     Desglose de Costos
                 </h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs text-gray-500">
                     Selecciona un producto para ver su desglose de costos
                 </p>
             </div>
@@ -44,7 +44,7 @@ export const CostProductsTable = ({
                             <MdCalculate size={compact ? 16 : 20} />
                             Desglose de Costos
                             {recalculatedData && (
-                                <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-sm">
+                                <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded-sm">
                                     Calculado
                                 </span>
                             )}
@@ -100,7 +100,7 @@ export const CostProductsTable = ({
                                         <div className="shrink-0 mr-3">
                                         {icon}
                                         </div>
-                                        <div className="text-sm font-medium text-gray-900">
+                                        <div className="text-xs font-medium text-gray-900">
                                         {label}
                                         </div>
                                     </div>
@@ -108,7 +108,7 @@ export const CostProductsTable = ({
 
                                 <td className="px-3 py-2 whitespace-nowrap text-center">
                                 <div
-                                    className={`text-sm font-semibold ${
+                                    className={`text-xs font-semibold ${
                                     value ? 'text-emerald-600' : 'text-gray-400'
                                     }`}
                                 >
@@ -133,7 +133,7 @@ export const CostProductsTable = ({
                                         <div className="shrink-0 mr-3">
                                             <FaDollarSign className="text-emerald-600" size={16} />
                                         </div>
-                                        <div className="text-sm font-bold text-gray-900">
+                                        <div className="text-xs font-bold text-gray-900">
                                             COSTO TOTAL
                                         </div>
                                     </div>
@@ -144,7 +144,7 @@ export const CostProductsTable = ({
                                     </div>
                                 </td>
                                 <td className="px-3 py-3 whitespace-nowrap text-center">
-                                    <div className="text-sm font-medium text-gray-600">
+                                    <div className="text-xs font-medium text-gray-600">
                                         {recalculatedData?.recalculados?.total || 0}
                                     </div>
                                 </td>
@@ -155,7 +155,7 @@ export const CostProductsTable = ({
                                         <div className="shrink-0 mr-3">
                                             <FaDollarSign className="text-emerald-600" size={16} />
                                         </div>
-                                        <div className="text-sm font-bold text-gray-900">
+                                        <div className="text-xs font-bold text-gray-900">
                                             VENTA <span className="text-white bg-emerald-600 px-1.5 py-0.5 rounded-md">x1,4</span>
                                         </div>
                                     </div>
@@ -166,7 +166,7 @@ export const CostProductsTable = ({
                                     </div>
                                 </td>
                                 <td className="px-3 py-3 whitespace-nowrap text-center">
-                                    <div className="text-sm font-medium text-gray-600">
+                                    <div className="text-xs font-medium text-gray-600">
                                         {productDetail?.costos?.precio_venta || 0}
                                     </div>
                                 </td>
@@ -178,7 +178,7 @@ export const CostProductsTable = ({
             {/* Footer */}
             <div className="bg-gray-50 px-4 py-3 border-t border-gray-400">
                 <div className="flex justify-between items-center">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-xs text-gray-600">
                         <span className="font-semibold">Fecha:</span> {productDetail?.costos?.fecha_calculo || 'N/A'}
                     </div>
                 </div>

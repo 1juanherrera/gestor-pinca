@@ -1,4 +1,4 @@
-import { useApiDelete, useApiMutation, useApiResource, useApiUpdate } from "../Connection/getApi";
+import { useApiDelete, useApiMutation, useApiResource, useApiUpdate } from "../connection/getApi";
 
 export const useProveedores = () => {
 

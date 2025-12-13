@@ -15,7 +15,7 @@ export const ProductSpecificationsTable = ({
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                     Especificaciones Técnicas
                 </h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs text-gray-500">
                     Selecciona un producto para ver sus especificaciones
                 </p>
             </div>
@@ -88,7 +88,7 @@ export const ProductSpecificationsTable = ({
     return (
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-4 py-3">
+            <div className="bg-linear-to-r from-teal-500 to-teal-600 text-white px-4 py-3">
                 <div className="flex items-center justify-between">
                     <div>
                         <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -135,17 +135,17 @@ export const ProductSpecificationsTable = ({
                                     <tr key={key} className="hover:bg-gray-50">
                                         <td className="px-3 py-2 whitespace-nowrap">
                                             <div className="flex items-center">
-                                                <div className="flex-shrink-0 mr-3">
+                                                <div className="shrink-0 mr-3">
                                                     {icon}
                                                 </div>
-                                                <div className="text-sm font-medium text-gray-900">
+                                                <div className="text-xs font-medium text-gray-900">
                                                     {label}
                                                 </div>
                                             </div>
                                         </td>
 
                                         <td className="px-3 py-2 whitespace-nowrap text-center">
-                                            <div className="text-sm font-semibold text-teal-600">
+                                            <div className="text-xs font-semibold text-teal-600">
                                                 {formatValue(key, value)}
                                             </div>
                                         </td>
@@ -165,10 +165,10 @@ export const ProductSpecificationsTable = ({
             {/* Footer */}
             <div className="bg-gray-50 px-4 py-3 border-t border-gray-400">
                 <div className="flex justify-between items-center">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-xs text-gray-600">
                         <span className="font-semibold">{productDetail?.parametros?.length}</span> especificaciones técnicas
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-xs text-gray-600">
                         <span className="font-semibold">Código:</span> {productDetail?.item?.codigo}
                     </div>
                 </div>

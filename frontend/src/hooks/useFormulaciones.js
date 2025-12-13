@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { apiRequest, useApiResource } from "../Connection/getApi";
+import { apiRequest, useApiResource } from "../connection/getApi";
 
 export const useFormulaciones = () => {
 

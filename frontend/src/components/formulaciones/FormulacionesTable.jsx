@@ -39,7 +39,7 @@ export const FormulacionesTable = ({
                             
                             {ProductSelect}
                             {recalculatedData && (
-                                <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-sm">
+                                <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded-sm">
                                     Calculado
                                 </span>
                             )}
@@ -64,31 +64,31 @@ export const FormulacionesTable = ({
                 <table className="w-full">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                                 #
                             </th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                                 Materia Prima
                             </th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">
                                 <div className="flex items-center justify-center gap-1">
                                     <FaWeight size={10} />
                                     Cantidad
                                 </div>
                             </th>
-                             <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                             <th className="px-3 py-2 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">
                                 <div className="flex items-center justify-center gap-1">
                                     <FaWeight size={10} />
                                     Cantidad Disp.
                                 </div>
                             </th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">
                                 <div className="flex items-center justify-center gap-1">
                                     <FaDollarSign size={10} />
                                     Costo Unit.
                                 </div>
                             </th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">
                                 <div className="flex items-center justify-center gap-1">
                                     <FaDollarSign size={10} />
                                     Costo Total
@@ -111,7 +111,7 @@ export const FormulacionesTable = ({
                                     <MdScience className="h-3 w-3 text-blue-600" />
                                     </div>
                                     <div className="ml-3">
-                                    <div className="text-sm font-medium text-gray-900">
+                                    <div className="text-xs font-medium text-gray-900">
                                         {formulacion.materia_prima_nombre || 'Sin nombre'}
                                     </div>
                                     <div className="text-xs text-gray-500">
@@ -126,7 +126,7 @@ export const FormulacionesTable = ({
                                 <div className={`text-sm font-semibold text-blue-600 ${recalculatedData ? 'text-green-600' : 'text-blue-600'}`}>
                                     {recalculatedData == null ? formulacion.cantidad : formulacion.cantidad_recalculada ?? 0}
                                     {recalculatedData && (
-                                        <div className="text-xs text-gray-500">
+                                        <div className="text-xs text-gray-600 font-normal">
                                             Base: {formulacion.cantidad ?? 0}
                                         </div>
                                     )}
@@ -184,7 +184,7 @@ export const FormulacionesTable = ({
                                 <div className="text-sm font-semibold text-emerald-600">
                                     {recalculatedData == null ? formulacion.costo_total_materia : formulacion.costo_total_materia_recalculado ?? 0}
                                     {recalculatedData && (
-                                        <div className="text-xs text-gray-500">
+                                        <div className="text-xs text-gray-600 font-normal">
                                             Base: {formulacion.costo_total_materia ?? 0}
                                         </div>
                                     )}

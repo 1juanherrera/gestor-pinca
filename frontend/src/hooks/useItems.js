@@ -1,4 +1,4 @@
-import { useApiResource } from "../Connection/getApi";
+import { useApiResource } from "../connection/getApi";
 
 export const useItems = () => {
   return useApiResource('/items');
