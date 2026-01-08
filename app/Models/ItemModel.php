@@ -123,5 +123,113 @@ class ItemModel extends BaseModel
             return ['error' => 'No se pudo crear el item completo.']; 
         }
     }
+
+public function create_full_item($data)
+    {
+        $this->db->transStart();
+
+        try {
+            // ---------------------------------------------------------
+            // 1. Insertar ITEM_GENERAL (Producto Padre)
+            // ---------------------------------------------------------
+            $itemData = [
+                'bodega_id'      => $data['bodega_id'] ?? 1,
+                'categoria_id'   => $data['categoria_id'] ?? 1,
+                'nombre'         => $data['nombre'],
+                'codigo'         => $data['codigo'],
+                // Mapeo de tipos: 0=Producto, 1=Materia Prima, 2=Insumo
+                'tipo'           => match($data['tipo']) { 'PRODUCTO' => 0, 'MATERIA PRIMA' => 1, 'INSUMO' => 2, default => 0 },
+                'cantidad'       => $data['cantidad'] ?? 0,
+                'costo_unitario' => $data['costo_unitario'] ?? 0,
+                'estado'         => 1, // Activo
+                
+                // Propiedades
+                'viscosidad'     => $data['viscosidad'] ?? null,
+                'p_g'            => $data['p_g'] ?? null,
+                'color'          => $data['color'] ?? null,
+                'brillo_60'      => $data['brillo_60'] ?? null,
+                'secado'         => $data['secado'] ?? null,
+                'cubrimiento'    => $data['cubrimiento'] ?? null,
+                'molienda'       => $data['molienda'] ?? null,
+                'ph'             => $data['ph'] ?? null,
+                'poder_tintoreo' => $data['poder_tintoreo'] ?? null,
+                'volumen'        => $data['volumen'] ?? null,
+            ];
+
+            $this->insert($itemData);
+            $newItemId = $this->insertID();
+
+            // ---------------------------------------------------------
+            // 2. Inicializar COSTOS_ITEM
+            // ---------------------------------------------------------
+            $this->db->table('costos_item')->insert([
+                'item_general_id' => $newItemId,
+                'costo_unitario'  => $data['costo_unitario'] ?? 0,
+                'cantidad_total'  => $data['cantidad'] ?? 0,
+                'volumen'         => $data['volumen'] ?? 1,
+                'fecha_calculo'   => date('Y-m-d H:i:s')
+            ]);
+
+            // ---------------------------------------------------------
+            // 3. Inicializar INVENTARIO (Stock)
+            // ---------------------------------------------------------
+            $this->db->table('inventario')->insert([
+                'item_general_id' => $newItemId,
+                'bodega_id'       => $data['bodega_id'] ?? 1,
+                'cantidad'        => $data['cantidad'] ?? 0,
+                'fecha_actualizacion' => date('Y-m-d H:i:s')
+            ]);
+
+            // ---------------------------------------------------------
+            // 4. Crear la FORMULACIÓN (Cabecera y Detalle)
+            // ---------------------------------------------------------
+            // Solo si es PRODUCTO (0) o INSUMO (2) y trae formulaciones
+            if (in_array($itemData['tipo'], [0, 2]) && !empty($data['formulaciones'])) {
+                
+                // A. Insertar Cabecera en 'formulaciones'
+                $formuHeaderData = [
+                    'item_general_id' => $newItemId, // El ID del producto padre
+                    'estado'          => 1,
+                    // Si tienes campos de fecha en esta tabla, agrégalos aquí:
+                    // 'fecha_creacion' => date('Y-m-d H:i:s') 
+                ];
+                
+                $this->db->table('formulaciones')->insert($formuHeaderData);
+                $formulacionId = $this->db->insertID();
+
+                // B. Insertar Detalles en 'item_general_formulaciones'
+                $ingredientesBatch = [];
+                foreach ($data['formulaciones'] as $form) {
+                    if (!empty($form['materia_prima_id'])) {
+                        $ingredientesBatch[] = [
+                            'formulaciones_id' => $formulacionId,          // El ID de la cabecera creada arriba
+                            'item_general_id'  => $form['materia_prima_id'], // El ingrediente (Materia Prima)
+                            'cantidad'         => $form['cantidad'],
+                            'porcentaje'       => 0 // Opcional: calcularlo si lo necesitas
+                        ];
+                    }
+                }
+
+                if (!empty($ingredientesBatch)) {
+                    $this->db->table('item_general_formulaciones')->insertBatch($ingredientesBatch);
+                }
+            }
+
+        $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                // Obtenemos el error de base de datos si la transacción falló
+                $error = $this->db->error();
+                return ['error' => 'Error de transacción: ' . $error['message']];
+            }
+
+            return $newItemId;
+
+        } catch (\Exception $e) {
+            // AQUÍ ESTÁ EL CAMBIO CLAVE:
+            // Devolvemos el mensaje exacto de la excepción (FK fallida, columna faltante, etc.)
+            return ['error' => $e->getMessage()]; 
+        }
+    }
 }
 

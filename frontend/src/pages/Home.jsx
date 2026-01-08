@@ -138,8 +138,8 @@ export const Home = () => {
                             handle(instalacion.id_instalaciones, instalacion.nombre, remove);
                         }}
                         className="flex-1 p-2 cursor-pointer flex items-center justify-center gap-1 
-                                    text-red-600 bg-red-50 rounded-lg shadow-lg border border-red-100 
-                                    hover:bg-red-100 transition-colors disabled:opacity-50"
+                                    text-red-600 bg-red-100 rounded-lg shadow-lg border border-red-200 
+                                    hover:bg-red-200 transition-colors disabled:opacity-50"
                         disabled={isRemoving}
                         >
                         <MdDelete size={18} />
@@ -154,11 +154,10 @@ export const Home = () => {
                             e.preventDefault();
                             setShowEdit(true);
                             setInstalacionEdit(instalacion);
-                            eventToast("Sede editada correctamente", "error");
                         }}
                         className="flex-1 cursor-pointer p-2 flex items-center justify-center gap-1 
-                                    text-blue-600 bg-blue-50 rounded-lg shadow-lg border border-blue-100 
-                                    hover:bg-blue-100 transition-colors"
+                                    text-blue-600 bg-blue-100 rounded-lg shadow-lg border border-blue-200 
+                                    hover:bg-blue-200 transition-colors"
                         >
                         <FaEdit size={16} />
                         Editar

@@ -1,0 +1,47 @@
+services:
+  app:
+    build: .
+    container_name: gestor-pinca-app
+    ports:
+      - "8080:80" # Tu API estará en http://localhost:8080
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  db:
+    image: mysql:8.0
+    container_name: gestor-pinca-db
+    environment:
+      MYSQL_DATABASE: gestorpincadb
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./gestorpincadb.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+    
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: gestor-pinca-pma
+    restart: always
+    ports:
+      - "8081:80" # Accederás por http://localhost:8081
+    environment:
+      PMA_HOST: db # Debe coincidir con el nombre del servicio de la DB
+      MYSQL_ROOT_PASSWORD: rootpassword # La misma que pusiste en db
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db_data:

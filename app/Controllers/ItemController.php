@@ -33,13 +33,27 @@ class ItemController extends ResourceController
     {
         $json = $this->request->getBody();
         $data = json_decode($json, true);
-        if ($this->model->create_item($data, 'item_general')) {
+
+        if (!$data) return $this->fail('JSON inválido', 400);
+
+        // Llamamos al modelo
+        $result = $this->model->create_full_item($data);
+
+        // Verificamos si es un ID (éxito) o un array de error
+        if (is_numeric($result)) {
             return $this->respondCreated([
-                'mensaje' => 'Item creado',
-                'id' => $this->model->insertID(),
+                'status'  => 201,
+                'message' => 'Ítem creado exitosamente',
+                'id'      => $result
             ]);
+        } else {
+            // Si falló, mostramos el mensaje exacto que nos dio el modelo
+            $mensajeError = is_array($result) && isset($result['error']) 
+                            ? $result['error'] 
+                            : 'Error desconocido al guardar';
+                            
+            return $this->failServerError($mensajeError);
         }
-        return $this->failValidationErrors($this->model->errors());
     }
 
     public function update($id = null)

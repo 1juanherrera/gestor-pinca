@@ -94,8 +94,7 @@ export default function InstalacionesForm({
           value={form.telefono}
           onChange={handleChange}
           className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
-           focus:outline-none focus:ring-2 block w-full p-2"
-          
+          focus:outline-none focus:ring-2 block w-full p-2"
         />
       </div>
       <div>

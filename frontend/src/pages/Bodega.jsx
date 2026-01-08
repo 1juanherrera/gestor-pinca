@@ -22,6 +22,7 @@ import { TableInventario } from '../components/inventario/TableInventario';
 import { useMemo, useState } from 'react';
 import { ItemForm } from '../components/inventario/ItemForm';
 import { FileDown } from 'lucide-react';
+import { PageTitle } from '../components/PageTitle';
 
 export const Bodega = () => {
 
@@ -43,7 +44,7 @@ export const Bodega = () => {
   }, [items, tipoFiltro]);
 
   const filtered = useMemo(() => {
-      if (!itemsFiltrados) return [];  // <- Previene el error
+      if (!itemsFiltrados) return [];
 
       return itemsFiltrados.filter(f => {
           if (filterEstado && f.estado !== filterEstado) return false;
@@ -61,9 +62,22 @@ export const Bodega = () => {
       });
   }, [itemsFiltrados, filterEstado, search]);
 
+  const filteredColor = (tipo) => {
+    switch (tipo) {
+      case '0':
+        return 'bg-blue-100 text-blue-700 border-blue-300';
+      case '1':
+        return 'bg-purple-100 text-purple-700 border-purple-300';
+      case '2':
+        return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+      default:
+        return 'bg-gray-200 text-gray-700 border-gray-300';
+    }
+  }
   
   return (
     <div className="ml-65 p-4 bg-gray-100 min-h-screen">
+      <PageTitle title="Pinca | Inventario" />
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-2">
@@ -107,28 +121,40 @@ export const Bodega = () => {
             {/* Botones de filtro por tipo de ítem */}
             <div className="flex items-center gap-3">
                 <button
-                    onClick={() => setTipoFiltro("")}
+                    onClick={() => {
+                      setTipoFiltro("");
+                      setSearch("");
+                    }}
                     className={`px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg hover:bg-gray-400 hover:text-white cursor-pointer flex items-center gap-2`}
                 >
                     <FaBoxOpen size={16} />
                     Todos
                 </button>
                 <button
-                    onClick={() => setTipoFiltro("0")}
+                    onClick={() => {
+                      setTipoFiltro("0")
+                      setSearch("");
+                    }}
                     className={`px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg hover:bg-emerald-600 hover:text-white cursor-pointer flex items-center gap-2`}
                 >
                     <AiFillProduct size={16} />
                     Productos
                 </button>
                 <button
-                    onClick={() => setTipoFiltro("1")}
+                    onClick={() => {
+                      setTipoFiltro("1")
+                      setSearch("");
+                    }}
                     className={`px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg hover:bg-purple-600 hover:text-white cursor-pointer flex items-center gap-2`}  
                 >
                     <LuAtom size={16} />
                     Materia Prima
                 </button>
                 <button
-                    onClick={() => setTipoFiltro("2")}
+                    onClick={() => {
+                      setTipoFiltro("2")
+                      setSearch("");
+                    }}
                     className={`px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg hover:bg-yellow-600 hover:text-white cursor-pointer flex items-center gap-2`}
                 >
                     <AiFillAppstore size={16} />
@@ -160,18 +186,18 @@ export const Bodega = () => {
                     {
                       tipoFiltro === "" ? "Todos" : tipoFiltro === "0" 
                       ? "Productos" : tipoFiltro === "1" 
-                      ?"Materia Prima" : tipoFiltro === "2" 
+                      ? "Materia Prima" : tipoFiltro === "2" 
                       ? "Insumos" : ""
                     }
                   </h2>
-                  <div className="px-3 py-1 text-sm rounded-full bg-purple-300 text-purple-700 font-medium">
+                  <div className={`px-3 shadow-md py-1 text-sm rounded-full bg-gray-200 text-gray-700 border-gray-300 font-medium`}>
                     <span>
-                      {items?.inventario ? items?.inventario.length : 0} ítems totales
+                      {items?.inventario ? items?.inventario.length : 0} items totales
                     </span>
                   </div>
-                  <div className="px-3 py-1 text-sm rounded-full bg-purple-300 text-purple-700 font-medium">
+                  <div className={`px-3 py-1 shadow-md ${tipoFiltro === "" ? "hidden": ""} text-sm rounded-full ${filteredColor(tipoFiltro)} font-medium`}>
                     <span>
-                      {itemsFiltrados ? itemsFiltrados.length : 0} ítems totales
+                      {filtered ? filtered.length : 0} items totales
                     </span>
                   </div>
               </div>
@@ -179,13 +205,16 @@ export const Bodega = () => {
               <div className="flex items-center gap-3 w-full md:w-1/3">
                   <div className="relative w-full">
                       <FaSearch className="absolute left-3 top-3 text-gray-400" />
-                      <input className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg" placeholder="Buscar por número, cliente o monto" value={search} onChange={e => setSearch(e.target.value)} />
+                      <input className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg" 
+                      placeholder="Buscar por nombre o codigo" 
+                      value={search} onChange={e => setSearch(e.target.value)} />
                   </div>
               </div>
           </div>
 
         <TableInventario
-          items={itemsFiltrados}
+          items={filtered}
+          setFilterEstado={setFilterEstado}
           refreshItems={refreshItems}
         />
       </div>

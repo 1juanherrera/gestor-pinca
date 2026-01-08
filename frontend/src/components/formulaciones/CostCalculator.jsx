@@ -136,7 +136,7 @@ export const CostCalculator = ({
                             <h5 className="font-semibold text-gray-700 mb-2 text-sm">Original - Vol {productDetail.item?.volumen_base || '0'}</h5>
                             <div className="space-y-1 text-xs">
                                 <div className="flex justify-between">
-                                    <span>Total Costos:</span>
+                                    <span>T/Costos:</span>
                                     <span className="font-medium">
                                         {productDetail?.costos.total_costo_materia_prima || 0}
                                     </span>
@@ -170,7 +170,7 @@ export const CostCalculator = ({
                             </h5>
                             <div className="space-y-1 text-xs">
                                 <div className="flex justify-between">
-                                    <span>Total Costos:</span>
+                                    <span>T/Costos:</span>
                                     <span className="font-medium text-green-600">
                                         {recalculatedData?.recalculados?.total_costo_materia_prima || 0}
                                     </span>
