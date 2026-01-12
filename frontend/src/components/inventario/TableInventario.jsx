@@ -1,12 +1,18 @@
 import { FaTrash, FaEdit } from "react-icons/fa";
 import { formatoPesoColombiano, validarEntero } from "../../utils/formatters";
+import { useItems } from "../../hooks/useItems";
+import { useToast } from "../../hooks/useToast";
+import { Toast } from "../Toast";
 
-export const TableInventario = ({ items = [] }) => {
+export const TableInventario = ({ items = [], refreshItems }) => {
+
+    const { removeItem, refreshData } = useItems();
 
     const getNombre = (item) => item?.nombre_item_general || item.nombre || '-';
     const getCodigo = (item) => item?.codigo_item_general || item.codigo || '-';
     const getTipo = (item) => (item?.nombre_tipo || item.tipo || '-').toUpperCase();
     const getPrecio = (item) => item?.precio_venta || '-';
+    const getId = (item) => item?.id_item_general || item.id || '-';
 
     const handleType = (item) => {
         const tipo = getTipo(item);
@@ -19,6 +25,24 @@ export const TableInventario = ({ items = [] }) => {
                 return 'bg-yellow-100 text-yellow-700';
             default:
                 return 'bg-gray-100 text-gray-700';
+        }
+    }
+
+    const {
+        toastVisible,
+        toastMessage,
+        toastType,
+
+        eventToast,
+        setToastVisible
+    } = useToast();
+
+    const handleDelete = (id, name, deleteFunc) => {
+        if (window.confirm(`¿Seguro que deseas eliminar ${name}?`)) {
+            eventToast(`${name} eliminado correctamente`, "error");
+            refreshItems();
+            refreshData();
+            deleteFunc(id);
         }
     }
 
@@ -58,7 +82,7 @@ export const TableInventario = ({ items = [] }) => {
                                         </span>
                                     </td>
                                     <td className="p-1 border border-gray-200">
-                                        <span className="text-xs font-medium text-gray-900">
+                                        <span className="text-xs font-medium text-gray-900 uppercase">
                                             {getNombre(producto)}
                                         </span>
                                     </td>
@@ -96,6 +120,7 @@ export const TableInventario = ({ items = [] }) => {
                                                     <FaEdit size={14} />
                                                 </button>
                                                 <button 
+                                                    onClick={() => handleDelete(getId(producto), getNombre(producto), removeItem)}
                                                     className="p-2 bg-red-500 text-white hover:bg-red-800 rounded-md transition-colors cursor-pointer"
                                                     title="Eliminar"
                                                 >
@@ -109,6 +134,15 @@ export const TableInventario = ({ items = [] }) => {
                     </table>
                 </div>
             </div>
+
+        {/* Toast */}           
+        {toastVisible && (
+            <Toast
+                message={toastMessage} 
+                type={toastType}
+                onClose={() => setToastVisible(false)}
+            />
+        )}
         </>
     )
 }

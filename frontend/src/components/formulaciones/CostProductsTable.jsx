@@ -156,7 +156,7 @@ export const CostProductsTable = ({
                                             <FaDollarSign className="text-emerald-600" size={16} />
                                         </div>
                                         <div className="text-xs font-bold text-gray-900">
-                                            VENTA <span className="text-white bg-emerald-600 px-1.5 py-0.5 rounded-md">x1,4</span>
+                                            VENTA <span className="text-white bg-emerald-600 px-1.5 py-0.5 rounded-md">50%</span>
                                         </div>
                                     </div>
                                 </td>

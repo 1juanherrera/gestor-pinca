@@ -64,171 +64,109 @@ class ItemModel extends BaseModel
         return $items;
     }
 
-    public function create_complete_item(array $data)
-    {
-        $db = $this->db; 
-        $db->transBegin();
-        
-        try {
-            $itemGeneralData = array_intersect_key($data, array_flip($this->allowedFields));
-            
-            $itemGeneralData['unidad_id'] = $itemGeneralData['unidad_id'] ?? null;
-            $itemGeneralData['cantidad'] = $itemGeneralData['cantidad'] ?? 0;
-            $itemGeneralData['costo_produccion'] = $itemGeneralData['costo_produccion'] ?? null;
-            
-            if (!$this->insert($itemGeneralData)) {
-                $errorDetail = $this->errors() ? json_encode($this->errors()) : "Error de base de datos desconocido.";
-                throw new \Exception("Error al insertar Item General: " . $errorDetail);
-            }
-
-            $idItem = $this->insertID();
-
-            // Insertar en inventario
-            $db->table('inventario')->insert([
-                'item_general_id' => $idItem,
-                'cantidad'        => $data['cantidad'] ?? 0,
-                'bodegas_id'      => $data['bodegas_id'] ?? 1
-            ]);
-
-            // Insertar en costos_item 
-            $db->table('costos_item')->insert([
-                'item_general_id' => $idItem,
-                'costo_unitario'  => $data['costo_unitario'] ?? 0
-            ]);
-
-            // Insertar formulaciones 
-            if (!empty($data['formulaciones']) && is_array($data['formulaciones'])) {
-                $formulasBatch = [];
-                foreach ($data['formulaciones'] as $formula) {
-
-                    $formulasBatch[] = [
-                        'item_general_id'    => $idItem,
-                        'materia_prima_id'   => $formula['materia_prima_id'],
-                        'cantidad'           => $formula['cantidad'],
-                        'unidad'             => $formula['unidad']
-                    ];
-                }
-                if (!empty($formulasBatch)) {
-                    $db->table('formulaciones')->insertBatch($formulasBatch);
-                }
-            }
-
-            $db->transCommit();
-
-            return $idItem;
-
-        } catch (\Exception $e) {
-            $db->transRollback();
-            
-            return ['error' => 'No se pudo crear el item completo.']; 
-        }
-    }
-
-public function create_full_item($data)
+    public function create_full_item($data)
     {
         $this->db->transStart();
 
         try {
-            // ---------------------------------------------------------
-            // 1. Insertar ITEM_GENERAL (Producto Padre)
-            // ---------------------------------------------------------
+            $tipoMapeado = is_numeric($data['tipo']) ? (int)$data['tipo'] : 
+                        match($data['tipo']) { 'PRODUCTO' => 0, 'MATERIA PRIMA' => 1, 'INSUMO' => 2, default => 0 };
+
             $itemData = [
-                'bodega_id'      => $data['bodega_id'] ?? 1,
-                'categoria_id'   => $data['categoria_id'] ?? 1,
-                'nombre'         => $data['nombre'],
-                'codigo'         => $data['codigo'],
-                // Mapeo de tipos: 0=Producto, 1=Materia Prima, 2=Insumo
-                'tipo'           => match($data['tipo']) { 'PRODUCTO' => 0, 'MATERIA PRIMA' => 1, 'INSUMO' => 2, default => 0 },
-                'cantidad'       => $data['cantidad'] ?? 0,
-                'costo_unitario' => $data['costo_unitario'] ?? 0,
-                'estado'         => 1, // Activo
-                
-                // Propiedades
-                'viscosidad'     => $data['viscosidad'] ?? null,
-                'p_g'            => $data['p_g'] ?? null,
-                'color'          => $data['color'] ?? null,
-                'brillo_60'      => $data['brillo_60'] ?? null,
-                'secado'         => $data['secado'] ?? null,
-                'cubrimiento'    => $data['cubrimiento'] ?? null,
-                'molienda'       => $data['molienda'] ?? null,
-                'ph'             => $data['ph'] ?? null,
-                'poder_tintoreo' => $data['poder_tintoreo'] ?? null,
-                'volumen'        => $data['volumen'] ?? null,
+                'nombre'           => $data['nombre'],
+                'codigo'           => substr($data['codigo'] ?? '', 0, 6), // Límite varchar(6)
+                'tipo'             => $tipoMapeado,
+                'categoria_id'     => $data['categoria_id'] ?? null,
+                'viscosidad'       => $data['viscosidad'] ?? null,
+                'p_g'              => $data['p_g'] ?? null,
+                'color'            => substr($data['color'] ?? '', 0, 3), // Límite varchar(3)
+                'brillo_60'        => $data['brillo_60'] ?? null,
+                'secado'           => $data['secado'] ?? null,
+                'cubrimiento'      => $data['cubrimiento'] ?? null,
+                'molienda'         => $data['molienda'] ?? null,
+                'ph'               => substr($data['ph'] ?? '', 0, 1),    // Límite varchar(1)
+                'poder_tintoreo'   => $data['poder_tintoreo'] ?? null,
+                'volumen'          => $data['volumen'] ?? null,
+                'cantidad'         => $data['cantidad'] ?? 0,
+                'unidad_id'        => $data['unidad_id'] ?? null,
+                'costo_produccion' => $data['costo_unitario'] ?? 0
             ];
 
-            $this->insert($itemData);
-            $newItemId = $this->insertID();
+            $this->db->table('item_general')->insert($itemData);
+            $newItemId = $this->db->insertID();
 
-            // ---------------------------------------------------------
-            // 2. Inicializar COSTOS_ITEM
-            // ---------------------------------------------------------
+            // 3. INSERT en costos_item (Incluyendo envases, etiquetas, etc.)
             $this->db->table('costos_item')->insert([
                 'item_general_id' => $newItemId,
                 'costo_unitario'  => $data['costo_unitario'] ?? 0,
+                'costo_mp_galon'  => $data['costo_mp_galon'] ?? 0,
+                'periodo'         => date('Y-m'),
+                'metodo_calculo'  => $data['metodo_calculo'] ?? 'Manual',
+                'fecha_calculo'   => date('Y-m-d'),
+                'costo_mp_kg'     => $data['costo_mp_kg'] ?? 0,
+                'envase'          => $data['envase'] ?? 0,      // <--- Campo nuevo
+                'etiqueta'        => $data['etiqueta'] ?? 0,    // <--- Campo nuevo
+                'bandeja'         => $data['bandeja'] ?? 0,     // <--- Campo nuevo
+                'plastico'        => $data['plastico'] ?? 0,    // <--- Campo nuevo
+                'costo_total'     => $data['costo_total'] ?? ($data['costo_unitario'] ?? 0),
+                'volumen'         => $data['volumen_numero'] ?? 1,
+                'precio_venta'    => $data['precio_venta'] ?? 0,
                 'cantidad_total'  => $data['cantidad'] ?? 0,
-                'volumen'         => $data['volumen'] ?? 1,
-                'fecha_calculo'   => date('Y-m-d H:i:s')
+                'costo_mod'       => $data['costo_mod'] ?? 0,
+                'estado'          => 1
             ]);
 
-            // ---------------------------------------------------------
-            // 3. Inicializar INVENTARIO (Stock)
-            // ---------------------------------------------------------
+            // 4. INSERT en inventario (Campos técnicos de stock)
             $this->db->table('inventario')->insert([
-                'item_general_id' => $newItemId,
-                'bodega_id'       => $data['bodega_id'] ?? 1,
-                'cantidad'        => $data['cantidad'] ?? 0,
-                'fecha_actualizacion' => date('Y-m-d H:i:s')
+                'item_general_id'          => $newItemId,
+                'bodegas_id'               => $data['bodega_id'] ?? 1,
+                'cantidad'                 => $data['cantidad'] ?? 0,
+                'fecha_update'             => '', // Tu SQL lo define como varchar(0)
+                'apartada'                 => 0,
+                'estado'                   => 1,
+                'movimiento_inventario_id' => null,
+                'tipo'                     => 1 // 1 = Ingreso inicial
             ]);
 
-            // ---------------------------------------------------------
-            // 4. Crear la FORMULACIÓN (Cabecera y Detalle)
-            // ---------------------------------------------------------
-            // Solo si es PRODUCTO (0) o INSUMO (2) y trae formulaciones
-            if (in_array($itemData['tipo'], [0, 2]) && !empty($data['formulaciones'])) {
-                
-                // A. Insertar Cabecera en 'formulaciones'
-                $formuHeaderData = [
-                    'item_general_id' => $newItemId, // El ID del producto padre
+            // 5. INSERT en formulaciones e item_general_formulaciones
+            if (!empty($data['formulaciones'])) {
+                $this->db->table('formulaciones')->insert([
+                    'nombre'          => "Formulación - " . $data['nombre'],
+                    'descripcion'     => $data['descripcion_formula'] ?? null,
                     'estado'          => 1,
-                    // Si tienes campos de fecha en esta tabla, agrégalos aquí:
-                    // 'fecha_creacion' => date('Y-m-d H:i:s') 
-                ];
-                
-                $this->db->table('formulaciones')->insert($formuHeaderData);
-                $formulacionId = $this->db->insertID();
+                    'defecto'         => 1,
+                    'item_general_id' => $newItemId
+                ]);
+                $idFormulacion = $this->db->insertID();
 
-                // B. Insertar Detalles en 'item_general_formulaciones'
-                $ingredientesBatch = [];
-                foreach ($data['formulaciones'] as $form) {
-                    if (!empty($form['materia_prima_id'])) {
-                        $ingredientesBatch[] = [
-                            'formulaciones_id' => $formulacionId,          // El ID de la cabecera creada arriba
-                            'item_general_id'  => $form['materia_prima_id'], // El ingrediente (Materia Prima)
-                            'cantidad'         => $form['cantidad'],
-                            'porcentaje'       => 0 // Opcional: calcularlo si lo necesitas
+                $batchDetalle = [];
+                foreach ($data['formulaciones'] as $f) {
+                    if (!empty($f['materia_prima_id'])) {
+                        $batchDetalle[] = [
+                            'formulaciones_id' => $idFormulacion,
+                            'item_general_id'  => $f['materia_prima_id'],
+                            'cantidad'         => $f['cantidad'],
+                            'porcentaje'       => $f['porcentaje'] ?? 0
                         ];
                     }
                 }
-
-                if (!empty($ingredientesBatch)) {
-                    $this->db->table('item_general_formulaciones')->insertBatch($ingredientesBatch);
+                if (!empty($batchDetalle)) {
+                    $this->db->table('item_general_formulaciones')->insertBatch($batchDetalle);
                 }
             }
 
-        $this->db->transComplete();
+            $this->db->transComplete();
 
             if ($this->db->transStatus() === false) {
-                // Obtenemos el error de base de datos si la transacción falló
                 $error = $this->db->error();
-                return ['error' => 'Error de transacción: ' . $error['message']];
+                throw new \Exception("Error SQL detallado: " . $error['message']);
             }
 
             return $newItemId;
 
         } catch (\Exception $e) {
-            // AQUÍ ESTÁ EL CAMBIO CLAVE:
-            // Devolvemos el mensaje exacto de la excepción (FK fallida, columna faltante, etc.)
-            return ['error' => $e->getMessage()]; 
+            $this->db->transRollback();
+            return ['error' => $e->getMessage()];
         }
     }
 }

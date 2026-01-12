@@ -31,29 +31,31 @@ class ItemController extends ResourceController
 
     public function create()
     {
-        $json = $this->request->getBody();
-        $data = json_decode($json, true);
+        $data = $this->request->getJSON(true);
 
-        if (!$data) return $this->fail('JSON inválido', 400);
+        if (!$data) {
+            return $this->fail('No se recibieron datos o el JSON es inválido', 400);
+        }
 
-        // Llamamos al modelo
+        // Validación mínima de seguridad
+        if (empty($data['nombre']) || empty($data['categoria_id'])) {
+            return $this->failValidationErrors('El nombre y la categoría son obligatorios.');
+        }
+
+        // Llamamos al modelo que ya tiene todos los campos de Costos, Inventario y Propiedades
         $result = $this->model->create_full_item($data);
 
-        // Verificamos si es un ID (éxito) o un array de error
-        if (is_numeric($result)) {
-            return $this->respondCreated([
-                'status'  => 201,
-                'message' => 'Ítem creado exitosamente',
-                'id'      => $result
-            ]);
-        } else {
-            // Si falló, mostramos el mensaje exacto que nos dio el modelo
-            $mensajeError = is_array($result) && isset($result['error']) 
-                            ? $result['error'] 
-                            : 'Error desconocido al guardar';
-                            
-            return $this->failServerError($mensajeError);
+        // Si el modelo devuelve un error (llave foránea, columna inexistente, etc.)
+        if (is_array($result) && isset($result['error'])) {
+            return $this->fail($result['error'], 400);
         }
+
+        // ÉXITO: Retornamos el ID y un mensaje claro para el frontend
+        return $this->respondCreated([
+            'status'  => 201,
+            'message' => 'Ítem completo creado con éxito',
+            'id'      => $result
+        ]);
     }
 
     public function update($id = null)

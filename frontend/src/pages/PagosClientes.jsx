@@ -30,9 +30,18 @@ export const PagosClientes = () => {
     }, [pagos, search, filterTipo, filterFechaDesde, filterFechaHasta]);
 
     const totals = useMemo(() => {
-        const total = pagos.reduce((s, p) => s + Number(p.total || 0), 0);
-        const totalParcial = pagos.filter(p => p.estado.toLowerCase() === 'pendiente').reduce((s, p) => s + Number(p.monto || 0), 0);
-        const totalTotal = pagos.filter(p => p.estado.toLowerCase() === 'pagada').reduce((s, p) => s + Number(p.monto || 0), 0);
+        // 1. Usamos 'monto' porque 'p.total' no existe en tus objetos
+        const total = pagos.reduce((s, p) => s + Number(p.monto || 0), 0);
+
+        // 2. Filtramos usando 'tipo_pago' y agregamos una validación por si acaso (p.tipo_pago || '')
+        const totalParcial = pagos
+            .filter(p => (p.tipo_pago || '').toLowerCase() === 'parcial')
+            .reduce((s, p) => s + Number(p.monto || 0), 0);
+
+        const totalTotal = pagos
+            .filter(p => (p.tipo_pago || '').toLowerCase() === 'total')
+            .reduce((s, p) => s + Number(p.monto || 0), 0);
+
         return { total, totalParcial, totalTotal };
     }, [pagos]);
 

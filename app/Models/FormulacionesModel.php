@@ -154,7 +154,7 @@ class FormulacionesModel extends BaseModel
             + $item->plastico 
             + $item->costo_mod;
 
-        $precioVenta = $nuevoCostoTotal * 1.4;
+        $precioVenta = $nuevoCostoTotal * 1.50;
 
         $costo_mg_kg = ($newVolume && $newVolume > 0)
             ? $nuevoCostoMateriaPrima / $newVolume

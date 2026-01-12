@@ -37,7 +37,6 @@ export const FormulacionesTable = ({
                             <FaFlask size={compact ? 16 : 20} />
                             Formulaciones
                             
-                            {ProductSelect}
                             {recalculatedData && (
                                 <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded-sm">
                                     Calculado
