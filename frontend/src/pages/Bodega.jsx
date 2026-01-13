@@ -21,7 +21,7 @@ import { Loader } from '../components/Loader';
 import { TableInventario } from '../components/inventario/TableInventario';
 import { useMemo, useState } from 'react';
 import { ItemForm } from '../components/inventario/ItemForm';
-import { FileDown } from 'lucide-react';
+import { FileDown, FileUp } from 'lucide-react';
 import { PageTitle } from '../components/PageTitle';
 
 export const Bodega = () => {
@@ -100,6 +100,11 @@ export const Bodega = () => {
                   className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-800 transition-colors">
                   <FileDown className="w-4 h-4" />
                   Insertar Excel
+              </button>
+              <button
+                  className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-800 transition-colors">
+                  <FileUp className="w-4 h-4" />
+                  Descargar Excel
               </button>
               <button
                   onClick={() => {

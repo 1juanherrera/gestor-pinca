@@ -3,7 +3,7 @@ services:
     build: .
     container_name: gestor-pinca-app
     ports:
-      - "8080:80" # Tu API estará en http://localhost:8080
+      - "8080:80" 
     volumes:
       - .:/var/www/html
     depends_on:
@@ -32,8 +32,8 @@ services:
     ports:
       - "8081:80" # Accederás por http://localhost:8081
     environment:
-      PMA_HOST: db # Debe coincidir con el nombre del servicio de la DB
-      MYSQL_ROOT_PASSWORD: rootpassword # La misma que pusiste en db
+      PMA_HOST: db 
+      MYSQL_ROOT_PASSWORD: rootpassword 
     depends_on:
       - db
     networks:

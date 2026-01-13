@@ -1,11 +1,12 @@
 import { MdSave, MdClose, MdAdd, MdDelete, MdAddCircleOutline, MdArticle } from 'react-icons/md';
-import { FaMicroscope, FaPencilAlt } from "react-icons/fa";
+import { FaMicroscope } from "react-icons/fa";
 import { LuTestTubeDiagonal } from "react-icons/lu";
 import { BiMoneyWithdraw } from "react-icons/bi";
-import { HiMiniMagnifyingGlass } from "react-icons/hi2";
-import { BsFillFileBarGraphFill } from "react-icons/bs";
 import { useState } from 'react';
 import { useItems } from '../../hooks/useItems';
+import Select from 'react-select'
+import { ZapIcon } from 'lucide-react';
+import { CustomSelect } from '../CustomSelect';
 
 export const ItemForm = ({ onClose }) => {
 
@@ -16,7 +17,7 @@ export const ItemForm = ({ onClose }) => {
     const [errors, setErrors] = useState({});
     // const [isEditing, setIsEditing] = useState(false);
 
-    const inputClasses = "w-full bg-white text-sm px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out placeholder-gray-300 text-gray-800";
+    const inputClasses = "w-full bg-white text-sm px-3 py-[8px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out placeholder-gray-300 text-gray-800 shadow-sm";
     const labelClasses = "block text-sm font-semibold text-gray-700 mb-1";
     // const errorClasses = "text-red-500 text-xs mt-1";
 
@@ -25,6 +26,32 @@ export const ItemForm = ({ onClose }) => {
         { id: 'propiedades', label: 'Propiedades', icon: <FaMicroscope /> },
         { id: 'formulaciones', label: 'Formulaciones', icon: <LuTestTubeDiagonal /> },
         { id: 'costos', label: 'Inventario & Costos', icon: <BiMoneyWithdraw /> }
+    ];
+
+    const opcionesTipo = [
+        { value: 'PRODUCTO', label: 'PRODUCTO' },
+        { value: 'MATERIA PRIMA', label: 'MATERIA PRIMA' },
+        { value: 'INSUMO', label: 'INSUMO' }
+    ];
+
+    const opcionesCategoria =[
+        { value: '1', label: 'ESMALTE' },
+        { value: '2', label: 'PASTA' },
+        { value: '3', label: 'ANTICORROSIVO' },
+        { value: '4', label: 'BARNIZ' },
+    ]
+
+    const propiedadesFisicas = [
+        { id: 'viscosidad', label: 'Viscosidad' },
+        { id: 'p_g', label: 'Densidad / P.G.' },
+        { id: 'color', label: 'Color' },
+        { id: 'brillo_60', label: 'Brillo (60°)' },
+        { id: 'secado', label: 'Tiempo de Secado' },
+        { id: 'cubrimiento', label: 'Poder Cubriente' },
+        { id: 'molienda', label: 'Molienda / Finura' },
+        { id: 'ph', label: 'pH' },
+        { id: 'poder_tintoreo', label: 'Poder Tintóreo' },
+        { id: 'volumen', label: 'Volumen Solidos' }
     ];
 
     const [formData, setFormData] = useState({
@@ -52,6 +79,17 @@ export const ItemForm = ({ onClose }) => {
     });
 
     const [formulaciones, setFormulaciones] = useState([]);
+
+    const materiaPrimaOptions = materiaPrima?.map(mp => ({
+    value: mp.id_item_general,
+    label: `${mp.nombre} (${mp.codigo})`
+    })) || [];
+
+    const handleFocus = (e) => {
+        if (e.target.value === '0') {
+            e.target.select();
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -103,8 +141,6 @@ export const ItemForm = ({ onClose }) => {
             formulaciones: listaProcesada 
         };
 
-        console.log("Payload corregido:", payload);
-
         createItem(payload, {
             onSuccess: () => {
                 alert("¡Item y Receta creados con éxito!");
@@ -122,28 +158,29 @@ export const ItemForm = ({ onClose }) => {
                         <div className="bg-blue-200 p-6 rounded-lg">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className={labelClasses}>Nombre *</label>
-                                    <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} className={inputClasses} placeholder="Ej: Esmalte Blanco" />
+                                    <label className={labelClasses}>NOMBRE <span className="text-red-700">*</span></label>
+                                    <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} className={inputClasses} />
                                 </div>
                                 <div>
-                                    <label className={labelClasses}>Código *</label>
-                                    <input type="text" name="codigo" value={formData.codigo} onChange={handleChange} className={inputClasses} placeholder="Ej: EBT001" />
+                                    <label className={labelClasses}>CÓDIGO <span className="text-red-700">*</span></label>
+                                    <input type="text" name="codigo" value={formData.codigo} onChange={handleChange} className={inputClasses} />
                                 </div>
-                                <div>
-                                    <label className={labelClasses}>Tipo *</label>
-                                    <select name="tipo" value={formData.tipo} onChange={handleChange} className={inputClasses}>
-                                        <option value="PRODUCTO">PRODUCTO</option>
-                                        <option value="MATERIA PRIMA">MATERIA PRIMA</option>
-                                        <option value="INSUMO">INSUMO</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className={labelClasses}>Categoría *</label>
-                                    <select name="categoria_id" value={formData.categoria_id} onChange={handleChange} className={inputClasses}>
-                                        <option value="1">ESMALTE</option>
-                                        <option value="2">PASTA</option>
-                                    </select>
-                                </div>
+                                <CustomSelect 
+                                    label="TIPO"
+                                    name="tipo"
+                                    value={formData.tipo}
+                                    options={opcionesTipo}
+                                    onChange={handleChange}
+                                    isRequired={true}
+                                />
+                                <CustomSelect 
+                                    label="CATEGORÍA"
+                                    name="categoria_id"
+                                    value={formData.categoria_id}
+                                    options={opcionesCategoria}
+                                    onChange={handleChange}
+                                    isRequired={true}
+                                />
                             </div>
                         </div>
                     </div>
@@ -154,10 +191,17 @@ export const ItemForm = ({ onClose }) => {
                     <div className="space-y-6">
                         <div className="bg-blue-200 p-6 rounded-lg">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {['viscosidad', 'p_g', 'color', 'brillo_60', 'secado', 'cubrimiento', 'molienda', 'ph', 'poder_tintoreo', 'volumen'].map((campo) => (
-                                    <div key={campo}>
-                                        <label className={labelClasses}>{campo.toUpperCase()}</label>
-                                        <input type="text" name={campo} value={formData[campo]} onChange={handleChange} className={inputClasses} />
+                                {propiedadesFisicas.map((campo) => (
+                                    <div key={campo.id}>
+                                        <label className={labelClasses}>{campo.label.toUpperCase()}</label>
+                                        
+                                        <input 
+                                            type="text" 
+                                            name={campo.id}
+                                            value={formData[campo.id]} 
+                                            onChange={handleChange} 
+                                            className={inputClasses}
+                                        />
                                     </div>
                                 ))}
                             </div>
@@ -198,36 +242,43 @@ export const ItemForm = ({ onClose }) => {
                 return (
                     <div className="bg-blue-200 p-6 rounded-lg">
                         <div className="flex justify-between mb-4">
-                            <h3 className="font-bold">Composición del Producto</h3>
-                            <button type="button" onClick={addMateriaPrima} className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2">
-                                <MdAdd /> Agregar Materia Prima
+                            <h3 className="font-bold uppercase text-gray-500 text-[14px]">Formulación del Producto</h3>
+                            <button type="button" onClick={addMateriaPrima} className="bg-green-600 hover:bg-green-700 duration-200 cursor-pointer text-white px-4 py-2 rounded flex items-center gap-2">
+                                <MdAdd size={24}/> Agregar Materia Prima
                             </button>
                         </div>
                         {formulaciones.map((f) => (
                             <div key={f.id} className="bg-white p-4 rounded mb-2 flex gap-4 items-end shadow-sm">
-                                <div className="flex-1">
-                                    <label className="text-xs font-bold">Materia Prima</label>
-                                    <select 
-                                        value={f.id_item_general} 
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            console.log("ID Seleccionado:", val, f.id_item_general);
-                                            handleFormuChange(f.id, 'id_item_general', val);
-                                        }}
-                                        className={inputClasses}
-                                    >
-                                        <option value="">Seleccione...</option>
-                                        {materiaPrima?.map((mp, i) => (
-                                            <option key={i} value={mp.id_item_general}>{mp.nombre} ({mp.codigo})</option>
-                                        ))}
-                                    </select>
+                                <div className="flex-3">
+                                    <label className="text-xs font-bold text-gray-700 uppercase">Materia Prima</label>
+                                <CustomSelect
+                                                options={materiaPrimaOptions}
+                                                value={f.id_item_general}
+                                                onChange={(selected) => 
+                                                    handleFormuChange(f.id, 'id_item_general', selected ? selected.value : '')
+                                                }
+                                                placeholder="BUSCAR MATERIA PRIMA..."
+                                            />
                                 </div>
-                                <div className="w-24">
-                                    <label className="text-xs font-bold">Cant.</label>
-                                    <input type="number" step="0.01" value={f.cantidad} onChange={(e) => handleFormuChange(f.id, 'cantidad', e.target.value)} className={inputClasses} />
+                                
+                                <div className="w-30">
+                                    <label className="text-xs font-bold text-gray-700 uppercase">Cantidad</label>
+                                    <input 
+                                        type="number" 
+                                        step="0.01" 
+                                        value={f.cantidad} 
+                                        onFocus={handleFocus}
+                                        onChange={(e) => handleFormuChange(f.id, 'cantidad', e.target.value)} 
+                                        className={`${inputClasses} text-gray-100`} 
+                                    />
                                 </div>
-                                <button onClick={() => removeMateriaPrima(f.id)} className="bg-red-500 text-white p-2 rounded">
-                                    <MdDelete />
+
+                                <button 
+                                    type="button"
+                                    onClick={() => removeMateriaPrima(f.id)} 
+                                    className="bg-red-500 duration-200 transform cursor-pointer text-white p-2.5 rounded-lg hover:bg-red-700"
+                                >
+                                    <MdDelete size={20} />
                                 </button>
                             </div>
                         ))}
@@ -248,10 +299,10 @@ export const ItemForm = ({ onClose }) => {
                         </h2>
                         <button type="button" onClick={onClose}><MdClose size={28} /></button>
                     </div>
-                    <div className="flex border-b bg-gray-50">
+                    <div className="flex border-b border-gray-300 bg-gray-50">
                         {tabs.map(tab => (
                             <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
-                                className={`px-6 py-4 flex items-center gap-2 ${activeTab === tab.id ? 'border-b-2 border-blue-600 text-blue-600 bg-white' : ''}`}>
+                                className={`px-6 py-4 cursor-pointer flex items-center gap-2 ${activeTab === tab.id ? 'border-b-3 bg-blue-100 border-blue-600 font-semibold text-blue-800' : 'text-gray-700'}`}>
                                 {tab.icon} {tab.label}
                             </button>
                         ))}
@@ -260,9 +311,9 @@ export const ItemForm = ({ onClose }) => {
                         {renderTabContent()}
                         {errors.server && <p className="text-red-500 mt-4 text-center font-bold">{errors.server}</p>}
                     </div>
-                    <div className="p-4 bg-gray-100 flex justify-end gap-3">
-                        <button type="button" onClick={onClose} className="px-6 py-2 border rounded-lg">Cancelar</button>
-                        <button type="submit" disabled={isCreating} className="px-6 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2">
+                    <div className="p-4 border-t border-gray-300 flex justify-end gap-3">
+                        <button type="button" onClick={onClose} className="px-6 py-2 duration-200 transform cursor-pointer hover:scale-105 border border-gray-400 shadow-md rounded-lg">Cancelar</button>
+                        <button type="submit" disabled={isCreating} className="px-6 duration-200 transform cursor-pointer hover:scale-105 py-2 bg-blue-600 text-white shadow-md rounded-lg flex items-center gap-2">
                             {/* <MdSave /> {isCreating ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Guardar Item')} */}
                             <MdSave /> {isCreating ? 'Guardando...' : 'Guardar Item'}
                         </button>
