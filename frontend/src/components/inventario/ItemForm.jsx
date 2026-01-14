@@ -4,11 +4,9 @@ import { LuTestTubeDiagonal } from "react-icons/lu";
 import { BiMoneyWithdraw } from "react-icons/bi";
 import { useState } from 'react';
 import { useItems } from '../../hooks/useItems';
-import Select from 'react-select'
-import { ZapIcon } from 'lucide-react';
 import { CustomSelect } from '../CustomSelect';
 
-export const ItemForm = ({ onClose }) => {
+export const ItemForm = ({ onClose, idBodega }) => {
 
     const { createItem, isCreating, materiaPrima } = useItems();
 
@@ -18,7 +16,7 @@ export const ItemForm = ({ onClose }) => {
     // const [isEditing, setIsEditing] = useState(false);
 
     const inputClasses = "w-full bg-white text-sm px-3 py-[8px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out placeholder-gray-300 text-gray-800 shadow-sm";
-    const labelClasses = "block text-sm font-semibold text-gray-700 mb-1";
+    const labelClasses = "block text-sm font-semibold text-gray-700 mb-1 uppercase";
     // const errorClasses = "text-red-500 text-xs mt-1";
 
     const tabs = [
@@ -50,8 +48,7 @@ export const ItemForm = ({ onClose }) => {
         { id: 'cubrimiento', label: 'Poder Cubriente' },
         { id: 'molienda', label: 'Molienda / Finura' },
         { id: 'ph', label: 'pH' },
-        { id: 'poder_tintoreo', label: 'Poder Tintóreo' },
-        { id: 'volumen', label: 'Volumen Solidos' }
+        { id: 'poder_tintoreo', label: 'Poder Tintóreo' }
     ];
 
     const [formData, setFormData] = useState({
@@ -69,10 +66,9 @@ export const ItemForm = ({ onClose }) => {
         molienda: '',
         ph: '',
         poder_tintoreo: '',
-        volumen: '',
         cantidad: 0,
         costo_unitario: 0,
-        bodega_id: '1',
+        bodega_id: idBodega || '',
         envase: 0,
         etiqueta: 0,
         plastico: 0
@@ -140,6 +136,8 @@ export const ItemForm = ({ onClose }) => {
             plastico: parseFloat(formData.plastico || 0),
             formulaciones: listaProcesada 
         };
+
+        console.log("Formulaciones Snapshot:", JSON.parse(JSON.stringify(formulaciones)));
 
         createItem(payload, {
             onSuccess: () => {
@@ -215,24 +213,54 @@ export const ItemForm = ({ onClose }) => {
                         <div className="bg-blue-200 p-6 rounded-lg grid grid-cols-2 gap-6">
                             <div>
                                 <label className={labelClasses}>Cantidad Inicial</label>
-                                <input type="number" name="cantidad" value={formData.cantidad} onChange={handleChange} className={inputClasses} />
+                                <input 
+                                    type="number" 
+                                    name="cantidad" 
+                                    value={formData.cantidad} 
+                                    onChange={handleChange} 
+                                    onFocus={handleFocus}
+                                    className={inputClasses} />
                             </div>
                             <div>
                                 <label className={labelClasses}>Costo Unitario</label>
-                                <input type="number" name="costo_unitario" value={formData.costo_unitario} onChange={handleChange} className={inputClasses} />
+                                <input 
+                                    type="number" 
+                                    name="costo_unitario" 
+                                    value={formData.costo_unitario} 
+                                    onChange={handleChange} 
+                                    onFocus={handleFocus}
+                                    className={inputClasses} />
                             </div>
                             {/* --- CAMPOS AGREGADOS PARA COINCIDIR CON POSTMAN --- */}
                             <div>
                                 <label className={labelClasses}>Envase</label>
-                                <input type="number" name="envase" value={formData.envase} onChange={handleChange} className={inputClasses} />
+                                <input 
+                                    type="number" 
+                                    name="envase" 
+                                    value={formData.envase} 
+                                    onChange={handleChange} 
+                                    onFocus={handleFocus}
+                                    className={inputClasses} />
                             </div>
                             <div>
                                 <label className={labelClasses}>Etiqueta</label>
-                                <input type="number" name="etiqueta" value={formData.etiqueta} onChange={handleChange} className={inputClasses} />
+                                <input 
+                                    type="number" 
+                                    name="etiqueta" 
+                                    value={formData.etiqueta} 
+                                    onChange={handleChange} 
+                                    onFocus={handleFocus}
+                                    className={inputClasses} />
                             </div>
                             <div>
                                 <label className={labelClasses}>Plástico</label>
-                                <input type="number" name="plastico" value={formData.plastico} onChange={handleChange} className={inputClasses} />
+                                <input 
+                                    type="number" 
+                                    name="plastico" 
+                                    value={formData.plastico} 
+                                    onChange={handleChange} 
+                                    onFocus={handleFocus}
+                                    className={inputClasses} />
                             </div>
                         </div>
                     </div>
@@ -252,13 +280,13 @@ export const ItemForm = ({ onClose }) => {
                                 <div className="flex-3">
                                     <label className="text-xs font-bold text-gray-700 uppercase">Materia Prima</label>
                                 <CustomSelect
-                                                options={materiaPrimaOptions}
-                                                value={f.id_item_general}
-                                                onChange={(selected) => 
-                                                    handleFormuChange(f.id, 'id_item_general', selected ? selected.value : '')
-                                                }
-                                                placeholder="BUSCAR MATERIA PRIMA..."
-                                            />
+                                    options={materiaPrimaOptions}
+                                    value={materiaPrimaOptions.find(opt => opt.value === f.id_item_general)}
+                                    onChange={(selected) => 
+                                        handleFormuChange(f.id, 'id_item_general', selected ? selected.value : '')
+                                    }
+                                    placeholder="BUSCAR MATERIA PRIMA..."
+                                />
                                 </div>
                                 
                                 <div className="w-30">
@@ -297,7 +325,7 @@ export const ItemForm = ({ onClose }) => {
                             { /* <MdAddCircleOutline size={28} /> {isEditing ? 'Editar Item' : 'Crear Nuevo Item'} */}
                             <MdAddCircleOutline size={28} /> Crear Nuevo Item
                         </h2>
-                        <button type="button" onClick={onClose}><MdClose size={28} /></button>
+                        <button type="button" className="cursor-pointer" onClick={onClose}><MdClose size={28} /></button>
                     </div>
                     <div className="flex border-b border-gray-300 bg-gray-50">
                         {tabs.map(tab => (
@@ -313,7 +341,7 @@ export const ItemForm = ({ onClose }) => {
                     </div>
                     <div className="p-4 border-t border-gray-300 flex justify-end gap-3">
                         <button type="button" onClick={onClose} className="px-6 py-2 duration-200 transform cursor-pointer hover:scale-105 border border-gray-400 shadow-md rounded-lg">Cancelar</button>
-                        <button type="submit" disabled={isCreating} className="px-6 duration-200 transform cursor-pointer hover:scale-105 py-2 bg-blue-600 text-white shadow-md rounded-lg flex items-center gap-2">
+                        <button type="submit" disabled={isCreating} className="px-6 duration-200 transform cursor-pointer hover:scale-105 py-2 bg-blue-600 hover:bg-blue-700 text-white shadow-md rounded-lg flex items-center gap-2">
                             {/* <MdSave /> {isCreating ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Guardar Item')} */}
                             <MdSave /> {isCreating ? 'Guardando...' : 'Guardar Item'}
                         </button>

@@ -11,7 +11,6 @@ RUN apt-get update && apt-get install -y \
 
 RUN a2enmod rewrite
 
-# --- AGREGA ESTA LÍNEA EXACTA AQUÍ ---
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # -------------------------------------
 

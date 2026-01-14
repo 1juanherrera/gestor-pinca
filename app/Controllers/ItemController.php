@@ -8,6 +8,7 @@ use App\Models\ItemModel;
 class ItemController extends ResourceController 
 {
     protected $modelName = ItemModel::class;
+    protected $request;
 
     public function item_general()
     {
@@ -58,6 +59,7 @@ class ItemController extends ResourceController
         ]);
     }
 
+    
     public function update($id = null)
     {
         $json = $this->request->getBody();

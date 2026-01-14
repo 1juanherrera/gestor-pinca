@@ -13,6 +13,7 @@ export const TableInventario = ({ items = [], refreshItems }) => {
     const getTipo = (item) => (item?.nombre_tipo || item.tipo || '-').toUpperCase();
     const getPrecio = (item) => item?.precio_venta || '-';
     const getId = (item) => item?.id_item_general || item.id || '-';
+    const getCostoGalon = (item) => item?.costo_mp_galon || '-';
 
     const handleType = (item) => {
         const tipo = getTipo(item);
@@ -50,24 +51,26 @@ export const TableInventario = ({ items = [], refreshItems }) => {
         <>
             <div className="overflow-hidden rounded-lg border mt-3 border-gray-200">
                 <div className="max-h-[63vh] overflow-y-auto">
-                    <table className="w-full">
-                        <thead className="sticky top-0 bg-gray-700 text-white uppercase">
+                    <table className="w-full border-collapse">
+                        <thead className="text-white uppercase">
                             <tr>
-                                <th className="px-4 py-2 text-center text-xs font-medium w-15">#</th>
-                                <th className="px-4 py-2 text-center text-xs font-medium w-25">Codigo</th>
-                                <th className="px-4 py-2 text-left text-xs font-medium">Nombre</th>
-                                <th className="px-4 py-2 text-center text-xs font-medium w-32">Cantidad</th>
-                                <th className="px-4 py-2 text-center text-xs font-medium w-32">Tipo</th>
-                                <th className="px-4 py-2 text-center text-xs font-medium w-32">Unidad</th>
-                                <th className="px-4 py-2 text-center text-xs font-medium w-28">Precio</th>
-                                <th className="px-4 py-2 text-center text-xs font-medium w-32">Acciones</th>
+                                <th className="px-4 py-2 sticky top-0 z-20 bg-gray-700 text-center text-xs font-medium w-15">#</th>
+                                <th className="px-4 py-2 sticky top-0 z-20 bg-gray-700 text-center text-xs font-medium w-25">Codigo</th>
+                                <th className="px-4 py-2 sticky top-0 z-20 bg-gray-700 text-left text-xs font-medium">Nombre</th>
+                                <th className="px-4 py-2 sticky top-0 z-20 bg-gray-700 text-center text-xs font-medium w-32">Cantidad</th>
+                                <th className="px-4 py-2 sticky top-0 z-20 bg-gray-700 text-center text-xs font-medium w-32">Tipo</th>
+                                <th className="px-4 py-2 sticky top-0 z-20 bg-gray-700 text-center text-xs font-medium w-32">Unidad</th>
+                                <th className="px-4 py-2 sticky top-0 z-20 bg-gray-700 text-center text-xs font-medium w-32">Costo</th>
+                                <th className="px-4 py-2 sticky top-0 z-20 bg-gray-700 text-center text-xs font-medium w-28">Precio</th>
+                                <th className="px-4 py-2 sticky top-0 z-20 bg-gray-700 text-center text-xs font-medium w-32">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="bg-gray-100">
                             {items.map((producto, index) => (
                                 <tr 
                                     key={index} 
-                                    className={`border-b border-gray-300 hover:bg-gray-200 transition-colors ${
+                                    className={`border-b border-gray-300 hover:bg-gray-300 
+                                        relative hover:z-10 hover:ring-2 hover:ring-inset hover:ring-gray-400 transition-colors ${
                                         index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                                     }`}
                                 >
@@ -104,6 +107,11 @@ export const TableInventario = ({ items = [], refreshItems }) => {
                                     <td className="p-1 text-center border border-gray-200">
                                         <span className="text-xs font-medium text-gray-900">
                                             {producto.unidad || '-'}
+                                        </span>
+                                    </td>
+                                    <td className="p-1 text-left border border-gray-200">
+                                        <span className="text-xs font-semibold text-emerald-800 pl-6">
+                                            {formatoPesoColombiano(getCostoGalon(producto))}
                                         </span>
                                     </td>
                                     <td className="p-1 text-left border border-gray-200">

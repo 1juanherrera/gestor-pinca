@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { FaWarehouse , FaCalculator, FaFileInvoice, FaUserTag, FaUserFriends, FaCompressAlt } from "react-icons/fa";
 import { HiOutlineViewGridAdd } from "react-icons/hi";
-import { BsFileEarmarkBarGraphFill } from "react-icons/bs";
+import { TbReportMoney } from "react-icons/tb";
 import { IoMdExit } from "react-icons/io";
 import { logout } from "../store/session";
 
@@ -46,8 +46,8 @@ export const Sidebar = () => {
         </li>
         <li className="w-full">
           <NavLink
-            to="/graficas"
-            className={({ isActive }) => `flex items-center gap-2 w-full p-3 rounded-xl cursor-pointer text-left ${ isActive ? 'bg-neutral-900' : 'hover:bg-neutral-900'}`}><BsFileEarmarkBarGraphFill fontSize={25}/> Graficas</NavLink>
+            to="/costos"
+            className={({ isActive }) => `flex items-center gap-2 w-full p-3 rounded-xl cursor-pointer text-left ${ isActive ? 'bg-neutral-900' : 'hover:bg-neutral-900'}`}><TbReportMoney fontSize={25}/> Costos</NavLink>
         </li>
         <li className="w-full mt-15">
           <NavLink

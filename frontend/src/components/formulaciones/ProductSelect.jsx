@@ -25,7 +25,8 @@ export const ProductSelect = ({
     const productosOnly = productos.filter(item => item.tipo === 'PRODUCTO');
     const insumosOnly = insumos.filter(item => item.tipo === 'INSUMO');
 
-    console.log(productos)
+    console.log('productosOnly:', productosOnly);
+    console.log('insumosOnly:', insumosOnly);
 
     return (
         <div className={`bg-white rounded-lg shadow-sm ${compact ? 'p-4' : 'p-6'}`}>
@@ -58,7 +59,7 @@ export const ProductSelect = ({
                     {productosOnly.length > 0 && (
                         <optgroup label={`${productosOnly.length} PRODUCTOS`}>
                             {productosOnly.map((producto, i) => (
-                                <option key={i} value={producto.id_formulacion}>
+                                <option key={i} value={producto.id_item_general}>
                                     {producto.codigo} {producto.nombre} 
                                     ({producto.items?.length || 0} comp.)
                                 </option>
@@ -69,9 +70,9 @@ export const ProductSelect = ({
                     {insumosOnly.length > 0 && (
                         <optgroup label={`${insumosOnly.length} INSUMOS`}>
                             {insumosOnly.map((insumo, i) => (
-                                <option key={i} value={insumo.id}>
-                                    {insumo.codigo} - {insumo.nombre} 
-                                    ({insumo.formulaciones?.length || 0} comp.)
+                                <option key={i} value={insumo.id_item_general}>
+                                    {insumo.codigo} - {insumo.nombre}  
+                                    ({insumo.items?.length || 0} comp.)
                                 </option>
                             ))}
                         </optgroup>
@@ -85,13 +86,13 @@ export const ProductSelect = ({
             {selectedProduct && (
                 <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex items-center gap-2">
-                        {productos.find(p => p.id === parseInt(selectedProduct))?.tipo === 'PRODUCTO' ? (
+                        {productos.find(p => p.id_item_general === parseInt(selectedProduct))?.tipo === 'PRODUCTO' ? (
                             <FaFlask className="text-blue-600" size={12} />
                         ) : (
                             <AiFillAppstore className="text-blue-600" size={12} />
                         )}
                         <p className="text-xs text-blue-800">
-                            ✓ {productos.find(p => p.id_formulacion === selectedProduct)?.tipo} seleccionado: {productos.find(p => p.id_formulacion === selectedProduct)?.nombre_item_general}
+                            ✓ {productos.find(p => p.id_item_general === parseInt(selectedProduct))?.tipo} seleccionado: {productos.find(p => p.id_item_general === parseInt(selectedProduct))?.nombre_item_general}
                         </p>
                     </div>
                 </div>

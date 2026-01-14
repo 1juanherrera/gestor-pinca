@@ -34,6 +34,8 @@ class BodegasModel extends BaseModel
                         ig.tipo,
                         ca.nombre AS categoria,
                         u.nombre AS unidad,
+                        c.costo_mp_galon,
+                        c.costo_mp_kg,
                         c.precio_venta
                         FROM inventario inv
                         JOIN item_general ig ON inv.item_general_id = ig.id_item_general

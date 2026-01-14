@@ -110,7 +110,7 @@ export const FormulacionesTable = ({
                                     <MdScience className="h-3 w-3 text-blue-600" />
                                     </div>
                                     <div className="ml-3">
-                                    <div className="text-xs font-medium text-gray-900">
+                                    <div className="text-xs font-medium text-gray-900 uppercase">
                                         {formulacion.materia_prima_nombre || 'Sin nombre'}
                                     </div>
                                     <div className="text-xs text-gray-500">

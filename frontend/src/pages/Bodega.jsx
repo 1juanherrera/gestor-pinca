@@ -1,19 +1,7 @@
-import {
-    FaPlus,
-    FaSearch,
-    FaUsers,
-    FaUser,
-    FaEye,
-    FaEdit,
-    FaTrash,
-    FaBuilding,
-    FaPhone,
-    FaEnvelope,
-    FaBoxOpen,
-    FaLongArrowAltLeft
-} from 'react-icons/fa';
+import { FaSearch, FaBoxOpen, FaLongArrowAltLeft } from 'react-icons/fa';
 import { MdAddCircleOutline, MdOutlineRefresh  } from "react-icons/md";
 import { AiFillProduct, AiFillAppstore } from "react-icons/ai";
+import { RiFileExcel2Line } from "react-icons/ri";
 import { LuAtom } from "react-icons/lu";
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBodegas } from '../hooks/useBodegas';
@@ -21,7 +9,6 @@ import { Loader } from '../components/Loader';
 import { TableInventario } from '../components/inventario/TableInventario';
 import { useMemo, useState } from 'react';
 import { ItemForm } from '../components/inventario/ItemForm';
-import { FileDown, FileUp } from 'lucide-react';
 import { PageTitle } from '../components/PageTitle';
 
 export const Bodega = () => {
@@ -36,7 +23,6 @@ export const Bodega = () => {
   const [filterEstado, setFilterEstado] = useState('');
   const [search, setSearch] = useState('');
   
-
   const itemsFiltrados = useMemo(() => {
     return tipoFiltro
       ? (items?.inventario || []).filter(item => item.tipo == tipoFiltro)
@@ -81,8 +67,8 @@ export const Bodega = () => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-2">
-              <FaBoxOpen className="text-blue-600 w-6 h-6" />
-              <h1 className="text-xl font-bold text-gray-800">
+              <FaBoxOpen className="text-blue-600" size={35} />
+              <h1 className="text-xl font-bold text-gray-800 uppercase">
                   Gestión de Inventario
               </h1>
           </div>
@@ -93,25 +79,20 @@ export const Bodega = () => {
                     setTipoFiltro("");
                   }}
                   className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-500 transition-colors">
-                  <MdOutlineRefresh className="w-4 h-4" />
+                  <MdOutlineRefresh size={20} />
                   Actualizar
               </button>
               <button
                   className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-800 transition-colors">
-                  <FileDown className="w-4 h-4" />
+                  <RiFileExcel2Line  size={20} />
                   Insertar Excel
-              </button>
-              <button
-                  className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-800 transition-colors">
-                  <FileUp className="w-4 h-4" />
-                  Descargar Excel
               </button>
               <button
                   onClick={() => {
                     navigate(-1);
                   }}
                   className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors">
-                  <FaLongArrowAltLeft className="w-4 h-4" />
+                  <FaLongArrowAltLeft size={20} />
                   Volver
               </button>
           </div>
@@ -132,7 +113,7 @@ export const Bodega = () => {
                     }}
                     className={`px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg hover:bg-gray-400 hover:text-white cursor-pointer flex items-center gap-2`}
                 >
-                    <FaBoxOpen size={16} />
+                    <FaBoxOpen size={20} />
                     Todos
                 </button>
                 <button
@@ -142,7 +123,7 @@ export const Bodega = () => {
                     }}
                     className={`px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg hover:bg-emerald-600 hover:text-white cursor-pointer flex items-center gap-2`}
                 >
-                    <AiFillProduct size={16} />
+                    <AiFillProduct size={20} />
                     Productos
                 </button>
                 <button
@@ -152,7 +133,7 @@ export const Bodega = () => {
                     }}
                     className={`px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg hover:bg-purple-600 hover:text-white cursor-pointer flex items-center gap-2`}  
                 >
-                    <LuAtom size={16} />
+                    <LuAtom size={20} />
                     Materia Prima
                 </button>
                 <button
@@ -162,7 +143,7 @@ export const Bodega = () => {
                     }}
                     className={`px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg hover:bg-yellow-600 hover:text-white cursor-pointer flex items-center gap-2`}
                 >
-                    <AiFillAppstore size={16} />
+                    <AiFillAppstore size={20} />
                     Insumos
                 </button>
             </div>
@@ -176,7 +157,7 @@ export const Bodega = () => {
                     shadow-md hover:shadow-lg cursor-pointer flex items-center gap-2
                     bg-emerald-600 text-white hover:bg-emerald-700"
             >
-                <MdAddCircleOutline size={18} />
+                <MdAddCircleOutline size={20} />
                 Crear Item
             </button>
         </div>
@@ -228,6 +209,7 @@ export const Bodega = () => {
         <ItemForm
           onClose={() => setShowForm(false)}
           refreshItems={refreshItems}
+          idBodega={id}
         />
       )}
  
