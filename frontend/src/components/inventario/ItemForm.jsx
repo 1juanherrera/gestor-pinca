@@ -2,18 +2,28 @@ import { MdSave, MdClose, MdAdd, MdDelete, MdAddCircleOutline, MdArticle } from 
 import { FaMicroscope } from "react-icons/fa";
 import { LuTestTubeDiagonal } from "react-icons/lu";
 import { BiMoneyWithdraw } from "react-icons/bi";
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useItems } from '../../hooks/useItems';
 import { CustomSelect } from '../CustomSelect';
+import { LoaderForm } from '../Loader';
 
-export const ItemForm = ({ onClose, idBodega }) => {
+export const ItemForm = ({ onClose, idBodega, idEdit, showForm }) => {
 
-    const { createItem, isCreating, materiaPrima } = useItems();
+    const { 
+        createItem, 
+        createError,
+        itemDetail,
+        isLoadingItemDetail,
+        isCreating, 
+        materiaPrima, 
+        updateItem, 
+        updateError, 
+        isUpdating 
+    } = useItems(idEdit);
 
     const [activeTab, setActiveTab] = useState('basico');
-    // const [loadingItems, setLoadingItems] = useState(false);
     const [errors, setErrors] = useState({});
-    // const [isEditing, setIsEditing] = useState(false);
+    const [formulaciones, setFormulaciones] = useState([]);
 
     const inputClasses = "w-full bg-white text-sm px-3 py-[8px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out placeholder-gray-300 text-gray-800 shadow-sm";
     const labelClasses = "block text-sm font-semibold text-gray-700 mb-1 uppercase";
@@ -27,12 +37,14 @@ export const ItemForm = ({ onClose, idBodega }) => {
     ];
 
     const opcionesTipo = [
-        { value: 'PRODUCTO', label: 'PRODUCTO' },
-        { value: 'MATERIA PRIMA', label: 'MATERIA PRIMA' },
-        { value: 'INSUMO', label: 'INSUMO' }
+        { value: '', label: 'SELECCIONE TIPO...' },
+        { value: '0', label: 'PRODUCTO' },
+        { value: '1', label: 'MATERIA PRIMA' },
+        { value: '2', label: 'INSUMO' }
     ];
 
     const opcionesCategoria =[
+        { value: '', label: 'SELECCIONE CATEGORÍA...' },
         { value: '1', label: 'ESMALTE' },
         { value: '2', label: 'PASTA' },
         { value: '3', label: 'ANTICORROSIVO' },
@@ -54,9 +66,8 @@ export const ItemForm = ({ onClose, idBodega }) => {
     const [formData, setFormData] = useState({
         nombre: '',
         codigo: '',
-        tipo: 'PRODUCTO',
-        categoria_id: '1',
-        unidad_id: '1',
+        tipo: '',
+        categoria_id: '',
         viscosidad: '',
         p_g: '',
         color: '',
@@ -74,12 +85,50 @@ export const ItemForm = ({ onClose, idBodega }) => {
         plastico: 0
     });
 
-    const [formulaciones, setFormulaciones] = useState([]);
+    useEffect(() => {
+        if (itemDetail) {
+            setFormData({
+                nombre: itemDetail.nombre || '',
+                codigo: itemDetail.codigo || '',
+                tipo: itemDetail.tipo || 'PRODUCTO',
+                categoria_id: itemDetail.categoria_id || '',
+                viscosidad: itemDetail.viscosidad || '',
+                p_g: itemDetail.p_g || '',
+                color: itemDetail.color || '',
+                brillo_60: itemDetail.brillo_60 || '',
+                secado: itemDetail.secado || '',
+                cubrimiento: itemDetail.cubrimiento || '',
+                molienda: itemDetail.molienda || '',
+                ph: itemDetail.ph || '',
+                poder_tintoreo: itemDetail.poder_tintoreo || '',
+                cantidad: itemDetail.cantidad || 0,
+                costo_unitario: itemDetail.costo_unitario || 0,
+                bodega_id: itemDetail.bodega_id || idBodega || '',
+                envase: itemDetail.envase || 0,
+                etiqueta: itemDetail.etiqueta || 0,
+                plastico: itemDetail.plastico || 0
+            });
 
-    const materiaPrimaOptions = materiaPrima?.map(mp => ({
-    value: mp.id_item_general,
-    label: `${mp.nombre} (${mp.codigo})`
-    })) || [];
+            if (itemDetail?.formulaciones) {
+                const formuMapped = itemDetail.formulaciones.map(f => ({
+                    id: f.id_item_general_formulaciones || Date.now() + Math.random(), //key de React
+                    id_item_general: String(f.item_general_id),
+                    nombre: f.nombre,
+                    cantidad: f.cantidad
+                }));
+                setFormulaciones(formuMapped);
+            }
+        } else {
+            setFormulaciones([]);
+        }
+    }, [itemDetail, idBodega]);
+
+    const materiaPrimaOptions = useMemo(() => {
+        return materiaPrima?.map(mp => ({
+            value: String(mp.id_item_general),
+            label: `${mp.nombre} (${mp.codigo})`
+        })) || [];
+    }, [materiaPrima]);
 
     const handleFocus = (e) => {
         if (e.target.value === '0') {
@@ -111,8 +160,25 @@ export const ItemForm = ({ onClose, idBodega }) => {
         ));
     };
 
+    const validate = () => {
+        const newErrors = {};
+        if (!(formData.nombre || "").trim()) {
+            newErrors.nombre = "El nombre es obligatorio.";
+        }
+
+        if (!(formData.codigo || "").trim()) {
+            newErrors.codigo = "El código de referencia es obligatorio.";
+        }
+        if (!formData.tipo) newErrors.tipo = "Seleccione un tipo de producto.";
+        if (!formData.categoria_id) newErrors.categoria_id = "La categoría es necesaria.";
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (!validate()) return;
         
         const listaProcesada = formulaciones
             .map(f => ({
@@ -127,7 +193,6 @@ export const ItemForm = ({ onClose, idBodega }) => {
         const payload = {
             ...formData,
             categoria_id: parseInt(formData.categoria_id),
-            unidad_id: parseInt(formData.unidad_id),
             bodega_id: parseInt(formData.bodega_id),
             costo_unitario: parseFloat(formData.costo_unitario || 0),
             cantidad: parseFloat(formData.cantidad || 0),
@@ -137,15 +202,23 @@ export const ItemForm = ({ onClose, idBodega }) => {
             formulaciones: listaProcesada 
         };
 
-        console.log("Formulaciones Snapshot:", JSON.parse(JSON.stringify(formulaciones)));
-
-        createItem(payload, {
-            onSuccess: () => {
-                alert("¡Item y Receta creados con éxito!");
-                onClose();
-            },
-            onError: (err) => setErrors({ server: err.message })
-        });
+            if (idEdit) {              
+                updateItem({ id: idEdit, data: payload }, {
+                    onSuccess: () => {
+                        alert("¡Item actualizado con éxito!");
+                        onClose();
+                    },
+                    onError: (err) => setErrors({ server: err.message })
+                });
+            } else {
+                createItem(payload, {
+                    onSuccess: () => {
+                        alert("¡Item creado con éxito!");
+                        onClose();
+                    },
+                    onError: (err) => setErrors({ server: err.message })
+                });
+            }
     };
 
     const renderTabContent = () => {
@@ -157,11 +230,31 @@ export const ItemForm = ({ onClose, idBodega }) => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className={labelClasses}>NOMBRE <span className="text-red-700">*</span></label>
-                                    <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} className={inputClasses} />
+                                    <input 
+                                        type="text" 
+                                        name="nombre" 
+                                        value={formData.nombre} 
+                                        onChange={handleChange}
+                                        className={inputClasses} />
+                                        {(errors.nombre || createError?.message || updateError?.message) && (
+                                                <p className="text-red-500 text-[11px] font-bold mt-1 uppercase leading-none">
+                                                    {errors.nombre || createError?.message || updateError?.message}
+                                                </p>
+                                            )}
                                 </div>
                                 <div>
                                     <label className={labelClasses}>CÓDIGO <span className="text-red-700">*</span></label>
-                                    <input type="text" name="codigo" value={formData.codigo} onChange={handleChange} className={inputClasses} />
+                                    <input 
+                                        type="text" 
+                                        name="codigo" 
+                                        value={formData.codigo} 
+                                        onChange={handleChange} 
+                                        className={inputClasses} />
+                                        {(errors.codigo || createError?.message || updateError?.message) && (
+                                                <p className="text-red-500 text-[11px] font-bold mt-1 uppercase leading-none">
+                                                    {errors.codigo || createError?.message || updateError?.message}
+                                                </p>
+                                            )}
                                 </div>
                                 <CustomSelect 
                                     label="TIPO"
@@ -170,14 +263,17 @@ export const ItemForm = ({ onClose, idBodega }) => {
                                     options={opcionesTipo}
                                     onChange={handleChange}
                                     isRequired={true}
+                                    error={errors.tipo || (createError || updateError) && "Error en servidor"}
                                 />
                                 <CustomSelect 
                                     label="CATEGORÍA"
                                     name="categoria_id"
+                                    
                                     value={formData.categoria_id}
                                     options={opcionesCategoria}
                                     onChange={handleChange}
                                     isRequired={true}
+                                    error={errors.categoria_id || (createError || updateError) && "Error en servidor"}
                                 />
                             </div>
                         </div>
@@ -224,14 +320,14 @@ export const ItemForm = ({ onClose, idBodega }) => {
                             <div>
                                 <label className={labelClasses}>Costo Unitario</label>
                                 <input 
-                                    type="number" 
+                                    type="text" 
                                     name="costo_unitario" 
                                     value={formData.costo_unitario} 
                                     onChange={handleChange} 
                                     onFocus={handleFocus}
                                     className={inputClasses} />
                             </div>
-                            {/* --- CAMPOS AGREGADOS PARA COINCIDIR CON POSTMAN --- */}
+
                             <div>
                                 <label className={labelClasses}>Envase</label>
                                 <input 
@@ -281,10 +377,11 @@ export const ItemForm = ({ onClose, idBodega }) => {
                                     <label className="text-xs font-bold text-gray-700 uppercase">Materia Prima</label>
                                 <CustomSelect
                                     options={materiaPrimaOptions}
-                                    value={materiaPrimaOptions.find(opt => opt.value === f.id_item_general)}
-                                    onChange={(selected) => 
-                                        handleFormuChange(f.id, 'id_item_general', selected ? selected.value : '')
-                                    }
+                                    value={String(f.id_item_general)}
+                                    onChange={(e) => {
+                                        const idReal = e.target.value;
+                                        handleFormuChange(f.id, 'id_item_general', idReal);
+                                    }}
                                     placeholder="BUSCAR MATERIA PRIMA..."
                                 />
                                 </div>
@@ -319,11 +416,14 @@ export const ItemForm = ({ onClose, idBodega }) => {
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden">
+
+            { idEdit && isLoadingItemDetail ? (
+                    <LoaderForm name="Item"/>
+                ) : (
                 <form onSubmit={handleSubmit}>
                     <div className="bg-blue-500 text-white p-6 flex justify-between items-center">
                         <h2 className="text-2xl font-bold flex items-center gap-2">
-                            { /* <MdAddCircleOutline size={28} /> {isEditing ? 'Editar Item' : 'Crear Nuevo Item'} */}
-                            <MdAddCircleOutline size={28} /> Crear Nuevo Item
+                            <MdAddCircleOutline size={28} /> {showForm ? 'Editar Item' : 'Crear Nuevo Item'}
                         </h2>
                         <button type="button" className="cursor-pointer" onClick={onClose}><MdClose size={28} /></button>
                     </div>
@@ -341,12 +441,12 @@ export const ItemForm = ({ onClose, idBodega }) => {
                     </div>
                     <div className="p-4 border-t border-gray-300 flex justify-end gap-3">
                         <button type="button" onClick={onClose} className="px-6 py-2 duration-200 transform cursor-pointer hover:scale-105 border border-gray-400 shadow-md rounded-lg">Cancelar</button>
-                        <button type="submit" disabled={isCreating} className="px-6 duration-200 transform cursor-pointer hover:scale-105 py-2 bg-blue-600 hover:bg-blue-700 text-white shadow-md rounded-lg flex items-center gap-2">
-                            {/* <MdSave /> {isCreating ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Guardar Item')} */}
-                            <MdSave /> {isCreating ? 'Guardando...' : 'Guardar Item'}
+                        <button type="submit" disabled={isCreating || isUpdating} className="px-6 duration-200 transform cursor-pointer hover:scale-105 py-2 bg-blue-600 hover:bg-blue-700 text-white shadow-md rounded-lg flex items-center gap-2">
+                            <MdSave /> {isCreating || isUpdating ? 'Guardando...' : (showForm ? 'Actualizar' : 'Guardar Item')}
                         </button>
                     </div>
                 </form>
+                )}
             </div>
         </div>
     );

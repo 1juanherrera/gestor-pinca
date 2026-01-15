@@ -23,10 +23,14 @@ class ItemController extends ResourceController
 
     public function show($id = null)
     {
-        $item = $this->model->get($id, 'item_general');
+        if (!$id) return $this->fail("ID no proporcionado", 400);
+
+        $item = $this->model->get_full_item_details($id);
+
         if (!$item) {
-            return $this->failNotFound("Item con ID $id no encontrado.");
+            return $this->failNotFound("El item no existe.");
         }
+
         return $this->respond($item);
     }
 
@@ -59,16 +63,29 @@ class ItemController extends ResourceController
         ]);
     }
 
-    
     public function update($id = null)
     {
-        $json = $this->request->getBody();
-        $data = json_decode($json, true);
-        if (!$this->model->find($id)) {
-            return $this->failNotFound("Item con ID $id no encontrado.");
+        // 1. Obtener datos del cuerpo de la petición (soporta JSON de React)
+        $data = $this->request->getJSON(true);
+
+        if (!$id) {
+            return $this->fail("ID no proporcionado", 400);
         }
-        $this->model->update($id, $data);
-        return $this->respond(['mensaje' => "Item $id actualizado"]);
+
+        try {
+            // 2. Llamamos a nuestra función personalizada que actualiza
+            // item_general, costos_item y las formulaciones en una sola transacción
+            $this->model->update_full_item($id, $data);
+
+            return $this->respond([
+                'status'  => 200,
+                'message' => "Item $id y sus dependencias actualizados correctamente"
+            ]);
+
+        } catch (\Exception $e) {
+            // 3. Si algo falla (el item no existe o error SQL), devolvemos el error real
+            return $this->fail($e->getMessage(), 400);
+        }
     }
 
     public function delete($id = null)

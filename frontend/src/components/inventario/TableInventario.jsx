@@ -3,10 +3,15 @@ import { formatoPesoColombiano, validarEntero } from "../../utils/formatters";
 import { useItems } from "../../hooks/useItems";
 import { useToast } from "../../hooks/useToast";
 import { Toast } from "../Toast";
+import { useState } from "react";
+import { ItemForm } from "./ItemForm";
 
 export const TableInventario = ({ items = [], refreshItems }) => {
 
     const { removeItem, refreshData } = useItems();
+    const [idEdit, setIdEdit] = useState(null);
+
+    const [showForm, setShowForm] = useState(false);
 
     const getNombre = (item) => item?.nombre_item_general || item.nombre || '-';
     const getCodigo = (item) => item?.codigo_item_general || item.codigo || '-';
@@ -40,7 +45,7 @@ export const TableInventario = ({ items = [], refreshItems }) => {
 
     const handleDelete = (id, name, deleteFunc) => {
         if (window.confirm(`¿Seguro que deseas eliminar ${name}?`)) {
-            eventToast(`${name} eliminado correctamente`, "error");
+            eventToast(`${name} eliminado correctamente`, "success");
             refreshItems();
             refreshData();
             deleteFunc(id);
@@ -122,14 +127,18 @@ export const TableInventario = ({ items = [], refreshItems }) => {
                                     <td className="p-1 py-1 border border-gray-200">
                                         <div className="flex justify-center gap-2">
                                                 <button 
-                                                    className="p-2 text-white rounded-md transition-colors bg-gray-500 hover:bg-gray-800 cursor-pointer"
+                                                onClick={() => (
+                                                    setShowForm(true),   
+                                                    setIdEdit(getId(producto))
+                                                )}
+                                                    className="p-2 text-white duration-200 transform hover:scale-110 rounded-md transition-colors bg-gray-500 hover:bg-gray-800 cursor-pointer"
                                                     title="Editar"
                                                 >
                                                     <FaEdit size={14} />
                                                 </button>
                                                 <button 
                                                     onClick={() => handleDelete(getId(producto), getNombre(producto), removeItem)}
-                                                    className="p-2 bg-red-500 text-white hover:bg-red-800 rounded-md transition-colors cursor-pointer"
+                                                    className="p-2 duration-200 transform hover:scale-110 bg-red-500 text-white hover:bg-red-800 rounded-md transition-colors cursor-pointer"
                                                     title="Eliminar"
                                                 >
                                                     <FaTrash size={14} />
@@ -149,6 +158,17 @@ export const TableInventario = ({ items = [], refreshItems }) => {
                 message={toastMessage} 
                 type={toastType}
                 onClose={() => setToastVisible(false)}
+            />
+        )}
+        {showForm && (
+            <ItemForm 
+                idEdit={idEdit}
+                refreshItems={refreshItems}
+                showForm={showForm}
+                onClose={() => {
+                    setIdEdit(null);
+                    setShowForm(false);
+                }}
             />
         )}
         </>

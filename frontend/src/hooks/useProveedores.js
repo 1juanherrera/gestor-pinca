@@ -18,7 +18,7 @@ export const useProveedores = () => {
   const data = query.data ?? [];
   const proveedoresData = queryProveedores.data ?? [];
   const itemData = Array.isArray(queryItem.data) ? queryItem.data : (queryItem.data ?? []);
-
+  
   const remove = (id) => {
     deleteMutation.mutate(id, {
       onSuccess: () => query.refetch(),

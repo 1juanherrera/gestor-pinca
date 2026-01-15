@@ -1,13 +1,15 @@
 import { useApiMutation, useApiDelete, useApiUpdate, useApiResource } from "../connection/getApi";
 
-export const useItems = () => {
+export const useItems = (id = null) => {
 
   const query = useApiResource(`/item_general`);
   const mutation = useApiMutation('/item_general');
   const deleteMutation = useApiDelete(`/item_general`);
   const updateMutation = useApiUpdate(`/item_general`);
+  const itemDetail = useApiResource(id ? `/item_general/${id}` : null, `item_detail_${id}`);
 
   const data = query.data ?? [];
+  const itemDetailData = itemDetail.data ?? null;
 
   const materiaPrima = data.filter(item => item.tipo === '1');
 
@@ -21,6 +23,8 @@ export const useItems = () => {
     ...query,
     materiaPrima,
     refreshData: query.refetch,
+    itemDetail: itemDetailData,
+    isLoadingItemDetail: itemDetail.isLoading,
 
     createItem: mutation.mutate,
     isCreating: mutation.isLoading,

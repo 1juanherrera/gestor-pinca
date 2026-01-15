@@ -25,9 +25,6 @@ export const ProductSelect = ({
     const productosOnly = productos.filter(item => item.tipo === 'PRODUCTO');
     const insumosOnly = insumos.filter(item => item.tipo === 'INSUMO');
 
-    console.log('productosOnly:', productosOnly);
-    console.log('insumosOnly:', insumosOnly);
-
     return (
         <div className={`bg-white rounded-lg shadow-sm ${compact ? 'p-4' : 'p-6'}`}>
             <div className="flex items-center justify-between mb-3">

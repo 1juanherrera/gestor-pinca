@@ -62,6 +62,45 @@ class ItemModel extends BaseModel
         return $items;
     }
 
+    public function get_full_item_details($id)
+    {
+        // 1. Obtener datos básicos de item_general y sus costos
+        $builder = $this->db->table('item_general ig');
+
+        $builder->select(
+                    'ig.*, 
+                    c.costo_unitario, 
+                    c.envase, 
+                    c.etiqueta, 
+                    c.plastico, 
+                    c.volumen, 
+                    c.costo_mp_galon, 
+                    c.costo_mp_kg, 
+                    c.precio_venta');
+        $builder->join('costos_item c', 'c.item_general_id = ig.id_item_general', 'left');
+        $builder->where('ig.id_item_general', $id);
+        
+        $item = $builder->get()->getRowArray();
+
+        if ($item) {
+            $formulacion = $this->db->table('formulaciones')
+                                ->where('item_general_id', $id)
+                                ->get()->getRow();
+
+            if ($formulacion) {
+                $item['formulaciones'] = $this->db->table('item_general_formulaciones igf')
+                    ->select('igf.item_general_id, ig.nombre, igf.cantidad')
+                    ->join('item_general ig', 'ig.id_item_general = igf.item_general_id', 'left')
+                    ->where('igf.formulaciones_id', $formulacion->id_formulaciones)
+                    ->get()->getResultArray();
+            } else {
+                $item['formulaciones'] = [];
+            }
+        }
+
+        return $item;
+    }
+
     public function create_full_item($data)
     {
         $this->db->transStart();
@@ -81,7 +120,7 @@ class ItemModel extends BaseModel
                 'categoria_id'     => $data['categoria_id'] ?? null,
                 'viscosidad'       => $data['viscosidad'] ?? null,
                 'p_g'              => $data['p_g'] ?? null,
-                'color'            => substr($data['color'] ?? '', 0, 3), 
+                'color'            => $data['color'] ?? null,
                 'brillo_60'        => $data['brillo_60'] ?? null,
                 'secado'           => $data['secado'] ?? null,
                 'cubrimiento'      => $data['cubrimiento'] ?? null,
@@ -186,12 +225,12 @@ class ItemModel extends BaseModel
                 'categoria_id'     => $data['categoria_id'] ?? null,
                 'viscosidad'       => $data['viscosidad'] ?? null,
                 'p_g'              => $data['p_g'] ?? null,
-                'color'            => substr($data['color'] ?? '', 0, 3),
+                'color'            => $data['color'] ?? null,
                 'brillo_60'        => $data['brillo_60'] ?? null,
                 'secado'           => $data['secado'] ?? null,
                 'cubrimiento'      => $data['cubrimiento'] ?? null,
                 'molienda'         => $data['molienda'] ?? null,
-                'ph'               => substr($data['ph'] ?? '', 0, 1),
+                'ph'               => $data['ph'] ?? null,
                 'poder_tintoreo'   => $data['poder_tintoreo'] ?? null,
                 'unidad_id'        => $data['unidad_id'] ?? null,
             ];
@@ -200,20 +239,16 @@ class ItemModel extends BaseModel
             // 3. Actualizar COSTOS_ITEM
             $costosData = [
                 'costo_unitario'  => $data['costo_unitario'] ?? 0,
-                'costo_mp_galon'  => $data['costo_mp_galon'] ?? 0,
-                'costo_mp_kg'     => $data['costo_mp_kg'] ?? 0,
                 'envase'          => $data['envase'] ?? 0,
                 'etiqueta'        => $data['etiqueta'] ?? 0,
-                'bandeja'         => $data['bandeja'] ?? 0,
                 'plastico'        => $data['plastico'] ?? 0,
-                'costo_total'     => $data['costo_total'] ?? ($data['costo_unitario'] ?? 0),
-                'volumen'         => $data['volumen_numero'] ?? 1,
-                'precio_venta'    => $data['precio_venta'] ?? 0,
-                'costo_mod'       => $data['costo_mod'] ?? 0,
-                'fecha_calculo'   => date('Y-m-d') // Actualizamos la fecha de cálculo
+                'volumen'         => $data['volumen'] ?? 1,
+                'fecha_calculo'   => date('Y-m-d'),
+                // Agregamos los campos que calculamos en el create para mantener coherencia
+                'costo_cunete'    => $data['costo_cunete'] ?? 0, 
+                'costo_tambor'    => $data['costo_tambor'] ?? 0,
             ];
             
-            // Verificamos si existe registro de costos para hacer update o insert
             $existsCostos = $this->db->table('costos_item')->where('item_general_id', $idItem)->countAllResults();
             if ($existsCostos > 0) {
                 $this->db->table('costos_item')->where('item_general_id', $idItem)->update($costosData);
@@ -222,60 +257,54 @@ class ItemModel extends BaseModel
                 $this->db->table('costos_item')->insert($costosData);
             }
 
-            // 4. Actualizar FORMULACIONES (Lógica de reemplazo)
-            
-            // A. Buscar el ID de la formulación vinculada
+            // 4. Actualizar FORMULACIONES
             $formRow = $this->db->table('formulaciones')->where('item_general_id', $idItem)->get()->getRow();
             
-            $idFormulacion = null;
-
             if ($formRow) {
                 $idFormulacion = $formRow->id_formulaciones;
-                // Actualizamos cabecera si es necesario (ej: descripción)
-                $this->db->table('formulaciones')->where('id_formulaciones', $idFormulacion)->update([
-                    'descripcion' => $data['descripcion_formula'] ?? null
-                ]);
+                // Actualizar descripción si viene en el data
+                if(isset($data['descripcion_formula'])) {
+                    $this->db->table('formulaciones')->where('id_formulaciones', $idFormulacion)->update([
+                        'descripcion' => $data['descripcion_formula']
+                    ]);
+                }
             } else {
-                // Si por error no tenía formulación, la creamos
+                // Si no tiene, la creamos (defensa contra datos corruptos)
                 $this->db->table('formulaciones')->insert([
-                    'nombre'          => "Formulación - " . $data['nombre'],
+                    'nombre'           => "Formulación - " . $data['nombre'],
                     'item_general_id' => $idItem,
-                    'estado'          => 1,
-                    'defecto'         => 1
+                    'estado'           => 1,
+                    'defecto'          => 1
                 ]);
                 $idFormulacion = $this->db->insertID();
             }
 
-            // B. LIMPIEZA: Borramos los ingredientes viejos
-            $this->db->table('item_general_formulaciones')->where('formulaciones_id', $idFormulacion)->delete();
+            // 5. Sincronizar DETALLE DE FORMULACIÓN (Item_general_formulaciones)
+            // Solo procedemos si el frontend envió el array de formulaciones
+            if (isset($data['formulaciones'])) {
+                // Limpieza
+                $this->db->table('item_general_formulaciones')->where('formulaciones_id', $idFormulacion)->delete();
 
-            // C. INSERCIÓN: Agregamos los nuevos ingredientes que vienen del frontend
-            if (!empty($data['formulaciones'])) {
                 $batchDetalle = [];
                 foreach ($data['formulaciones'] as $f) {
-                    // Validar que tenga ID de materia prima y cantidad válida
-                    if (!empty($f['materia_prima_id']) && $f['cantidad'] > 0) {
+                    // Importante: materia_prima_id es el nombre que enviamos desde el procesado de React
+                    if (!empty($f['materia_prima_id'])) {
                         $batchDetalle[] = [
                             'formulaciones_id' => $idFormulacion,
-                            'item_general_id'  => $f['materia_prima_id'], // El ID de la materia prima
-                            'cantidad'         => $f['cantidad'],
+                            'item_general_id'  => $f['materia_prima_id'],
+                            'cantidad'         => $f['cantidad'] ?? 0,
                             'porcentaje'       => $f['porcentaje'] ?? 0
                         ];
                     }
                 }
+
                 if (!empty($batchDetalle)) {
                     $this->db->table('item_general_formulaciones')->insertBatch($batchDetalle);
                 }
             }
 
             $this->db->transComplete();
-
-            if ($this->db->transStatus() === false) {
-                $error = $this->db->error();
-                throw new \Exception("Error al actualizar: " . $error['message']);
-            }
-
-            return true;
+            return $this->db->transStatus();
 
         } catch (\Exception $e) {
             $this->db->transRollback();
