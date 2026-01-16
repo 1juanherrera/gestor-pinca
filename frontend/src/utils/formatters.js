@@ -2,35 +2,19 @@ export const formatoPesoColombiano = (valor) => {
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency: 'COP',
-    minimumFractionDigits: 0 // Opcional: para mostrar sin decimales
+    minimumFractionDigits: 0
   }).format(valor);
 }
 
-// Versión con decimales
-export const formatoPesoColombiano2Decimales = (valor) => {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(valor);
-}
-
-// Formatear números sin símbolo de moneda
-export const formatoNumeroColombiano = (valor) => {
-  return new Intl.NumberFormat('es-CO', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(valor);
-}
-
-// Formatear cantidades
-export const formatoCantidad = (valor, decimales = 2) => {
-  return new Intl.NumberFormat('es-CO', {
-    minimumFractionDigits: decimales,
-    maximumFractionDigits: decimales
-  }).format(valor);
-}
+export const formatoMonedaLocal = (valor) => {
+    const numero = parseFloat(valor);
+    if (isNaN(numero)) return "";
+    return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0, // En COP no solemos usar decimales, pero puedes poner 2 si prefieres
+    }).format(numero);
+};
 
 // Parse a Colombian formatted currency string like "$ 48.000,00" into a number (48000)
 export const parsePesoColombiano = (valor) => {

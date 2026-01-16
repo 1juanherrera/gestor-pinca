@@ -76,8 +76,10 @@ class ItemModel extends BaseModel
                     c.volumen, 
                     c.costo_mp_galon, 
                     c.costo_mp_kg, 
-                    c.precio_venta');
+                    c.precio_venta,
+                    i.cantidad');
         $builder->join('costos_item c', 'c.item_general_id = ig.id_item_general', 'left');
+        $builder->join('inventario i', 'i.item_general_id = ig.id_item_general', 'left');
         $builder->where('ig.id_item_general', $id);
         
         $item = $builder->get()->getRowArray();
@@ -220,7 +222,7 @@ class ItemModel extends BaseModel
             // 2. Actualizar ITEM_GENERAL
             $itemData = [
                 'nombre'           => $data['nombre'],
-                'codigo'           => substr($data['codigo'] ?? '', 0, 6),
+                'codigo'           => substr($data['codigo'] ?? '', 0, 10),
                 'tipo'             => $data['tipo'],
                 'categoria_id'     => $data['categoria_id'] ?? null,
                 'viscosidad'       => $data['viscosidad'] ?? null,
@@ -244,7 +246,6 @@ class ItemModel extends BaseModel
                 'plastico'        => $data['plastico'] ?? 0,
                 'volumen'         => $data['volumen'] ?? 1,
                 'fecha_calculo'   => date('Y-m-d'),
-                // Agregamos los campos que calculamos en el create para mantener coherencia
                 'costo_cunete'    => $data['costo_cunete'] ?? 0, 
                 'costo_tambor'    => $data['costo_tambor'] ?? 0,
             ];
@@ -257,6 +258,39 @@ class ItemModel extends BaseModel
                 $this->db->table('costos_item')->insert($costosData);
             }
 
+            // 4. Actualizar INVENTARIO (CANTIDAD)
+            if (isset($data['cantidad']) && isset($data['bodega_id'])) {
+                $idItemInt   = (int)$idItem;
+                $idBodegaInt = (int)$data['bodega_id'];
+                $cantidadVal = (float)$data['cantidad'];
+
+                // Intentamos la actualización
+                $this->db->table('inventario')
+                    ->where('item_general_id', $idItemInt)
+                    ->where('bodegas_id', $idBodegaInt) // Columna exacta de tu imagen
+                    ->update(['cantidad' => $cantidadVal]);
+
+                // Si el UPDATE no afectó filas, es porque esa combinación Item-Bodega NO existe
+                if ($this->db->affectedRows() === 0) {
+                    // Verificamos si realmente no existe o si es que la cantidad era la misma
+                    $check = $this->db->table('inventario')
+                        ->where('item_general_id', $idItemInt)
+                        ->where('bodegas_id', $idBodegaInt)
+                        ->get()->getRow();
+
+                    if (!$check) {
+                        // Si no existe, lo insertamos
+                        $this->db->table('inventario')->insert([
+                            'item_general_id' => $idItemInt,
+                            'bodegas_id'      => $idBodegaInt,
+                            'cantidad'        => $cantidadVal,
+                            'estado'          => 0,
+                            'tipo'            => 1
+                        ]);
+                    }
+                }
+            }
+        
             // 4. Actualizar FORMULACIONES
             $formRow = $this->db->table('formulaciones')->where('item_general_id', $idItem)->get()->getRow();
             

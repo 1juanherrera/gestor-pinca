@@ -18,7 +18,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-export async function apiRequest({ endpoint, data = null, errorMsg, method }) {
+export async function apiRequest({ endpoint, data = null, method }) {
   try {
     const response = await api.request({
       url: endpoint,
@@ -27,7 +27,15 @@ export async function apiRequest({ endpoint, data = null, errorMsg, method }) {
     });
     return response.data;
   } catch (error) {
-    throw new Error(errorMsg + ': ' + error.message);
+    const serverMessage = error.response?.data?.message 
+                          || error.response?.data?.error 
+                          || error.message;
+
+    const finalError = new Error(serverMessage);
+    
+    finalError.responseData = error.response?.data;
+    
+    throw finalError;
   }
 }
 

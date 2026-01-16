@@ -78,12 +78,15 @@ export const Bodega = () => {
                     refreshItems();
                     setTipoFiltro("");
                   }}
-                  className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-500 transition-colors">
+                  className="cursor-pointer 
+                  duration-200 transform hover:scale-105 flex items-center gap-2 px-4 py-2 
+                  bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
                   <MdOutlineRefresh size={20} />
                   Actualizar
               </button>
               <button
-                  className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-800 transition-colors">
+                  className="cursor-pointer duration-200 transform hover:scale-105 flex items-center 
+                  gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-800 transition-colors">
                   <RiFileExcel2Line  size={20} />
                   Insertar Excel
               </button>
@@ -91,7 +94,8 @@ export const Bodega = () => {
                   onClick={() => {
                     navigate(-1);
                   }}
-                  className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors">
+                  className="cursor-pointer duration-200 transform hover:scale-105 flex items-center 
+                  gap-2 px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors">
                   <FaLongArrowAltLeft size={20} />
                   Volver
               </button>
@@ -199,6 +203,7 @@ export const Bodega = () => {
           </div>
 
         <TableInventario
+          idBodega={id}
           items={filtered}
           setFilterEstado={setFilterEstado}
           refreshItems={refreshItems}

@@ -47,7 +47,7 @@ export const Sidebar = () => {
         <li className="w-full">
           <NavLink
             to="/costos"
-            className={({ isActive }) => `flex items-center gap-2 w-full p-3 rounded-xl cursor-pointer text-left ${ isActive ? 'bg-neutral-900' : 'hover:bg-neutral-900'}`}><TbReportMoney fontSize={25}/> Costos</NavLink>
+            className={({ isActive }) => `flex items-center gap-2 w-full p-3 rounded-xl cursor-pointer text-left ${ isActive ? 'bg-neutral-900' : 'hover:bg-neutral-900'}`}><TbReportMoney fontSize={25}/>Costos</NavLink>
         </li>
         <li className="w-full mt-15">
           <NavLink

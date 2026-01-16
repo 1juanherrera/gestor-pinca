@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useItems } from '../../hooks/useItems';
 import { CustomSelect } from '../CustomSelect';
 import { LoaderForm } from '../Loader';
+import { InputMoneda } from '../InputMoneda';
+import { generateCode, mapItemDetailToForm, prepareItemPayload } from '../../services/inventarioService';
 
 export const ItemForm = ({ onClose, idBodega, idEdit, showForm }) => {
 
@@ -24,17 +26,31 @@ export const ItemForm = ({ onClose, idBodega, idEdit, showForm }) => {
     const [activeTab, setActiveTab] = useState('basico');
     const [errors, setErrors] = useState({});
     const [formulaciones, setFormulaciones] = useState([]);
+    const [formData, setFormData] = useState({
+        nombre: '',
+        codigo: '',
+        tipo: '',
+        categoria_id: '',
+        viscosidad: '',
+        p_g: '',
+        color: '',
+        brillo_60: '',
+        secado: '',
+        cubrimiento: '',
+        molienda: '',
+        ph: '',
+        poder_tintoreo: '',
+        cantidad: 0,
+        costo_unitario: 0,
+        bodega_id: idBodega || '',
+        envase: 0,
+        etiqueta: 0,
+        plastico: 0
+    });
 
     const inputClasses = "w-full bg-white text-sm px-3 py-[8px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out placeholder-gray-300 text-gray-800 shadow-sm";
     const labelClasses = "block text-sm font-semibold text-gray-700 mb-1 uppercase";
-    // const errorClasses = "text-red-500 text-xs mt-1";
-
-    const tabs = [
-        { id: 'basico', label: 'Información Básica', icon: <MdArticle /> },
-        { id: 'propiedades', label: 'Propiedades', icon: <FaMicroscope /> },
-        { id: 'formulaciones', label: 'Formulaciones', icon: <LuTestTubeDiagonal /> },
-        { id: 'costos', label: 'Inventario & Costos', icon: <BiMoneyWithdraw /> }
-    ];
+    const errorClasses = "text-red-500 text-[11px] font-bold mt-1 uppercase";
 
     const opcionesTipo = [
         { value: '', label: 'SELECCIONE TIPO...' },
@@ -63,65 +79,16 @@ export const ItemForm = ({ onClose, idBodega, idEdit, showForm }) => {
         { id: 'poder_tintoreo', label: 'Poder Tintóreo' }
     ];
 
-    const [formData, setFormData] = useState({
-        nombre: '',
-        codigo: '',
-        tipo: '',
-        categoria_id: '',
-        viscosidad: '',
-        p_g: '',
-        color: '',
-        brillo_60: '',
-        secado: '',
-        cubrimiento: '',
-        molienda: '',
-        ph: '',
-        poder_tintoreo: '',
-        cantidad: 0,
-        costo_unitario: 0,
-        bodega_id: idBodega || '',
-        envase: 0,
-        etiqueta: 0,
-        plastico: 0
-    });
-
     useEffect(() => {
-        if (itemDetail) {
-            setFormData({
-                nombre: itemDetail.nombre || '',
-                codigo: itemDetail.codigo || '',
-                tipo: itemDetail.tipo || 'PRODUCTO',
-                categoria_id: itemDetail.categoria_id || '',
-                viscosidad: itemDetail.viscosidad || '',
-                p_g: itemDetail.p_g || '',
-                color: itemDetail.color || '',
-                brillo_60: itemDetail.brillo_60 || '',
-                secado: itemDetail.secado || '',
-                cubrimiento: itemDetail.cubrimiento || '',
-                molienda: itemDetail.molienda || '',
-                ph: itemDetail.ph || '',
-                poder_tintoreo: itemDetail.poder_tintoreo || '',
-                cantidad: itemDetail.cantidad || 0,
-                costo_unitario: itemDetail.costo_unitario || 0,
-                bodega_id: itemDetail.bodega_id || idBodega || '',
-                envase: itemDetail.envase || 0,
-                etiqueta: itemDetail.etiqueta || 0,
-                plastico: itemDetail.plastico || 0
-            });
-
-            if (itemDetail?.formulaciones) {
-                const formuMapped = itemDetail.formulaciones.map(f => ({
-                    id: f.id_item_general_formulaciones || Date.now() + Math.random(), //key de React
-                    id_item_general: String(f.item_general_id),
-                    nombre: f.nombre,
-                    cantidad: f.cantidad
-                }));
-                setFormulaciones(formuMapped);
-            }
-        } else {
-            setFormulaciones([]);
+        if (idEdit && itemDetail) {
+            const mapped = mapItemDetailToForm(itemDetail, idBodega);
+            setFormData(() => ({
+                ...mapped.formData,
+                bodega_id: mapped.formData.bodega_id || idBodega 
+            }));
+            setFormulaciones(mapped.formulaciones);
         }
-    }, [itemDetail, idBodega]);
+    }, [itemDetail, idEdit, idBodega]);
 
     const materiaPrimaOptions = useMemo(() => {
         return materiaPrima?.map(mp => ({
@@ -129,6 +96,26 @@ export const ItemForm = ({ onClose, idBodega, idEdit, showForm }) => {
             label: `${mp.nombre} (${mp.codigo})`
         })) || [];
     }, [materiaPrima]);
+
+    const allTabs = useMemo(() => [
+        { id: 'basico', label: 'Información Básica', icon: <MdArticle /> },
+        { id: 'propiedades', label: 'Propiedades', icon: <FaMicroscope /> },
+        { id: 'formulaciones', label: 'Formulaciones', icon: <LuTestTubeDiagonal /> },
+        { id: 'costos', label: 'Inventario & Costos', icon: <BiMoneyWithdraw /> }
+    ], []);
+
+    const tabsFiltrados = useMemo(() => {
+        if (formData.tipo === '1') {
+            return allTabs.filter(tab => tab.id !== 'formulaciones');
+        }
+        return allTabs;
+    }, [formData.tipo, allTabs]);
+
+    useEffect(() => {
+        if (formData.tipo === '1' && activeTab === 'formulaciones') {
+            setActiveTab('basico');
+        }
+    }, [formData.tipo, activeTab]);
 
     const handleFocus = (e) => {
         if (e.target.value === '0') {
@@ -138,7 +125,16 @@ export const ItemForm = ({ onClose, idBodega, idEdit, showForm }) => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
+
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        if (errors[name]) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
     };
 
     const addMateriaPrima = () => {
@@ -154,7 +150,7 @@ export const ItemForm = ({ onClose, idBodega, idEdit, showForm }) => {
         setFormulaciones(formulaciones.filter(f => f.id !== id));
     };
 
-    const handleFormuChange = (id, field, value) => {
+    const handleFormChange = (id, field, value) => {
         setFormulaciones(formulaciones.map(f => 
             f.id === id ? { ...f, [field]: value } : f
         ));
@@ -176,51 +172,33 @@ export const ItemForm = ({ onClose, idBodega, idEdit, showForm }) => {
         return Object.keys(newErrors).length === 0;
     };
 
+    const errorNombre = errors.nombre || createError?.message || updateError?.message;
+    const errorCodigo = errors.codigo || createError?.message || updateError?.message;
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!validate()) return;
         
-        const listaProcesada = formulaciones
-            .map(f => ({
-                // Mapeamos id_item_general -> materia_prima_id
-                materia_prima_id: parseInt(f.id_item_general), 
-                cantidad: parseFloat(f.cantidad || 0),
-                porcentaje: parseFloat(f.porcentaje || 0)
-            }))
-            // Ahora el filtro sí encontrará el ID y no borrará la lista
-            .filter(f => !isNaN(f.materia_prima_id) && f.materia_prima_id > 0);
+        const payload = prepareItemPayload(formData, formulaciones);
 
-        const payload = {
-            ...formData,
-            categoria_id: parseInt(formData.categoria_id),
-            bodega_id: parseInt(formData.bodega_id),
-            costo_unitario: parseFloat(formData.costo_unitario || 0),
-            cantidad: parseFloat(formData.cantidad || 0),
-            envase: parseFloat(formData.envase || 0),
-            etiqueta: parseFloat(formData.etiqueta || 0),
-            plastico: parseFloat(formData.plastico || 0),
-            formulaciones: listaProcesada 
+        const options = {
+            onSuccess: () => {
+                alert(`¡Item ${idEdit ? 'actualizado' : 'creado'} con éxito!`);
+                onClose();
+            },
+            onError: (err) => setErrors({ server: err.message })
         };
 
-            if (idEdit) {              
-                updateItem({ id: idEdit, data: payload }, {
-                    onSuccess: () => {
-                        alert("¡Item actualizado con éxito!");
-                        onClose();
-                    },
-                    onError: (err) => setErrors({ server: err.message })
-                });
-            } else {
-                createItem(payload, {
-                    onSuccess: () => {
-                        alert("¡Item creado con éxito!");
-                        onClose();
-                    },
-                    onError: (err) => setErrors({ server: err.message })
-                });
-            }
+        idEdit ? updateItem({ id: idEdit, data: payload }, options) : createItem(payload, options);
     };
 
+    const handleGenerateCode = () => {
+        const nuevo = generateCode();
+        setFormData(prev => ({ ...prev, codigo: nuevo }));
+        // Limpiar error de código
+        if (errors.codigo) setErrors(({ ...rest }) => rest);
+    };
+    
     const renderTabContent = () => {
         switch (activeTab) {
             case 'basico':
@@ -236,25 +214,28 @@ export const ItemForm = ({ onClose, idBodega, idEdit, showForm }) => {
                                         value={formData.nombre} 
                                         onChange={handleChange}
                                         className={inputClasses} />
-                                        {(errors.nombre || createError?.message || updateError?.message) && (
-                                                <p className="text-red-500 text-[11px] font-bold mt-1 uppercase leading-none">
-                                                    {errors.nombre || createError?.message || updateError?.message}
-                                                </p>
-                                            )}
+                                        {errorNombre && <p className={errorClasses}>{errorNombre}</p>}
                                 </div>
                                 <div>
                                     <label className={labelClasses}>CÓDIGO <span className="text-red-700">*</span></label>
-                                    <input 
-                                        type="text" 
-                                        name="codigo" 
-                                        value={formData.codigo} 
-                                        onChange={handleChange} 
-                                        className={inputClasses} />
-                                        {(errors.codigo || createError?.message || updateError?.message) && (
-                                                <p className="text-red-500 text-[11px] font-bold mt-1 uppercase leading-none">
-                                                    {errors.codigo || createError?.message || updateError?.message}
-                                                </p>
-                                            )}
+                                    <div className="relative flex items-center">
+                                        <input 
+                                            type="text" 
+                                            name="codigo" 
+                                            value={formData.codigo} 
+                                            onChange={handleChange} 
+                                            className={inputClasses} />
+                                            {errorCodigo && <p className={errorClasses}>{errorCodigo}</p>}
+                                        <button 
+                                            type="button"
+                                            title="Generar código aleatorio"
+                                            onClick={handleGenerateCode}
+                                            className="absolute right-2 p-1.5 bg-gray-800 text-white rounded-md hover:bg-black transition-colors shadow-md cursor-pointer flex items-center justify-center"
+                                        >
+                                            <MdAddCircleOutline size={18} />
+                                        </button>
+
+                                    </div>
                                 </div>
                                 <CustomSelect 
                                     label="TIPO"
@@ -315,48 +296,48 @@ export const ItemForm = ({ onClose, idBodega, idEdit, showForm }) => {
                                     value={formData.cantidad} 
                                     onChange={handleChange} 
                                     onFocus={handleFocus}
-                                    className={inputClasses} />
+                                    className={`${inputClasses} font-mono`} />
                             </div>
                             <div>
-                                <label className={labelClasses}>Costo Unitario</label>
-                                <input 
-                                    type="text" 
-                                    name="costo_unitario" 
-                                    value={formData.costo_unitario} 
-                                    onChange={handleChange} 
-                                    onFocus={handleFocus}
-                                    className={inputClasses} />
-                            </div>
-
-                            <div>
-                                <label className={labelClasses}>Envase</label>
-                                <input 
-                                    type="number" 
-                                    name="envase" 
-                                    value={formData.envase} 
-                                    onChange={handleChange} 
-                                    onFocus={handleFocus}
-                                    className={inputClasses} />
+                                <InputMoneda
+                                    label="Costo Unitario"
+                                    name="costo_unitario"
+                                    value={formData.costo_unitario}
+                                    onChange={handleChange}
+                                    labelClasses={labelClasses}
+                                    className={inputClasses}
+                                    />
                             </div>
                             <div>
-                                <label className={labelClasses}>Etiqueta</label>
-                                <input 
-                                    type="number" 
-                                    name="etiqueta" 
-                                    value={formData.etiqueta} 
-                                    onChange={handleChange} 
+                                <InputMoneda
+                                    label="Costo Envase"
+                                    name="envase"
+                                    value={formData.envase}
+                                    onChange={handleChange}
                                     onFocus={handleFocus}
-                                    className={inputClasses} />
+                                    labelClasses={labelClasses}
+                                    className={inputClasses}
+                                    />
                             </div>
                             <div>
-                                <label className={labelClasses}>Plástico</label>
-                                <input 
-                                    type="number" 
-                                    name="plastico" 
-                                    value={formData.plastico} 
-                                    onChange={handleChange} 
-                                    onFocus={handleFocus}
-                                    className={inputClasses} />
+                                <InputMoneda
+                                    label="costo etiqueta"
+                                    name="etiqueta"
+                                    value={formData.etiqueta}
+                                    onChange={handleChange}
+                                    labelClasses={labelClasses}
+                                    className={inputClasses}
+                                    />
+                            </div>
+                            <div>
+                                <InputMoneda
+                                    label="costo plástico"
+                                    name="plastico"
+                                    value={formData.plastico}
+                                    onChange={handleChange}
+                                    labelClasses={labelClasses}
+                                    className={inputClasses}
+                                    />
                             </div>
                         </div>
                     </div>
@@ -380,7 +361,7 @@ export const ItemForm = ({ onClose, idBodega, idEdit, showForm }) => {
                                     value={String(f.id_item_general)}
                                     onChange={(e) => {
                                         const idReal = e.target.value;
-                                        handleFormuChange(f.id, 'id_item_general', idReal);
+                                        handleFormChange(f.id, 'id_item_general', idReal);
                                     }}
                                     placeholder="BUSCAR MATERIA PRIMA..."
                                 />
@@ -393,7 +374,7 @@ export const ItemForm = ({ onClose, idBodega, idEdit, showForm }) => {
                                         step="0.01" 
                                         value={f.cantidad} 
                                         onFocus={handleFocus}
-                                        onChange={(e) => handleFormuChange(f.id, 'cantidad', e.target.value)} 
+                                        onChange={(e) => handleFormChange(f.id, 'cantidad', e.target.value)} 
                                         className={`${inputClasses} text-gray-100`} 
                                     />
                                 </div>
@@ -428,7 +409,7 @@ export const ItemForm = ({ onClose, idBodega, idEdit, showForm }) => {
                         <button type="button" className="cursor-pointer" onClick={onClose}><MdClose size={28} /></button>
                     </div>
                     <div className="flex border-b border-gray-300 bg-gray-50">
-                        {tabs.map(tab => (
+                        {tabsFiltrados.map(tab => (
                             <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
                                 className={`px-6 py-4 cursor-pointer flex items-center gap-2 ${activeTab === tab.id ? 'border-b-3 bg-blue-100 border-blue-600 font-semibold text-blue-800' : 'text-gray-700'}`}>
                                 {tab.icon} {tab.label}

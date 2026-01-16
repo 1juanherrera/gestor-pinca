@@ -36,13 +36,15 @@ class BodegasModel extends BaseModel
                         u.nombre AS unidad,
                         c.costo_mp_galon,
                         c.costo_mp_kg,
-                        c.precio_venta
+                        c.precio_venta,
+                        inv.bodegas_id
                         FROM inventario inv
                         JOIN item_general ig ON inv.item_general_id = ig.id_item_general
                         LEFT JOIN costos_item c ON c.item_general_id = ig.id_item_general
                         LEFT JOIN categoria ca ON ig.categoria_id = ca.id_categoria
                         LEFT JOIN unidad u ON ig.unidad_id = u.id_unidad
-                        WHERE inv.bodegas_id = ?';
+                        WHERE inv.bodegas_id = ?
+                        ORDER BY ig.id_item_general DESC';
                 $inventario = $this->db->query($sql1, [$id_bodega])->getResult();
 
                 return [

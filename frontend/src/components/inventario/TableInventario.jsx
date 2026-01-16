@@ -1,17 +1,23 @@
 import { FaTrash, FaEdit } from "react-icons/fa";
+import { MdSwapHorizontalCircle  } from "react-icons/md";
 import { formatoPesoColombiano, validarEntero } from "../../utils/formatters";
 import { useItems } from "../../hooks/useItems";
 import { useToast } from "../../hooks/useToast";
 import { Toast } from "../Toast";
 import { useState } from "react";
 import { ItemForm } from "./ItemForm";
+import { TraspasoModal } from "./TraspasoModal";
+import { useBodegas } from "../../hooks/useBodegas";
 
-export const TableInventario = ({ items = [], refreshItems }) => {
+export const TableInventario = ({ items = [], refreshItems, idBodega }) => {
 
-    const { removeItem, refreshData } = useItems();
+    const { removeItem } = useItems();
+    const { bodegas } = useBodegas();
     const [idEdit, setIdEdit] = useState(null);
 
     const [showForm, setShowForm] = useState(false);
+    const [showTraspaso, setShowTraspaso] = useState(false);
+    const [itemSeleccionado, setItemSeleccionado] = useState(null);
 
     const getNombre = (item) => item?.nombre_item_general || item.nombre || '-';
     const getCodigo = (item) => item?.codigo_item_general || item.codigo || '-';
@@ -46,8 +52,6 @@ export const TableInventario = ({ items = [], refreshItems }) => {
     const handleDelete = (id, name, deleteFunc) => {
         if (window.confirm(`¿Seguro que deseas eliminar ${name}?`)) {
             eventToast(`${name} eliminado correctamente`, "success");
-            refreshItems();
-            refreshData();
             deleteFunc(id);
         }
     }
@@ -143,6 +147,16 @@ export const TableInventario = ({ items = [], refreshItems }) => {
                                                 >
                                                     <FaTrash size={14} />
                                                 </button>
+                                                <button 
+                                                    onClick={() => (
+                                                        setShowTraspaso(true),
+                                                        setItemSeleccionado(producto)
+                                                    )} 
+                                                    className="p-2 duration-200 transform hover:scale-110 bg-blue-500 text-white hover:bg-blue-800 rounded-md transition-colors cursor-pointer"
+                                                    title="Cambiar de bodega"
+                                                >
+                                                    <MdSwapHorizontalCircle  size={20} />
+                                                </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -162,6 +176,7 @@ export const TableInventario = ({ items = [], refreshItems }) => {
         )}
         {showForm && (
             <ItemForm 
+                idBodega={idBodega}
                 idEdit={idEdit}
                 refreshItems={refreshItems}
                 showForm={showForm}
@@ -169,6 +184,18 @@ export const TableInventario = ({ items = [], refreshItems }) => {
                     setIdEdit(null);
                     setShowForm(false);
                 }}
+            />
+        )}
+        {showTraspaso && (
+            <TraspasoModal 
+                item={itemSeleccionado}
+                bodegas={bodegas} 
+                onClose={() => setShowTraspaso(false)}
+                onConfirm={(data) => {
+                    console.log('Traspaso confirmado:', data);
+                    setShowTraspaso(false);
+                }}
+                isSubmitting={false}
             />
         )}
         </>

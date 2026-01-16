@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: db
--- Tiempo de generación: 14-01-2026 a las 22:02:57
+-- Tiempo de generación: 16-01-2026 a las 21:54:38
 -- Versión del servidor: 8.0.44
 -- Versión de PHP: 8.3.26
 
@@ -104,22 +104,22 @@ INSERT INTO `clientes` (`id_clientes`, `nombre_encargado`, `nombre_empresa`, `nu
 CREATE TABLE `costos_item` (
   `id` int NOT NULL,
   `item_general_id` int NOT NULL,
-  `costo_unitario` int DEFAULT NULL,
-  `costo_mp_galon` int DEFAULT NULL,
-  `costo_cunete` int NOT NULL,
-  `costo_tambor` int NOT NULL,
+  `costo_unitario` decimal(18,2) DEFAULT NULL,
+  `costo_mp_galon` decimal(10,0) DEFAULT NULL,
+  `costo_cunete` decimal(10,0) NOT NULL,
+  `costo_tambor` decimal(10,0) NOT NULL,
   `periodo` varchar(7) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `metodo_calculo` varchar(6) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `fecha_calculo` date DEFAULT NULL,
-  `costo_mp_kg` int DEFAULT NULL,
-  `envase` int DEFAULT NULL,
-  `etiqueta` int DEFAULT NULL,
-  `bandeja` int DEFAULT NULL,
-  `plastico` int DEFAULT NULL,
+  `costo_mp_kg` decimal(10,0) DEFAULT NULL,
+  `envase` decimal(18,2) DEFAULT NULL,
+  `etiqueta` decimal(18,2) DEFAULT NULL,
+  `bandeja` decimal(10,0) DEFAULT NULL,
+  `plastico` decimal(10,0) DEFAULT NULL,
   `volumen` decimal(10,0) DEFAULT NULL,
-  `precio_venta` int DEFAULT NULL,
-  `cantidad_total` int DEFAULT NULL,
-  `costo_mod` int DEFAULT NULL COMMENT '0  inactivo\n1 activo',
+  `precio_venta` decimal(18,2) DEFAULT NULL,
+  `cantidad_total` decimal(10,0) DEFAULT NULL,
+  `costo_mod` decimal(10,0) DEFAULT NULL COMMENT '0  inactivo\r\n1 activo',
   `estado` tinyint DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -128,119 +128,118 @@ CREATE TABLE `costos_item` (
 --
 
 INSERT INTO `costos_item` (`id`, `item_general_id`, `costo_unitario`, `costo_mp_galon`, `costo_cunete`, `costo_tambor`, `periodo`, `metodo_calculo`, `fecha_calculo`, `costo_mp_kg`, `envase`, `etiqueta`, `bandeja`, `plastico`, `volumen`, `precio_venta`, `cantidad_total`, `costo_mod`, `estado`) VALUES
-(1, 1, 0, 2000, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 370, 2000, 0, 600, NULL),
-(2, 31, 7000, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(3, 32, 11000, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(4, 33, 34050, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(5, 34, 27144, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(6, 35, 12691, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(7, 36, 4372, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(8, 37, 11466, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(9, 38, 16300, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(10, 39, 17000, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(11, 40, 4400, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(12, 41, 14300, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(13, 42, 40, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(14, 43, 1550, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(15, 44, 4617, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(17, 46, 14300, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(18, 47, 855, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(19, 48, 5400, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(21, 50, 12215, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(23, 52, 14152, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(25, 54, 12718, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(27, 56, 11447, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(28, 57, 1690, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(30, 59, 722, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(31, 60, 715, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(32, 61, 4300, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(33, 62, 4400, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(34, 63, 8000, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(35, 64, 8000, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(36, 65, 1103, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(37, 66, 22700, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(38, 67, 43900, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(39, 68, 37300, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(40, 69, 22700, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(41, 70, 7000, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(42, 71, 19500, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(43, 72, 33500, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(44, 73, 37200, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(45, 74, 21850, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(46, 75, 10400, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(47, 76, 8000, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(48, 77, 11466, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(49, 78, 13000, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(50, 79, 17000, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(51, 80, 2900, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(52, 81, 17000, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(54, 83, 4617, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(55, 84, 22700, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(56, 85, 22700, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(57, 86, 11000, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(58, 2, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 719, 20000, 0, 600, NULL),
-(59, 3, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 398, 170000, 0, 600, NULL),
-(60, 4, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 440, 0, 0, 600, NULL),
-(61, 5, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 376, 0, 0, 600, NULL),
-(62, 6, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 397, 0, 0, 600, NULL),
-(63, 7, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 396, 0, 0, 600, NULL),
-(64, 8, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 712, 0, 0, 600, NULL),
-(65, 9, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 616, 0, 0, 600, NULL),
-(66, 10, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 711, 0, 0, 600, NULL),
-(67, 11, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 595, 0, 0, 600, NULL),
-(68, 12, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 599, 0, 0, 600, NULL),
-(69, 13, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 578, 0, 0, 600, NULL),
-(70, 14, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 813, 0, 0, 600, NULL),
-(71, 15, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 168, 0, 0, 600, NULL),
-(72, 16, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 212, 0, 0, 600, NULL),
-(73, 17, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 213, 0, 0, 600, NULL),
-(74, 18, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 801, 0, 0, 600, NULL),
-(75, 19, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600, 350, 140, 153, 178, 0, 0, 600, NULL),
-(76, 20, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 328, 0, 0, 150, NULL),
-(77, 21, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 345, 0, 0, 150, NULL),
-(78, 22, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 488, 0, 0, 150, NULL),
-(79, 23, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 119, 0, 0, 150, NULL),
-(80, 24, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 961, 0, 0, 150, NULL),
-(81, 25, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 1018, 0, 0, 150, NULL),
-(82, 26, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 874, 0, 0, 150, NULL),
-(83, 27, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 851, 0, 0, 150, NULL),
-(84, 28, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 833, 0, 0, 150, NULL),
-(85, 29, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 748, 0, 0, 150, NULL),
-(86, 30, 0, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0, 0, 0, 0, 376, 0, 0, 150, NULL),
-(87, 87, 4372, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(88, 88, 4400, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(89, 89, 4372, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(90, 90, 4372, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(92, 92, 16300, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(93, 93, 14152, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(94, 94, 11466, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(95, 95, 17000, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(96, 96, 11447, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(97, 97, 22700, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(98, 98, 22700, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(99, 99, 22700, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(108, 100, 8000, 0, 0, 0, NULL, 'MANUAL', '2025-06-15', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(128, 114, 60, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 60, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(129, 115, 7880, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 7880, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(130, 116, 5900, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 5900, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(131, 117, 16000, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 16000, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(132, 118, 10000, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 10000, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(133, 119, 9200, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 9200, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(134, 120, 9800, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 9800, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(135, 121, 16600, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 16600, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(136, 122, 11100, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 11100, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(137, 123, 558, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 558, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(138, 124, 1520, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 1520, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(139, 125, 2450, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 2450, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(140, 126, 1800, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 1800, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(141, 127, 4850, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 4850, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(142, 128, 7200, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 7200, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(143, 129, 15000, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 15000, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(144, 130, 11700, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 11700, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(145, 131, 6905, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 6905, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(146, 132, 23000, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 23000, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL),
-(147, 133, 1, 0, 0, 0, NULL, 'Manual', '2026-01-12', 0, 1, 1, 0, 1, 250, 0, 1, 0, 1),
-(155, 141, 1, 0, 0, 0, '2026-01', 'Manual', '2026-01-14', 0, 1, 1, 0, 1, 1, 0, NULL, 0, 1);
+(1, 1, 0.00, 2000, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 370, 2000.00, 0, 600, NULL),
+(2, 31, 7000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(3, 32, 11000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(4, 33, 34050.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(5, 34, 27144.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(6, 35, 12691.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(7, 36, 4372.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(8, 37, 11466.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(9, 38, 16300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(10, 39, 17000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(11, 40, 4400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(12, 41, 14300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(13, 42, 40.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(14, 43, 1550.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(15, 44, 4617.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(17, 46, 14300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(18, 47, 855.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(19, 48, 5400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(21, 50, 12215.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(23, 52, 14152.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(25, 54, 12718.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(27, 56, 11447.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(28, 57, 1690.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(30, 59, 722.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(31, 60, 715.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(32, 61, 4300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(33, 62, 4400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(34, 63, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(35, 64, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(36, 65, 1103.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(37, 66, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(38, 67, 43900.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(39, 68, 37300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(40, 69, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(41, 70, 7000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(42, 71, 19500.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(43, 72, 33500.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(44, 73, 37200.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(45, 74, 21850.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(46, 75, 10400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(47, 76, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(48, 77, 11466.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(49, 78, 13000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(50, 79, 17000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(51, 80, 2900.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(52, 81, 17000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(54, 83, 4617.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(55, 84, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(56, 85, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(57, 86, 11000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(58, 2, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 719, 20000.00, 0, 600, NULL),
+(59, 3, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 398, 170000.00, 0, 600, NULL),
+(60, 4, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 440, 0.00, 0, 600, NULL),
+(61, 5, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 376, 0.00, 0, 600, NULL),
+(62, 6, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 397, 0.00, 0, 600, NULL),
+(63, 7, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 396, 0.00, 0, 600, NULL),
+(64, 8, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 712, 0.00, 0, 600, NULL),
+(65, 9, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 616, 0.00, 0, 600, NULL),
+(66, 10, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 711, 0.00, 0, 600, NULL),
+(67, 11, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 595, 0.00, 0, 600, NULL),
+(68, 12, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 599, 0.00, 0, 600, NULL),
+(69, 13, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 578, 0.00, 0, 600, NULL),
+(70, 14, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 813, 0.00, 0, 600, NULL),
+(71, 15, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 168, 0.00, 0, 600, NULL),
+(72, 16, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 212, 0.00, 0, 600, NULL),
+(73, 17, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 213, 0.00, 0, 600, NULL),
+(74, 18, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 801, 0.00, 0, 600, NULL),
+(75, 19, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 178, 0.00, 0, 600, NULL),
+(76, 20, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 328, 0.00, 0, 150, NULL),
+(77, 21, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 345, 0.00, 0, 150, NULL),
+(78, 22, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 488, 0.00, 0, 150, NULL),
+(79, 23, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 119, 0.00, 0, 150, NULL),
+(80, 24, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 961, 0.00, 0, 150, NULL),
+(81, 25, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 1018, 0.00, 0, 150, NULL),
+(82, 26, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 874, 0.00, 0, 150, NULL),
+(83, 27, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 851, 0.00, 0, 150, NULL),
+(84, 28, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 833, 0.00, 0, 150, NULL),
+(85, 29, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 748, 0.00, 0, 150, NULL),
+(86, 30, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 376, 0.00, 0, 150, NULL),
+(87, 87, 4372.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(88, 88, 4400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(89, 89, 4372.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(90, 90, 4372.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(92, 92, 16300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(93, 93, 14152.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(94, 94, 11466.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(95, 95, 17000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(96, 96, 11447.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(97, 97, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(98, 98, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(99, 99, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(108, 100, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-15', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(128, 114, 60.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 60, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(129, 115, 7880.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 7880, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(130, 116, 5900.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 5900, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(131, 117, 16000.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 16000, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(132, 118, 10000.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 10000, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(133, 119, 9200.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 9200, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(134, 120, 9800.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 9800, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(135, 121, 16600.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 16600, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(136, 122, 11100.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 11100, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(137, 123, 558.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 558, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(138, 124, 1520.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 1520, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(139, 125, 2450.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 2450, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(140, 126, 1800.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 1800, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(141, 127, 4850.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 4850, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(142, 128, 7200.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 7200, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(143, 129, 15000.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 15000, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(144, 130, 11700.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 11700, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(145, 131, 6905.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 6905, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(146, 132, 23000.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 23000, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(147, 133, 0.00, 0, 0, 0, NULL, 'Manual', '2026-01-16', 0, 0.00, 0.00, 0, 0, 1, 0.00, 1, 0, 1);
 
 -- --------------------------------------------------------
 
@@ -544,8 +543,7 @@ INSERT INTO `inventario` (`id_inventario`, `cantidad`, `fecha_update`, `apartada
 (124, 0.00, NULL, 0, 130, 0, NULL, 1, 1),
 (125, 0.00, NULL, 0, 131, 0, NULL, 1, 1),
 (126, 0.00, NULL, 0, 132, 0, NULL, 1, 1),
-(139, 1.00, NULL, 0, 133, 1, NULL, 1, 1),
-(147, 1.00, '2026-01-14', 0, 141, 1, NULL, 1, 1);
+(139, 5.00, NULL, 0, 133, 1, NULL, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -624,10 +622,10 @@ INSERT INTO `item_general` (`id_item_general`, `nombre`, `codigo`, `tipo`, `cate
 (46, 'DISASTAB GAT', 'AEM004', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 10400.00),
 (47, 'MICROTALC C 20', 'CTA011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8000.00),
 (48, 'CELITE 499', 'MSI006', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11466.00),
-(50, 'PASTA ESMALTE ROJO 57:1', 'PE1033', 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 17000.00),
-(52, 'PASTA AMARILLO CROMO MEDIO', 'PE1010', 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 17000.00),
-(54, 'PASTA VERDE FTALO', 'PE1040', 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4617.00),
-(56, 'PASTA ESMALTE AZUL FTALO 15:3', 'PE1021', 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00),
+(50, 'PASTA ESMALTE ROJO 57:1', 'PE1033', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 17000.00),
+(52, 'PASTA AMARILLO CROMO MEDIO', 'PE1010', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 17000.00),
+(54, 'PASTA VERDE FTALO', 'PE1040', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4617.00),
+(56, 'PASTA ESMALTE AZUL FTALO 15:3', 'PE1021', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00),
 (57, 'OMYACARB UF', 'CCC002', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11000.00),
 (59, 'MICROTALC C 20', 'CTA025', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
 (60, 'CARBONATO DE CALCIO HI WHITE', 'CCC004', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
@@ -661,10 +659,10 @@ INSERT INTO `item_general` (`id_item_general`, `nombre`, `codigo`, `tipo`, `cate
 (89, 'DISOLVENTE 2232', 'SAA011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4372.00),
 (90, 'DISOLVENTE 3', 'SAA011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4372.00),
 (92, 'OCTOATO DE ZINC 16%', 'SOZ016', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 16300.00),
-(93, 'PASTA ESMALTE AMARILLO CROMO MEDIO', 'PE1010', 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 14152.00),
+(93, 'PASTA ESMALTE AMARILLO CROMO MEDIO', 'PE1010', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 14152.00),
 (94, 'DIOXIDO DE TITANIO SULFATO 2196', 'PED010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11466.00),
 (95, 'BENTOCLAY BP184', 'AAS005', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 17000.00),
-(96, 'PASTA ESMALTE AZUL 15:3', 'PE1021', 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11447.00),
+(96, 'PASTA ESMALTE AZUL 15:3', 'PE1021', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11447.00),
 (97, 'EDAPLAN 918', 'ADI010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00),
 (98, 'EDAPLAN 918 / LANSPERSE SUV', 'ADI010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00),
 (99, 'CHEMOSPERSE 77', 'ADI010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00),
@@ -688,8 +686,7 @@ INSERT INTO `item_general` (`id_item_general`, `nombre`, `codigo`, `tipo`, `cate
 (130, 'Aisol 700 (MP)', 'MP-017', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (131, 'Amoniaco (MP)', 'MP-018', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (132, 'Fungicida (MP)', 'MP-019', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(133, 'VINILO T1 BLANCO', 'EBT012', 0, 1, '1', '1', '1', '1', '1', '1', '1', '1', '1', 1, 1.00),
-(141, '1', '1', 0, 1, '1', '1', '1', '1', '1', '1', '1', '1', '1', 1, 1.00);
+(133, 'VINILO T1 BLANCO', 'EBT012', 0, 1, '', '', '', '', '', '', '', '', '', NULL, 1.00);
 
 -- --------------------------------------------------------
 
@@ -1045,27 +1042,8 @@ INSERT INTO `item_general_formulaciones` (`id_item_general_formulaciones`, `form
 (333, 25, 35.00, NULL, 84),
 (334, 27, 35.00, NULL, 84),
 (335, 22, 150.00, NULL, 83),
-(345, 48, 471.00, 0, 114),
-(346, 48, 2.00, 0, 115),
-(347, 48, 3.70, 0, 116),
-(348, 48, 2.50, 0, 117),
-(349, 48, 3.00, 0, 118),
-(350, 48, 12.50, 0, 119),
-(351, 48, 6.00, 0, 120),
-(352, 48, 2.50, 0, 121),
-(353, 48, 118.00, 0, 122),
-(354, 48, 250.00, 0, 123),
-(355, 48, 75.00, 0, 124),
-(356, 48, 100.02, 0, 125),
-(357, 48, 100.00, 0, 126),
-(358, 48, 5.00, 0, 128),
-(359, 48, 3.80, 0, 121),
-(360, 48, 1.31, 0, 129),
-(361, 48, 7.51, 0, 130),
-(362, 48, 5.00, 0, 131),
-(363, 48, 2.50, 0, 117),
-(364, 48, 7.50, 0, 114),
-(365, 48, 2.50, 0, 132);
+(366, 50, 5.00, 0, 35),
+(367, 50, 10.00, 0, 47);
 
 -- --------------------------------------------------------
 
@@ -1422,7 +1400,7 @@ ALTER TABLE `clientes`
 -- AUTO_INCREMENT de la tabla `costos_item`
 --
 ALTER TABLE `costos_item`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=156;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=164;
 
 --
 -- AUTO_INCREMENT de la tabla `costos_produccion`
@@ -1452,7 +1430,7 @@ ALTER TABLE `facturas`
 -- AUTO_INCREMENT de la tabla `formulaciones`
 --
 ALTER TABLE `formulaciones`
-  MODIFY `id_formulaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
+  MODIFY `id_formulaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
 
 --
 -- AUTO_INCREMENT de la tabla `instalaciones`
@@ -1464,19 +1442,19 @@ ALTER TABLE `instalaciones`
 -- AUTO_INCREMENT de la tabla `inventario`
 --
 ALTER TABLE `inventario`
-  MODIFY `id_inventario` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=148;
+  MODIFY `id_inventario` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=160;
 
 --
 -- AUTO_INCREMENT de la tabla `item_general`
 --
 ALTER TABLE `item_general`
-  MODIFY `id_item_general` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=142;
+  MODIFY `id_item_general` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=150;
 
 --
 -- AUTO_INCREMENT de la tabla `item_general_formulaciones`
 --
 ALTER TABLE `item_general_formulaciones`
-  MODIFY `id_item_general_formulaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=366;
+  MODIFY `id_item_general_formulaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=368;
 
 --
 -- AUTO_INCREMENT de la tabla `item_proveedor`

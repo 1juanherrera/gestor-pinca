@@ -1,7 +1,7 @@
 import Select from 'react-select';
 
 export const CustomSelect = ({ label, options, name, value, onChange, placeholder, error, isRequired = false }) => {
-    // Estilos base que ya definimos
+
     const customStyles = {
         control: (base) => ({
             ...base,
