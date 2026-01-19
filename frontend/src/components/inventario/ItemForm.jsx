@@ -406,7 +406,7 @@ export const ItemForm = ({ onClose, idBodega, idEdit, showForm }) => {
                         <h2 className="text-2xl font-bold flex items-center gap-2">
                             <MdAddCircleOutline size={28} /> {showForm ? 'Editar Item' : 'Crear Nuevo Item'}
                         </h2>
-                        <button type="button" className="cursor-pointer" onClick={onClose}><MdClose size={28} /></button>
+                        <button type="button" className="hover:bg-blue-600 cursor-pointer rounded-full p-1 transition-colors" onClick={onClose}><MdClose size={28} /></button>
                     </div>
                     <div className="flex border-b border-gray-300 bg-gray-50">
                         {tabsFiltrados.map(tab => (

@@ -77,5 +77,8 @@ $routes->group('api', function ($routes) {
     $routes->post('facturas', 'FacturasController::create');
     $routes->put('facturas/(:num)', 'FacturasController::update/$1');
     $routes->delete('facturas/(:num)', 'FacturasController::delete/$1');
+
+    // INVENTARIO
+    $routes->post('inventario/traspaso', 'InventarioController::traspaso');
 });
 

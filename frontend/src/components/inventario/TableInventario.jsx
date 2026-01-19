@@ -14,7 +14,7 @@ export const TableInventario = ({ items = [], refreshItems, idBodega }) => {
     const { removeItem } = useItems();
     const { bodegas } = useBodegas();
     const [idEdit, setIdEdit] = useState(null);
-
+    
     const [showForm, setShowForm] = useState(false);
     const [showTraspaso, setShowTraspaso] = useState(false);
     const [itemSeleccionado, setItemSeleccionado] = useState(null);

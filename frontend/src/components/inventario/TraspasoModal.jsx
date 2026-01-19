@@ -8,10 +8,6 @@ export const TraspasoModal = ({ item, bodegas, onClose, onConfirm, isSubmitting 
     const [cantidad, setCantidad] = useState(0);
     const [observacion, setObservacion] = useState('');
 
-    console.log(bodegas);
-    console.log(item);
-
-    // Filtramos las bodegas para no mostrar la actual del producto
     const opcionesDestino = useMemo(() => {
         return bodegas
             .filter(b => b.id_bodegas !== item.bodegas_id)
@@ -100,6 +96,7 @@ export const TraspasoModal = ({ item, bodegas, onClose, onConfirm, isSubmitting 
                             Cancelar
                         </button>
                         <button 
+                            onClick={handleSubmit}
                             type="submit"
                             disabled={esInvalido || isSubmitting}
                             className={`px-6 py-2 rounded-lg text-white font-bold text-sm shadow-md transition-all transform active:scale-95
