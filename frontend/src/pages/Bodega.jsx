@@ -60,7 +60,9 @@ export const Bodega = () => {
         return 'bg-gray-200 text-gray-700 border-gray-300';
     }
   }
-  
+ 
+  if (isLoadingItems) return <Loader message="Cargando bodega..." />;
+
   return (
     <div className="ml-65 p-4 bg-gray-100 min-h-screen">
       <PageTitle title="Pinca | Inventario" />
@@ -86,9 +88,9 @@ export const Bodega = () => {
               </button>
               <button
                   className="cursor-pointer duration-200 transform hover:scale-105 flex items-center 
-                  gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-800 transition-colors">
-                  <RiFileExcel2Line  size={20} />
-                  Insertar Excel
+                  gap-2 px-4 py-2 bg-emerald-600 font-semibold text-[15px] text-white rounded-lg hover:bg-emerald-800 transition-colors">
+                  <RiFileExcel2Line size={20} />
+                  EXCEL
               </button>
               <button
                   onClick={() => {
@@ -101,10 +103,6 @@ export const Bodega = () => {
               </button>
           </div>
       </div>
-      
-      {isLoadingItems && (
-        <Loader message="cargando..."/>
-      )}
 
       <div className="bg-white rounded-lg shadow-sm p-4 mb-2">
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -180,7 +178,7 @@ export const Bodega = () => {
                       ? "Insumos" : ""
                     }
                   </h2>
-                  <div className={`px-3 shadow-md py-1 text-sm rounded-full bg-gray-200 text-gray-700 border-gray-300 font-medium`}>
+                  <div className={`px-3 ${tipoFiltro != "" ? 'hidden' : ''} shadow-md py-1 text-sm rounded-full bg-gray-200 text-gray-700 border-gray-300 font-medium`}>
                     <span>
                       {items?.inventario ? items?.inventario.length : 0} items totales
                     </span>

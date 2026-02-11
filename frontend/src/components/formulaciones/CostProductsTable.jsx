@@ -1,6 +1,9 @@
-import { FaDollarSign, FaFlask, FaBox, FaTag, FaPallet } from 'react-icons/fa';
+import { FaDollarSign, FaFlask, FaBox, FaTag, FaPallet, FaEdit } from 'react-icons/fa';
 import { MdWork, MdCalculate } from 'react-icons/md';
 import { FaBottleWater } from "react-icons/fa6";
+import { BsFillNutFill } from "react-icons/bs";
+import { useState } from 'react';
+import { FormCostProducts } from './FormCostProducts';
 
 export const CostProductsTable = ({ 
     selectedProductData,
@@ -8,6 +11,11 @@ export const CostProductsTable = ({
     compact = false,
     recalculatedData
 }) => {
+
+
+    const [showForm, setShowForm] = useState(null);
+    const [idEdit, setIdEdit] = useState();
+
     if (!selectedProductData) {
         return (
             <div className="bg-white rounded-lg shadow-sm p-4 text-center">
@@ -25,16 +33,17 @@ export const CostProductsTable = ({
     }
 
     const COST_DEFINITIONS = {
-    costo_mp_galon: { label: 'COSTO MP/GALÓN', icon: <FaFlask className="text-blue-500" size={14} /> },
-    costo_mg_kg: { label: 'COSTO MG/KG', icon: <FaFlask className="text-blue-500" size={14} /> },
-    mod: { label: 'COSTO MOD', icon: <MdWork className="text-green-500" size={14} /> },
-    envase: { label: 'ENVASE', icon: <FaBox className="text-orange-500" size={14} /> },
-    etiqueta: { label: 'ETIQUETA', icon: <FaTag className="text-red-500" size={14} /> },
-    bandeja: { label: 'BANDEJA', icon: <FaPallet className="text-purple-500" size={14} /> },
-    plastico: { label: 'PLÁSTICO', icon: <FaBottleWater className="text-teal-500" size={14} /> },
+        costo_mp_galon: { label: 'COSTO MP/GALÓN', icon: <FaFlask className="text-blue-500" size={14} /> },
+        costo_mg_kg: { label: 'COSTO MG/KG', icon: <FaFlask className="text-blue-500" size={14} /> },
+        mod: { label: 'COSTO MOD', icon: <MdWork className="text-green-500" size={14} /> },
+        envase: { label: 'ENVASE', icon: <FaBox className="text-orange-500" size={14} /> },
+        etiqueta: { label: 'ETIQUETA', icon: <FaTag className="text-red-500" size={14} /> },
+        bandeja: { label: 'BANDEJA', icon: <FaPallet className="text-purple-500" size={14} /> },
+        plastico: { label: 'PLÁSTICO', icon: <FaBottleWater className="text-teal-500" size={14} /> },
     }
 
     return (
+        <>
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             {/* Header */}
             <div className="bg-linear-to-r from-emerald-500 to-emerald-600 text-white px-4 py-3">
@@ -85,6 +94,12 @@ export const CostProductsTable = ({
                                     Original
                                 </div>
                             </th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <div className="flex items-center justify-center gap-1">
+                                    <BsFillNutFill size={10}/>
+                                    Acciones
+                                </div>
+                            </th>
                         </tr>
                     </thead>
                        <tbody className="bg-white divide-y divide-gray-200">
@@ -107,19 +122,35 @@ export const CostProductsTable = ({
                                 </td>
 
                                 <td className="px-3 py-2 whitespace-nowrap text-center">
-                                <div
-                                    className={`text-xs font-semibold ${
-                                    value ? 'text-emerald-600' : 'text-gray-400'
-                                    }`}
-                                >
-                                    {value || '-'}
-                                </div>
+                                    <div
+                                        className={`text-xs font-semibold flex justify-center items-center gap-2 ${
+                                        value ? 'text-emerald-600' : 'text-gray-400'
+                                        }`}
+                                    >
+                                        {value || '-'}
+                                    </div>
                                 </td>
 
                                 <td className="px-3 py-2 whitespace-nowrap text-center">
-                                <div className="text-xs text-gray-400">
-                                    {value || '-'}
-                                </div>
+                                    <div className="text-xs font-semibold text-gray-500">
+                                        {value || '-'}
+                                    </div>
+                                </td>
+
+                                <td>
+                                    {/* BOTON EDIT */}
+                                    <div className="flex justify-center gap-2">
+                                        <button
+                                            onClick={() => (
+                                                setShowForm(true),   
+                                                setIdEdit(productDetail?.costos?.id_costos_item)
+                                            )}
+                                            className={`p-1.5 ${label == "COSTO MP/GALÓN" || label == "COSTO MG/KG" ? 'hidden' : '' } text-white duration-200 transform hover:scale-110 rounded-md transition-colors bg-gray-500 hover:bg-gray-800 cursor-pointer`}
+                                            title="Editar"
+                                        >
+                                            <FaEdit size={14} />
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             )})}
@@ -148,6 +179,7 @@ export const CostProductsTable = ({
                                         {recalculatedData?.recalculados?.total || 0}
                                     </div>
                                 </td>
+                                <td></td>
                             </tr>
                             <tr className="bg-gray-100 font-semibold border-t-2 border-gray-300">
                                 <td className="px-3 py-3 whitespace-nowrap">
@@ -162,14 +194,15 @@ export const CostProductsTable = ({
                                 </td>
                                 <td className="px-3 py-3 whitespace-nowrap text-center">
                                     <div className={`text-lg font-bold ${productDetail ? 'text-green-700' : 'text-emerald-700'}`}>
-                                        {productDetail?.costos?.precio_venta || 0}
+                                        {productDetail?.costos?.precio_venta || "-"}
                                     </div>
                                 </td>
                                 <td className="px-3 py-3 whitespace-nowrap text-center">
                                     <div className="text-xs font-medium text-gray-600">
-                                        {productDetail?.costos?.precio_venta || 0}
+                                        {productDetail?.costos?.precio_venta || "-"}
                                     </div>
                                 </td>
+                                <td></td>
                             </tr>
                         </tfoot>
                 </table>
@@ -184,5 +217,18 @@ export const CostProductsTable = ({
                 </div>
             </div>
         </div>
-    );
-};
+
+        {showForm && (
+            <FormCostProducts
+                idEdit={idEdit}
+                showForm={showForm}
+                productDetail={productDetail}
+                onClose={() => {
+                    setIdEdit(null);
+                    setShowForm(false);
+                }}
+            />
+        )}
+        </>
+    )
+}

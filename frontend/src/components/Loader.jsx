@@ -15,7 +15,7 @@ export const Loader = ({ message, duration = 3000 }) => {
   if (!visible) return null;
 
     return (
-        <div className="min-h-screen flex justify-center items-center flex-col text-black px-4 py-2">
+        <div className="min-h-screen ml-65 flex justify-center items-center flex-col text-black px-4 py-2">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-b-blue-500"></div>
           <p className="text-gray-500 font-medium uppercase tracking-widest text-center">
             {message}

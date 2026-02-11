@@ -18,7 +18,7 @@ export const TableInventario = ({ items = [], refreshItems, idBodega }) => {
     const [showForm, setShowForm] = useState(false);
     const [showTraspaso, setShowTraspaso] = useState(false);
     const [itemSeleccionado, setItemSeleccionado] = useState(null);
-
+    
     const getNombre = (item) => item?.nombre_item_general || item.nombre || '-';
     const getCodigo = (item) => item?.codigo_item_general || item.codigo || '-';
     const getTipo = (item) => (item?.nombre_tipo || item.tipo || '-').toUpperCase();

@@ -80,5 +80,8 @@ $routes->group('api', function ($routes) {
 
     // INVENTARIO
     $routes->post('inventario/traspaso', 'InventarioController::traspaso');
+
+    // COSTOS ITEM
+    $routes->put('costos_item/(:num)', 'CostosItemController::update/$1');
 });
 

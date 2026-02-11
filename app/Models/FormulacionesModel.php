@@ -53,7 +53,7 @@ class FormulacionesModel extends BaseModel
         return $datos;
     }
 
-    public function calculate_costs_new_volume($itemId, $newVolume = null)
+    public function calculate_costs($itemId, $newVolume = null)
         {
             if (empty($itemId)) {
                 throw new Exception('Parámetro inválido: itemId requerido.');
@@ -72,6 +72,7 @@ class FormulacionesModel extends BaseModel
                         ig.cubrimiento,
                         ig.brillo_60,
                         i.cantidad,
+                        ci.id_costos_item,
                         COALESCE(ci.costo_unitario, 0) as costo_unitario,
                         COALESCE(ci.costo_mp_galon, 0) as costo_mp_galon,
                         COALESCE(ci.costo_mp_kg, 0) as costo_mp_kg,
@@ -219,6 +220,7 @@ class FormulacionesModel extends BaseModel
                     'factor_volumen' => $factorVolumen
                 ],
                 'costos' => [
+                    'id_costos_item' => $item->id_costos_item,
                     'total_costo_materia_prima' => Formatter::toCOP($nuevoCostoMateriaPrima),
                     'envase' => Formatter::toCOP($item->envase),
                     'etiqueta' => Formatter::toCOP($item->etiqueta),
@@ -241,8 +243,8 @@ class FormulacionesModel extends BaseModel
             throw new Exception('Parámetros inválidos: itemId o newVolume incorrectos.');
         }
 
-        $currentData = $this->calculate_costs_new_volume($itemId);
-        $newData = $this->calculate_costs_new_volume($itemId, $newVolume);
+        $currentData = $this->calculate_costs($itemId);
+        $newData = $this->calculate_costs($itemId, $newVolume);
 
         $costosActuales = $currentData['costos'];
         $costosRecalculados = $newData['costos'];

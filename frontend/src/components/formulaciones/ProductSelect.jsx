@@ -24,6 +24,7 @@ export const ProductSelect = ({
 
     const productosOnly = productos.filter(item => item.tipo === 'PRODUCTO');
     const insumosOnly = insumos.filter(item => item.tipo === 'INSUMO');
+    const productoEncontrado = productos.find(p => Number(p.id_item_general) === Number(selectedProduct));
 
     return (
         <div className={`bg-white rounded-lg shadow-sm ${compact ? 'p-4' : 'p-6'}`}>
@@ -80,20 +81,22 @@ export const ProductSelect = ({
                 </div>
             </div>
 
-            {selectedProduct && (
-                <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-center gap-2">
-                        {productos.find(p => p.id_item_general === parseInt(selectedProduct))?.tipo === 'PRODUCTO' ? (
-                            <FaFlask className="text-blue-600" size={12} />
-                        ) : (
-                            <AiFillAppstore className="text-blue-600" size={12} />
-                        )}
-                        <p className="text-xs text-blue-800">
-                            ✓ {productos.find(p => p.id_item_general === parseInt(selectedProduct))?.tipo} seleccionado: {productos.find(p => p.id_item_general === parseInt(selectedProduct))?.nombre_item_general}
-                        </p>
+            {selectedProduct && productoEncontrado && (
+                    <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center gap-2">
+                            {/* 2. Usamos la constante 'productoEncontrado' directamente */}
+                            {productoEncontrado.tipo === 'PRODUCTO' ? (
+                                <FaFlask className="text-blue-600" size={12} />
+                            ) : (
+                                <AiFillAppstore className="text-blue-600" size={12} />
+                            )}
+                            <p className="text-xs text-blue-800">
+                                {/* 3. Accedemos a las propiedades de forma segura */}
+                                ✓ {productoEncontrado.tipo} seleccionado: {productoEncontrado.nombre_item_general || productoEncontrado.nombre}
+                            </p>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
         </div>
     )
 }

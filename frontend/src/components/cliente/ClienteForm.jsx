@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { FaTimes, FaBuilding, FaUser, FaPhone, FaEnvelope, FaMapMarkerAlt, FaIdCard } from 'react-icons/fa';
+import { FaTimes, FaBuilding, FaUser, FaPhone, FaEnvelope } from 'react-icons/fa';
 
 export const ClienteForm = ({ 
     setShowForm, 

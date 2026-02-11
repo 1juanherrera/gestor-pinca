@@ -6,6 +6,8 @@ import { FaFlask, FaChartPie, FaSpinner, FaCube } from 'react-icons/fa';
 import { MdScience } from 'react-icons/md';
 import { CostProductsTable } from '../components/formulaciones/CostProductsTable';     
 import { useFormulaciones } from '../hooks/useFormulaciones';
+import { Loader } from '../components/Loader';
+import { PageTitle } from '../components/PageTitle';
 
 export const Formulaciones = () => {
   const { 
@@ -26,11 +28,13 @@ export const Formulaciones = () => {
     isRecalculating
   } = useFormulaciones();
 
-  if (isLoading) return <div>Cargando...</div>;
+  if (isLoading) return <Loader message="Cargando formulaciones..." />;
+  if(loadingDetail) return <Loader message="Cargando..." />;
   if (error) return <div>Error: {error.message}</div>;
 
   return (
     <div className="ml-65 p-4 bg-gray-100 min-h-screen">
+      <PageTitle title="Pinca | Formulaciones" />
       {/* Header Compacto */}
       <div className="mb-4">
         <div className="flex items-center justify-between">
@@ -180,6 +184,7 @@ export const Formulaciones = () => {
               <CostProductsTable
                   selectedProductData={selectedProduct}
                   productDetail={productDetail}
+                  loadingDetail={loadingDetail}
                   recalculatedData={recalculatedData}
                   compact={true}
               />
@@ -188,6 +193,7 @@ export const Formulaciones = () => {
           <div>
               <ProductSpecificationsTable
                   selectedProductData={selectedProduct}
+                  loadingDetail={loadingDetail}
                   recalculatedData={recalculatedData}
                   productDetail={productDetail}
               />
