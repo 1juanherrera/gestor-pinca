@@ -7,14 +7,14 @@ class Formatter
     /**
      * Formatea un número como moneda COP (pesos colombianos)
      */
-    public static function toCOP($value, $conSimbolo = true)
+    public static function toCOP($value)
     {
         if (!is_numeric($value)) {
-            return $conSimbolo ? '$0' : '0';
+            return '0';
         }
 
-        $formateado = number_format((float) $value, 2, ',', '.');
-        return $conSimbolo ? '$ ' . $formateado : $formateado;
+        $formateado = number_format((float) $value, 0, ',', '.');
+        return $formateado;
     }
 
     public static function parseCOP($valor) 

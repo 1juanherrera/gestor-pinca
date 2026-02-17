@@ -7,7 +7,7 @@ export const InputMoneda = ({ label, name, value, onChange, className, labelClas
     const internalChange = (e) => {
         let val = e.target.value.replace(/[^0-9.]/g, '');
 
-        if (val.length > 1 && val.startsWith('0') && val[1] !== '.') {
+        if (val.length > 1 && val.startsWith('') && val[1] !== '.') {
             val = val.substring(1);
         }
         

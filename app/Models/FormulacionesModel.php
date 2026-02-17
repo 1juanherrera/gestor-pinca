@@ -226,7 +226,7 @@ class FormulacionesModel extends BaseModel
                     'etiqueta' => Formatter::toCOP($item->etiqueta),
                     'bandeja' => Formatter::toCOP($item->bandeja),
                     'plastico' => Formatter::toCOP($item->plastico),
-                    'mod' => Formatter::toCOP($item->costo_mod),
+                    'costo_mod' => Formatter::toCOP($item->costo_mod),
                     'costo_mg_kg' => Formatter::toCOP($costo_mg_kg),
                     'total_cantidad_materia_prima' => Formatter::toThousands($totalCantidad),
                     'total' => Formatter::toCOP($nuevoCostoTotal),

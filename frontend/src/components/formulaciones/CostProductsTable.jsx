@@ -4,6 +4,8 @@ import { FaBottleWater } from "react-icons/fa6";
 import { BsFillNutFill } from "react-icons/bs";
 import { useState } from 'react';
 import { FormCostProducts } from './FormCostProducts';
+import { useToast } from '../../hooks/useToast';
+import { Toast } from '../../components/Toast';
 
 export const CostProductsTable = ({ 
     selectedProductData,
@@ -15,6 +17,16 @@ export const CostProductsTable = ({
 
     const [showForm, setShowForm] = useState(null);
     const [idEdit, setIdEdit] = useState();
+    const [name, setName] = useState("");
+
+    const {
+        toastVisible,
+        toastMessage,
+        toastType,
+
+        eventToast,
+        setToastVisible
+    } = useToast();
 
     if (!selectedProductData) {
         return (
@@ -33,13 +45,13 @@ export const CostProductsTable = ({
     }
 
     const COST_DEFINITIONS = {
-        costo_mp_galon: { label: 'COSTO MP/GALÓN', icon: <FaFlask className="text-blue-500" size={14} /> },
-        costo_mg_kg: { label: 'COSTO MG/KG', icon: <FaFlask className="text-blue-500" size={14} /> },
-        mod: { label: 'COSTO MOD', icon: <MdWork className="text-green-500" size={14} /> },
-        envase: { label: 'ENVASE', icon: <FaBox className="text-orange-500" size={14} /> },
-        etiqueta: { label: 'ETIQUETA', icon: <FaTag className="text-red-500" size={14} /> },
-        bandeja: { label: 'BANDEJA', icon: <FaPallet className="text-purple-500" size={14} /> },
-        plastico: { label: 'PLÁSTICO', icon: <FaBottleWater className="text-teal-500" size={14} /> },
+        costo_mp_galon: { label: 'COSTO MP/GALÓN', name: 'costo_mp_galon', icon: <FaFlask className="text-blue-500" size={14} /> },
+        costo_mg_kg: { label: 'COSTO MG/KG', name: 'costo_mg_kg', icon: <FaFlask className="text-blue-500" size={14} /> },
+        costo_mod: { label: 'COSTO MOD', name: 'costo_mod', icon: <MdWork className="text-green-500" size={14} /> },
+        envase: { label: 'ENVASE', name: 'envase', icon: <FaBox className="text-orange-500" size={14} /> },
+        etiqueta: { label: 'ETIQUETA', name: 'etiqueta', icon: <FaTag className="text-red-500" size={14} /> },
+        bandeja: { label: 'BANDEJA', name: 'bandeja', icon: <FaPallet className="text-purple-500" size={14} /> },
+        plastico: { label: 'PLÁSTICO', name: 'plastico', icon: <FaBottleWater className="text-teal-500" size={14} /> },
     }
 
     return (
@@ -107,7 +119,7 @@ export const CostProductsTable = ({
                             Object.entries(productDetail.costos || {})
                             .filter(([key]) => COST_DEFINITIONS[key])
                             .map(([key, value]) => {
-                                const { label, icon } = COST_DEFINITIONS[key];
+                                const { label, icon, name } = COST_DEFINITIONS[key];
                                 return (
                             <tr key={key} className="hover:bg-gray-50">
                                 <td className="px-3 py-2 whitespace-nowrap">
@@ -143,7 +155,8 @@ export const CostProductsTable = ({
                                         <button
                                             onClick={() => (
                                                 setShowForm(true),   
-                                                setIdEdit(productDetail?.costos?.id_costos_item)
+                                                setIdEdit(productDetail?.costos?.id_costos_item),
+                                                setName(name)
                                             )}
                                             className={`p-1.5 ${label == "COSTO MP/GALÓN" || label == "COSTO MG/KG" ? 'hidden' : '' } text-white duration-200 transform hover:scale-110 rounded-md transition-colors bg-gray-500 hover:bg-gray-800 cursor-pointer`}
                                             title="Editar"
@@ -176,7 +189,7 @@ export const CostProductsTable = ({
                                 </td>
                                 <td className="px-3 py-3 whitespace-nowrap text-center">
                                     <div className="text-xs font-medium text-gray-600">
-                                        {recalculatedData?.recalculados?.total || 0}
+                                        {recalculatedData?.recalculados?.total || "-"}
                                     </div>
                                 </td>
                                 <td></td>
@@ -199,7 +212,7 @@ export const CostProductsTable = ({
                                 </td>
                                 <td className="px-3 py-3 whitespace-nowrap text-center">
                                     <div className="text-xs font-medium text-gray-600">
-                                        {productDetail?.costos?.precio_venta || "-"}
+                                        {recalculatedData?.recalculados?.precio_venta || "-"}
                                     </div>
                                 </td>
                                 <td></td>
@@ -221,12 +234,23 @@ export const CostProductsTable = ({
         {showForm && (
             <FormCostProducts
                 idEdit={idEdit}
-                showForm={showForm}
+                setShowForm={setShowForm}
+                name={name}
+                eventToast={eventToast}
                 productDetail={productDetail}
                 onClose={() => {
                     setIdEdit(null);
                     setShowForm(false);
                 }}
+            />
+        )}
+
+        {/* Toast */}           
+        {toastVisible && (
+            <Toast 
+                message={toastMessage} 
+                type={toastType}
+                onClose={() => setToastVisible(false)}
             />
         )}
         </>

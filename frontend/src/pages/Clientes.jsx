@@ -13,7 +13,7 @@ import {
 import { ClienteStats } from '../components/cliente/ClienteStats';
 import { useClientes } from "../hooks/useClientes";
 import { Loader } from '../components/Loader';
-import { ClienteForm } from '../components/cliente/clienteForm';
+import { ClienteForm } from '../components/cliente/ClienteForm';
 import { useMemo, useState } from 'react';
 import { useToast } from '../hooks/useToast';
 import { Toast } from '../components/Toast';

@@ -59,7 +59,7 @@ export const TableInventario = ({ items = [], refreshItems, idBodega }) => {
     return (
         <>
             <div className="overflow-hidden rounded-lg border mt-3 border-gray-200">
-                <div className="max-h-[63vh] overflow-y-auto">
+                <div className="max-h-[60vh] overflow-y-auto">
                     <table className="w-full border-collapse">
                         <thead className="text-white uppercase">
                             <tr>

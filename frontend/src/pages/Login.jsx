@@ -61,7 +61,7 @@ export const Login = () => {
           alt="Pinca Logo"
           className="w-2/3 max-w-sm drop-shadow-2xl animate-fade-in" 
         />
-        <h2 className="text-white text-3xl font-bold uppercase">Pinturas Industriales del Caribe S.A.S.</h2>
+        <h2 className="text-white text-2xl font-bold uppercase">Pinturas Industriales del Caribe S.A.S.</h2>
       </div>
 
       <div className="w-full md:w-1/2 flex items-center justify-center bg-gray-100 px-6 rounded-l-[8rem]">

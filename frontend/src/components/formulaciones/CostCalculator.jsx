@@ -69,7 +69,7 @@ export const CostCalculator = ({
                             <button 
                             onClick={handleRecalcular}
                             disabled={isRecalculating}
-                            className="bg-purple-600 text-white px-3 py-2 rounded-lg">
+                            className="bg-purple-600 hover:bg-purple-700 hover:scale-105 text-white px-3 py-2 cursor-pointer rounded-lg">
                             {isRecalculating ? (
                                 <>
                                     <FaSyncAlt className="animate-spin" />
