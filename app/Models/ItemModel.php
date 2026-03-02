@@ -39,9 +39,9 @@ class ItemModel extends BaseModel
                     ig.*,
                     c.nombre AS categoria,
                     ci.costo_unitario
-            FROM item_general ig
-            LEFT JOIN categoria c ON ig.categoria_id = c.id_categoria
-            LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general';
+                FROM item_general ig
+                LEFT JOIN categoria c ON ig.categoria_id = c.id_categoria
+                LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general';
 
         $tipos = [
             0 => 'PRODUCTO',

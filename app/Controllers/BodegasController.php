@@ -17,11 +17,18 @@ class BodegasController extends ResourceController
 
     public function bodega_inventario($id = null)
     {
-        $bodega = $this->model->bodega_inventario($id);
-        if (!$bodega) {
-            return $this->failNotFound("Bodega con ID $id no encontrada.");
+        // Capturamos page y perPage de la URL (?page=1&perPage=10)
+        $page    = $this->request->getVar('page') ?? 1;
+        $perPage = $this->request->getVar('perPage') ?? 10;
+
+        $model = new \App\Models\BodegasModel();
+        $data = $model->bodega_inventario($id, $page, $perPage);
+
+        if (!$data) {
+            return $this->response->setJSON(['error' => 'Bodega no encontrada'])->setStatusCode(404);
         }
-        return $this->respond($bodega);
+
+        return $this->response->setJSON($data);
     }
 
     public function show($id = null)
