@@ -26,22 +26,22 @@ class InstalacionesModel extends BaseModel
         } else {
             // Retornar solo la instalación específica con bodegas
             $sql = 'SELECT * FROM instalaciones WHERE id_instalaciones = ?';
-            $instalacion = $this->db->query($sql, [$id_instalacion])->getRow();
+            $instalacion = $this->db->query($sql, [$id_instalacion])->getRowArray();
 
             if ($instalacion) {
                 $sql1 = 'SELECT id_bodegas, nombre, descripcion, estado
                         FROM bodegas
                         WHERE instalaciones_id = ?';
-                $bodegas = $this->db->query($sql1, [$id_instalacion])->getResult();
+                $bodegas = $this->db->query($sql1, [$id_instalacion])->getResultArray();
 
                 return [
-                    'id_instalaciones' => $instalacion->id_instalaciones,
-                    'nombre'           => $instalacion->nombre,
-                    'descripcion'      => $instalacion->descripcion,
-                    'ciudad'           => $instalacion->ciudad,
-                    'direccion'        => $instalacion->direccion,
-                    'telefono'         => $instalacion->telefono,
-                    'id_empresa'       => $instalacion->id_empresa,
+                    'id_instalaciones' => $instalacion['id_instalaciones'],
+                    'nombre'           => $instalacion['nombre'],
+                    'descripcion'      => $instalacion['descripcion'],
+                    'ciudad'           => $instalacion['ciudad'],
+                    'direccion'        => $instalacion['direccion'],
+                    'telefono'         => $instalacion['telefono'],
+                    'id_empresa'       => $instalacion['id_empresa'],
                     'bodegas'          => $bodegas
                 ];
             }
