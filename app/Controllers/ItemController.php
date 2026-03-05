@@ -42,25 +42,27 @@ class ItemController extends ResourceController
             return $this->fail('No se recibieron datos o el JSON es inválido', 400);
         }
 
-        // Validación mínima de seguridad
         if (empty($data['nombre']) || empty($data['categoria_id'])) {
             return $this->failValidationErrors('El nombre y la categoría son obligatorios.');
         }
 
-        // Llamamos al modelo que ya tiene todos los campos de Costos, Inventario y Propiedades
-        $result = $this->model->create_full_item($data);
+        try {
+            // Ejecutamos el modelo
+            $result = $this->model->create_full_item($data);
 
-        // Si el modelo devuelve un error (llave foránea, columna inexistente, etc.)
-        if (is_array($result) && isset($result['error'])) {
-            return $this->fail($result['error'], 400);
+            // Si llegó aquí es porque funcionó
+            return $this->respondCreated([
+                'status'  => 201,
+                'message' => 'Ítem completo creado con éxito',
+                'id'      => $result
+            ]);
+
+        } catch (\Exception $e) {
+            // 🔥 AQUÍ ESTÁ LA MAGIA: 
+            // Si el modelo falla, capturamos el mensaje real (ej. "Data too long") 
+            // y lo devolvemos como un error 400 limpio en Postman.
+            return $this->fail($e->getMessage(), 400);
         }
-
-        // ÉXITO: Retornamos el ID y un mensaje claro para el frontend
-        return $this->respondCreated([
-            'status'  => 201,
-            'message' => 'Ítem completo creado con éxito',
-            'id'      => $result
-        ]);
     }
 
     public function update($id = null)

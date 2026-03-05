@@ -17,12 +17,15 @@ class BodegasController extends ResourceController
 
     public function bodega_inventario($id = null)
     {
-        // Capturamos page y perPage de la URL (?page=1&perPage=10)
-        $page    = $this->request->getVar('page') ?? 1;
-        $perPage = $this->request->getVar('perPage') ?? 10;
+        $page      = $this->request->getVar('page') ?? 1;
+        $perPage   = $this->request->getVar('perPage') ?? 10;
+        $search    = $this->request->getVar('search') ?? '';
+        $tipo = $this->request->getVar('tipo') ?? ''; // Este es el 'tipo' (0, 1, 2)
 
         $model = new \App\Models\BodegasModel();
-        $data = $model->bodega_inventario($id, $page, $perPage);
+        
+        // 2. Pasamos los 5 parámetros al modelo en el orden correcto
+        $data = $model->bodega_inventario($id, $page, $perPage, $search, $tipo);
 
         if (!$data) {
             return $this->response->setJSON(['error' => 'Bodega no encontrada'])->setStatusCode(404);

@@ -83,5 +83,12 @@ $routes->group('api', function ($routes) {
 
     // COSTOS ITEM
     $routes->put('costos_item/(:num)', 'CostosItemController::update/$1');
+
+    // UNIDADES
+    $routes->get('unidades', 'UnidadController::unidades');
+
+    // CATEGORIAS
+    $routes->get('categorias', 'CategoriaController::categorias');
+    
 });
 

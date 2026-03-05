@@ -117,7 +117,7 @@ class ItemModel extends BaseModel
 
             $itemData = [
                 'nombre'           => $data['nombre'],
-                'codigo'           => substr($data['codigo'] ?? '', 0, 6),
+                'codigo'           => substr($data['codigo'] ?? '', 0, 10),
                 'tipo'             => $tipoMapeado,
                 'categoria_id'     => $data['categoria_id'] ?? null,
                 'viscosidad'       => $data['viscosidad'] ?? null,
@@ -203,8 +203,16 @@ class ItemModel extends BaseModel
             return $newItemId;
 
         } catch (\Exception $e) {
+            // 1. Capturamos el error de la base de datos antes de limpiar la transacción
+            $dbError = $this->db->error(); 
             $this->db->transRollback();
-            throw new \Exception($e->getMessage()); 
+            
+            // 2. Si hay un mensaje de SQL, lo lanzamos. Si no, lanzamos el mensaje de la excepción.
+            $errorMessage = !empty($dbError['message']) 
+                ? "SQL Error: " . $dbError['message'] 
+                : $e->getMessage();
+
+            throw new \Exception($errorMessage); 
         }
     }
 

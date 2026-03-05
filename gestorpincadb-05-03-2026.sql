@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: db
--- Tiempo de generación: 11-02-2026 a las 21:59:21
+-- Tiempo de generación: 05-03-2026 a las 06:20:54
 -- Versión del servidor: 8.0.44
 -- Versión de PHP: 8.3.26
 
@@ -108,7 +108,7 @@ CREATE TABLE `costos_item` (
   `costo_mp_galon` decimal(10,0) DEFAULT NULL,
   `costo_cunete` decimal(10,0) NOT NULL,
   `costo_tambor` decimal(10,0) NOT NULL,
-  `periodo` varchar(7) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `periodo` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `metodo_calculo` varchar(6) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `fecha_calculo` date DEFAULT NULL,
   `costo_mp_kg` decimal(10,0) DEFAULT NULL,
@@ -1043,7 +1043,9 @@ INSERT INTO `item_general_formulaciones` (`id_item_general_formulaciones`, `form
 (334, 27, 35.00, NULL, 84),
 (335, 22, 150.00, NULL, 83),
 (366, 50, 5.00, 0, 35),
-(367, 50, 10.00, 0, 47);
+(367, 50, 10.00, 0, 47),
+(368, 51, 1.00, 0, 1),
+(369, 52, 1.00, 0, 3);
 
 -- --------------------------------------------------------
 
@@ -1400,7 +1402,7 @@ ALTER TABLE `clientes`
 -- AUTO_INCREMENT de la tabla `costos_item`
 --
 ALTER TABLE `costos_item`
-  MODIFY `id_costos_item` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=164;
+  MODIFY `id_costos_item` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=167;
 
 --
 -- AUTO_INCREMENT de la tabla `costos_produccion`
@@ -1430,7 +1432,7 @@ ALTER TABLE `facturas`
 -- AUTO_INCREMENT de la tabla `formulaciones`
 --
 ALTER TABLE `formulaciones`
-  MODIFY `id_formulaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
+  MODIFY `id_formulaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
 
 --
 -- AUTO_INCREMENT de la tabla `instalaciones`
@@ -1442,19 +1444,19 @@ ALTER TABLE `instalaciones`
 -- AUTO_INCREMENT de la tabla `inventario`
 --
 ALTER TABLE `inventario`
-  MODIFY `id_inventario` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=160;
+  MODIFY `id_inventario` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=163;
 
 --
 -- AUTO_INCREMENT de la tabla `item_general`
 --
 ALTER TABLE `item_general`
-  MODIFY `id_item_general` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=150;
+  MODIFY `id_item_general` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=153;
 
 --
 -- AUTO_INCREMENT de la tabla `item_general_formulaciones`
 --
 ALTER TABLE `item_general_formulaciones`
-  MODIFY `id_item_general_formulaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=368;
+  MODIFY `id_item_general_formulaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=370;
 
 --
 -- AUTO_INCREMENT de la tabla `item_proveedor`
