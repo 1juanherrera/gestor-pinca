@@ -20,7 +20,7 @@ class BodegasController extends ResourceController
         $page      = $this->request->getVar('page') ?? 1;
         $perPage   = $this->request->getVar('perPage') ?? 10;
         $search    = $this->request->getVar('search') ?? '';
-        $tipo = $this->request->getVar('tipo') ?? ''; // Este es el 'tipo' (0, 1, 2)
+        $tipo      = $this->request->getVar('tipo') ?? '';
 
         $model = new \App\Models\BodegasModel();
         

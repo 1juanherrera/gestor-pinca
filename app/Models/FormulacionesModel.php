@@ -53,6 +53,53 @@ class FormulacionesModel extends BaseModel
         return $datos;
     }
 
+    public function get_item_formulacion_by_id($id)
+    {
+        if (empty($id) || !is_numeric($id)) {
+            throw new Exception('Parámetro inválido: id requerido.');
+        }
+
+        $sql = 'SELECT f.*, 
+                    ig.nombre AS item_general, 
+                    ig.tipo, ig.codigo AS codigo_item_general,
+                    ig.id_item_general AS id_item_general
+                FROM formulaciones f
+                LEFT JOIN item_general ig ON ig.id_item_general = f.item_general_id
+                WHERE f.estado = 1 AND f.id_formulaciones = ?';
+
+        $item = $this->db->query($sql, [$id])->getRow();
+
+        if (!$item) {
+            throw new Exception("Formulación con ID {$id} no encontrada.");
+        }
+
+        $sql1 = 'SELECT ig.nombre, ig.codigo AS codigo_item_general,
+                    ig.*, ci.*, igf.cantidad, igf.porcentaje
+                    FROM item_general_formulaciones igf
+                    LEFT JOIN item_general ig ON ig.id_item_general = igf.item_general_id
+                    LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
+                    WHERE igf.formulaciones_id = ?';
+
+        $items = $this->db->query($sql1, [$item->id_formulaciones])->getResult();
+
+        $tipos = [
+            0 => 'PRODUCTO',
+            1 => 'MATERIA PRIMA',
+            2 => 'INSUMO',
+        ];
+
+        return [
+            'id_formulacion'      => $item->id_formulaciones,
+            'id_item_general'     => $item->id_item_general,
+            'codigo_item_general' => $item->codigo_item_general,
+            'nombre_item_general' => $item->item_general,
+            'nombre'              => $item->nombre,
+            'tipo'                => $tipos[$item->tipo] ?? 'Otro',
+            'descripcion'         => $item->descripcion,
+            'items'               => $items,
+        ];
+    }
+
     public function calculate_costs($itemId, $newVolume = null)
         {
             if (empty($itemId)) {

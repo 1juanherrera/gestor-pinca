@@ -2,26 +2,24 @@
 
 AGREGAR BUSCADOR DE PRODUCTOS DE PROOVEDOR PARA DIFERENCIAS Y COMPARA PRECIOS
 
-NUEVO MODULO -> PAGOSPENDIENTES, 
-- ESPECIFICACIONES DE FACTURAS Y DE PAGOS,
-- AGREGAR ABONOS POR CLIENTES,
-- REMISIONES,
+NUEVO MODULO -> PAGOSPENDIENTES
+
+- ESPECIFICACIONES DE FACTURAS Y DE PAGOS
+- AGREGAR ABONOS POR CLIENTES
+- REMISIONES
 - COTIZACIONES
 
 TAREAS PENDIENTES -> SEGUIR EN get_bodegas_by_instalacion, EXPORTAR EXCEL CostCalculator
 
 Costo unitario	Para cálculos de rentabilidad y costos de producción.
-Proveedor principal	Para agilizar pedidos.
-Estado (Activo/Inactivo)	Para ocultar productos sin eliminarlos.
+Proveedor principal Para agilizar pedidos.
+Estado (Activo/Inactivo) Para ocultar productos sin eliminarlos.
 IVA (%)	Para cálculo automático de precio con impuestos.
-Fecha de ingreso / caducidad (si aplica)	Importante para materia prima química.
+Fecha de ingreso / caducidad (si aplica) Importante para materia prima química.
 
 
 BUGS / FIX 11 DE FEBRERO 
--> EN FORMULACIONES SI HE RECALCULADO UN PRODUCTO, AL SELECCIONAR OTRO PRODUCTO ME DEJA EL RECALCULO ANTIGUO (O SEA DEL PRODUCTO ANTERIOR) -> "LIMPIAR DATA PARA NUEVO ITEM Y RECALCULACIÓN MANUAL"
+-> EN FORMULACIONES SI HE RECALCULADO UN PRODUCTO, AL SELECCIONAR OTRO PRODUCTO ME DEJA EL RECALCULO ANTIGUO (O SEA DEL PRODUCTO ANTERIOR) 
+-> "LIMPIAR DATA PARA NUEVO ITEM Y RECALCULACIÓN MANUAL"
 -> TRANSFERENCIA DE BODEGA A BODEGA NO SIRVE ACTUALMENTE 
--> TERMINAR FORM EDIT FORMULACIONES 
- 
-******************************************
--> SOLUCIONAR PRIORITARIAMENTE BUG CON EL COMPONENTE DE InputMoneda -> CAMBIOS DE VALORES AL HACER FOCUS EN LOS INPUT
-******************************************
+-> TERMINAR FORM EDIT FORMULACIONES
