@@ -16,10 +16,3 @@ Proveedor principal Para agilizar pedidos.
 Estado (Activo/Inactivo) Para ocultar productos sin eliminarlos.
 IVA (%)	Para cálculo automático de precio con impuestos.
 Fecha de ingreso / caducidad (si aplica) Importante para materia prima química.
-
-
-BUGS / FIX 11 DE FEBRERO 
--> EN FORMULACIONES SI HE RECALCULADO UN PRODUCTO, AL SELECCIONAR OTRO PRODUCTO ME DEJA EL RECALCULO ANTIGUO (O SEA DEL PRODUCTO ANTERIOR) 
--> "LIMPIAR DATA PARA NUEVO ITEM Y RECALCULACIÓN MANUAL"
--> TRANSFERENCIA DE BODEGA A BODEGA NO SIRVE ACTUALMENTE 
--> TERMINAR FORM EDIT FORMULACIONES

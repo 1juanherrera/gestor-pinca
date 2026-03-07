@@ -11,7 +11,8 @@ class CostosItemModel extends BaseModel
         "etiqueta",
         "bandeja",
         "plastico",
-        "costo_mod"
+        "costo_mod",
+        "porcentaje_utilidad",
     ];
 
     public function __construct(){

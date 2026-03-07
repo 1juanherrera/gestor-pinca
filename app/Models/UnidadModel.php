@@ -11,7 +11,8 @@ class UnidadModel extends BaseModel
         "numero",
         "nombre",
         "descripcion",
-        "estados"
+        "estados",
+        "escala"
     ];
 
     public function __construct()

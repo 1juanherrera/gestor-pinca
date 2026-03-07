@@ -87,9 +87,19 @@ $routes->group('api', function ($routes) {
 
     // UNIDADES
     $routes->get('unidades', 'UnidadController::unidades');
+    $routes->get('unidades/(:num)', 'UnidadController::show/$1');
+    $routes->post('unidades', 'UnidadController::create');
+    $routes->put('unidades/(:num)', 'UnidadController::update/$1');
+    $routes->delete('unidades/(:num)', 'UnidadController::delete/$1');
 
     // CATEGORIAS
     $routes->get('categorias', 'CategoriaController::categorias');
-    
+
+    // PREPARACIONES    
+    $routes->get('preparaciones',              'PreparacionesController::index');
+    $routes->post('preparaciones',             'PreparacionesController::create');
+    $routes->get('preparaciones/item/(:num)',  'PreparacionesController::byItem/$1');
+    $routes->get('preparaciones/(:num)',       'PreparacionesController::show/$1');
+    $routes->put('preparaciones/(:num)',       'PreparacionesController::update/$1'); 
 });
 
