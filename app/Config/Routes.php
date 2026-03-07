@@ -73,11 +73,16 @@ $routes->group('api', function ($routes) {
     $routes->delete('clientes/(:num)', 'ClientesController::delete/$1');
 
     // FACTURAS
-    $routes->get('facturas', 'FacturasController::facturas');
+    $routes->get('facturas', 'FacturasController::index');
     $routes->get('facturas/(:num)', 'FacturasController::show/$1');
+    $routes->get('facturas/(:num)/detalle', 'FacturasController::detalle/$1');
+    $routes->get('facturas/(:num)/abonos', 'FacturasController::abonos/$1');
+    $routes->get('facturas/(:num)/remision', 'FacturasController::remision/$1');
     $routes->post('facturas', 'FacturasController::create');
     $routes->put('facturas/(:num)', 'FacturasController::update/$1');
+    $routes->patch('facturas/(:num)/estado', 'FacturasController::cambiarEstado/$1');
     $routes->delete('facturas/(:num)', 'FacturasController::delete/$1');
+
 
     // INVENTARIO
     $routes->post('inventario/traspaso', 'InventarioController::traspaso');
@@ -101,5 +106,30 @@ $routes->group('api', function ($routes) {
     $routes->get('preparaciones/item/(:num)',  'PreparacionesController::byItem/$1');
     $routes->get('preparaciones/(:num)',       'PreparacionesController::show/$1');
     $routes->put('preparaciones/(:num)',       'PreparacionesController::update/$1'); 
-});
 
+    $routes->get   ('pagos_cliente',                 'PagosClienteController::index');
+    $routes->get   ('pagos_cliente/(:num)',           'PagosClienteController::show/$1');
+    $routes->post  ('pagos_cliente',                 'PagosClienteController::create');
+    $routes->put   ('pagos_cliente/(:num)',           'PagosClienteController::update/$1');
+    $routes->delete('pagos_cliente/(:num)',           'PagosClienteController::delete/$1');
+
+    // ── COTIZACIONES  (?cliente_id=X) ─────────────────────────────────────
+    $routes->get   ('cotizaciones',                  'CotizacionesController::index');
+    $routes->get   ('cotizaciones/(:num)',            'CotizacionesController::show/$1');
+    $routes->get   ('cotizaciones/(:num)/detalle',   'CotizacionesController::detalle/$1');
+    $routes->post  ('cotizaciones',                  'CotizacionesController::create');
+    $routes->put   ('cotizaciones/(:num)',            'CotizacionesController::update/$1');
+    $routes->patch ('cotizaciones/(:num)/estado',    'CotizacionesController::cambiarEstado/$1');
+    $routes->post  ('cotizaciones/(:num)/convertir', 'CotizacionesController::convertir/$1');
+    $routes->delete('cotizaciones/(:num)',            'CotizacionesController::delete/$1');
+
+    // ── REMISIONES  (?cliente_id=X | ?factura_id=X) ───────────────────────
+    $routes->get   ('remisiones',                    'RemisionesController::index');
+    $routes->get   ('remisiones/(:num)',              'RemisionesController::show/$1');
+    $routes->get   ('remisiones/(:num)/detalle',     'RemisionesController::detalle/$1');
+    $routes->post  ('remisiones',                    'RemisionesController::create');
+    $routes->put   ('remisiones/(:num)',              'RemisionesController::update/$1');
+    $routes->patch ('remisiones/(:num)/estado',      'RemisionesController::cambiarEstado/$1');
+    $routes->post  ('remisiones/(:num)/convertir',   'RemisionesController::convertir/$1');
+    $routes->delete('remisiones/(:num)',              'RemisionesController::delete/$1');
+});

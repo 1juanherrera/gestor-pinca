@@ -1,23 +1,28 @@
 <?php
 
 namespace App\Models;
-use App\Libraries\Formatter;
 
 class FacturasModel extends BaseModel
 {
-
-    protected $table = 'facturas';
+    protected $table      = 'facturas';
     protected $primaryKey = 'id_facturas';
+
+    // allowedFields se llena dinámicamente en BaseModel,
+    // pero lo declaramos para claridad y validación manual
     protected $allowedFields = [
-        "numero",
-        "cliente_id",
-        "fecha_emision",
-        "total",
-        "estado",
-        "subtotal",
-        "impuestos",
-        "retencion",
-        "movimiento_inventario_id"
+        'numero',
+        'cliente_id',
+        'fecha_emision',
+        'fecha_vencimiento',  // NUEVO
+        'subtotal',
+        'descuento',          // NUEVO
+        'impuestos',
+        'retencion',
+        'total',
+        'saldo_pendiente',    // NUEVO — se recalcula en el controlador
+        'estado',
+        'observaciones',      // NUEVO
+        'movimiento_inventario_id',
     ];
 
     public function __construct()
