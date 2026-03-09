@@ -38,15 +38,19 @@ $routes->group('api', function ($routes) {
 
     // BODEGAS
     $routes->get('bodegas', 'BodegasController::bodegas');
+    $routes->post('bodegas/item', 'BodegasController::createItemBodega');  
+    $routes->put('bodegas/item/(:num)', 'BodegasController::updateItemBodega/$1');
+    $routes->get('bodegas/inventario/(:num)', 'BodegasController::bodega_inventario/$1');
     $routes->get('bodegas/(:num)', 'BodegasController::show/$1');
     $routes->post('bodegas', 'BodegasController::create');
     $routes->put('bodegas/(:num)', 'BodegasController::update/$1');
     $routes->delete('bodegas/(:num)', 'BodegasController::delete/$1');
-    $routes->get('bodegas/inventario/(:num)', 'BodegasController::bodega_inventario/$1');
 
+    
     // FORMULACIONES
     $routes->get('formulaciones', 'FormulacionesController::formulaciones');
     $routes->get('formulaciones/(:num)', 'FormulacionesController::show/$1');
+    $routes->get('formulacion_item/(:num)',  'FormulacionesController::showItem/$1');
     $routes->get('formulaciones/costos/(:num)', 'FormulacionesController::calcular_costos_volumen/$1');
     $routes->get('formulaciones/recalcular_costos/(:num)/(:segment)', 'FormulacionesController::recalcular_costos_por_volumen/$1/$2');
 

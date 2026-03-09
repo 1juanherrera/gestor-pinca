@@ -3,11 +3,19 @@
 namespace App\Controllers;
 
 use CodeIgniter\RESTful\ResourceController;
+use CodeIgniter\HTTP\IncomingRequest;
 use App\Models\BodegasModel;
+use Exception;
 
 class BodegasController extends ResourceController
 {
     protected $modelName = BodegasModel::class;
+    protected IncomingRequest $req;
+
+    public function __construct()
+    {
+        $this->req = service('request'); // ✅
+    }
 
     public function bodegas()
     {
@@ -17,21 +25,29 @@ class BodegasController extends ResourceController
 
     public function bodega_inventario($id = null)
     {
-        $page      = $this->request->getVar('page') ?? 1;
-        $perPage   = $this->request->getVar('perPage') ?? 10;
-        $search    = $this->request->getVar('search') ?? '';
-        $tipo      = $this->request->getVar('tipo') ?? '';
+        try {
+            if ($id === null) {
+                return $this->failValidationErrors('El ID de bodega es obligatorio.');
+            }
 
-        $model = new \App\Models\BodegasModel();
-        
-        // 2. Pasamos los 5 parámetros al modelo en el orden correcto
-        $data = $model->bodega_inventario($id, $page, $perPage, $search, $tipo);
+            $page    = $this->req->getGet('page')    ?? 1;
+            $perPage = $this->req->getGet('perPage') ?? 10;
+            $search  = $this->req->getGet('search')  ?? '';
+            $tipo    = $this->req->getGet('tipo')    ?? '';
 
-        if (!$data) {
-            return $this->response->setJSON(['error' => 'Bodega no encontrada'])->setStatusCode(404);
+            $data = $this->model->bodega_inventario($id, $page, $perPage, $search, $tipo);
+
+            if (!$data) {
+                return $this->failNotFound("Bodega con ID $id no encontrada.");
+            }
+
+            return $this->respond([
+                'status' => 'success',
+                'data'   => $data
+            ]);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage(), 500);
         }
-
-        return $this->response->setJSON($data);
     }
 
     public function show($id = null)
@@ -42,6 +58,27 @@ class BodegasController extends ResourceController
         }
         return $this->respond($bodega);
     }
+
+    public function createItemBodega()
+    {
+        try {
+            $data = $this->req->getJSON(true);
+
+            if (empty($data)) {
+                return $this->failValidationErrors('No se recibieron datos válidos.');
+            }
+
+            $result = $this->model->createItemDesdeBodega($data);
+
+            return $this->respondCreated([
+                'status'  => 'success',
+                'message' => $result['message'],
+                'id'      => $result['id']
+            ]);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage(), 500);
+        }
+}
 
     public function create(){
         $json = $this->request->getBody();
@@ -58,6 +95,30 @@ class BodegasController extends ResourceController
             ]);
         }
         return $this->fail('Error al crear la bodega');
+    }
+
+    public function updateItemBodega($id = null)
+    {
+        try {
+            if ($id === null) {
+                return $this->failValidationErrors('El ID del item es obligatorio.');
+            }
+
+            $data = $this->req->getJSON(true); 
+
+            if (empty($data)) {
+                return $this->failValidationErrors('No se recibieron datos válidos.');
+            }
+
+            $result = $this->model->updateItemDesdeBodega((int) $id, $data);
+
+            return $this->respond([
+                'status'  => 'success',
+                'message' => $result['message']
+            ]);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage(), 500);
+        }
     }
 
     public function update($id = null)

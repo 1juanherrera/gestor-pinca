@@ -10,6 +10,24 @@ class FormulacionesController extends ResourceController
 {
     protected $modelName = FormulacionesModel::class;
 
+    public function showItem($itemId = null)
+    {
+        try {
+            if (empty($itemId)) {
+                return $this->fail('El parámetro itemId es requerido.', 400);
+            }
+
+            $data = $this->model->getFormulacionConMateriasPrimas($itemId);
+
+            return $this->respond([
+                'status'  => 'success',
+                'data'    => $data
+            ]);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage(), 404);
+        }
+    }
+
     public function formulaciones()
     {
         $items = $this->model->get_items_formulaciones();

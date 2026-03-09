@@ -100,6 +100,116 @@ class FormulacionesModel extends BaseModel
         ];
     }
 
+    public function getFormulacionConMateriasPrimas(int $itemId): array
+    {
+        // 1. Datos del item
+        $item = $this->db->query('
+            SELECT 
+                ig.id_item_general,
+                ig.nombre,
+                ig.codigo,
+                ig.tipo,
+                ig.viscosidad,
+                ig.p_g,
+                ig.color,
+                ig.secado,
+                ig.cubrimiento,
+                ig.brillo_60,
+                i.cantidad AS inventario_cantidad,
+                COALESCE(NULLIF(ci.volumen, 0), 1) AS volumen_base,
+                COALESCE(ci.envase, 0)             AS envase,
+                COALESCE(ci.etiqueta, 0)           AS etiqueta,
+                COALESCE(ci.bandeja, 0)            AS bandeja,
+                COALESCE(ci.plastico, 0)           AS plastico,
+                COALESCE(ci.costo_mod, 0)          AS costo_mod,
+                COALESCE(ci.porcentaje_utilidad, 50) AS porcentaje_utilidad
+            FROM item_general ig
+            LEFT JOIN inventario i   ON i.item_general_id   = ig.id_item_general
+            LEFT JOIN costos_item ci ON ci.item_general_id  = ig.id_item_general
+            WHERE ig.id_item_general = ?
+        ', [$itemId])->getRow();
+
+        if (!$item) {
+            throw new Exception("Item con ID {$itemId} no encontrado.");
+        }
+
+        // 2. Formulación activa
+        $formulacion = $this->db->query('
+            SELECT id_formulaciones
+            FROM formulaciones
+            WHERE item_general_id = ? AND estado = 1
+            LIMIT 1
+        ', [$itemId])->getRow();
+
+        if (!$formulacion) {
+            throw new Exception("El item '{$item->nombre}' no tiene una formulación activa.");
+        }
+
+        // 3. Materias primas de la formulación
+        $materiasPrimas = $this->db->query('
+            SELECT
+                igf.id_item_general_formulaciones,
+                igf.formulaciones_id,
+                igf.item_general_id   AS materia_prima_id,
+                igf.cantidad,
+                ig.nombre             AS materia_prima_nombre,
+                ig.codigo             AS materia_prima_codigo,
+                COALESCE(ci.costo_unitario, 0)      AS costo_unitario,
+                COALESCE(i.cantidad, 0)             AS inventario_cantidad,
+                (igf.cantidad * COALESCE(ci.costo_unitario, 0)) AS costo_total
+            FROM item_general_formulaciones igf
+            INNER JOIN item_general ig ON igf.item_general_id = ig.id_item_general
+            LEFT JOIN costos_item ci   ON ig.id_item_general  = ci.item_general_id
+            LEFT JOIN inventario i     ON ig.id_item_general  = i.item_general_id
+            WHERE igf.formulaciones_id = ?
+            ORDER BY ig.nombre ASC
+        ', [$formulacion->id_formulaciones])->getResult();
+
+        if (empty($materiasPrimas)) {
+            throw new Exception("La formulación del item '{$item->nombre}' no tiene materias primas asignadas.");
+        }
+
+        // 4. Formatear materias primas
+        $materiasFormateadas = array_map(function ($mp) {
+            return [
+                'id'                  => (int) $mp->id_item_general_formulaciones,
+                'formulaciones_id'    => (int) $mp->formulaciones_id,
+                'materia_prima_id'    => (int) $mp->materia_prima_id,
+                'nombre'              => $mp->materia_prima_nombre,
+                'codigo'              => $mp->materia_prima_codigo,
+                'cantidad'            => (float) $mp->cantidad,
+                'costo_unitario'      => (float) $mp->costo_unitario,
+                'costo_total'         => (float) $mp->costo_total,
+                'inventario_cantidad' => (float) $mp->inventario_cantidad,
+            ];
+        }, $materiasPrimas);
+
+        return [
+            'item' => [
+                'id'                  => (int) $item->id_item_general,
+                'nombre'              => $item->nombre,
+                'codigo'              => $item->codigo,
+                'tipo'                => $item->tipo,
+                'viscosidad'          => $item->viscosidad,
+                'p_g'                 => $item->p_g,
+                'color'               => $item->color,
+                'secado'              => $item->secado,
+                'cubrimiento'         => $item->cubrimiento,
+                'brillo_60'           => $item->brillo_60,
+                'inventario_cantidad' => (float) $item->inventario_cantidad,
+                'volumen_base'        => (float) $item->volumen_base,
+                'envase'              => (float) $item->envase,
+                'etiqueta'            => (float) $item->etiqueta,
+                'bandeja'             => (float) $item->bandeja,
+                'plastico'            => (float) $item->plastico,
+                'costo_mod'           => (float) $item->costo_mod,
+                'porcentaje_utilidad' => (float) $item->porcentaje_utilidad,
+            ],
+            'formulacion_id'  => (int) $formulacion->id_formulaciones,
+            'materias_primas' => $materiasFormateadas,
+        ];
+    }
+
     public function calculate_costs($itemId, $newVolume = null)
     {
         if (empty($itemId)) {
