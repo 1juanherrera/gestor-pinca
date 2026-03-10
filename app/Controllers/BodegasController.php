@@ -59,7 +59,7 @@ class BodegasController extends ResourceController
         return $this->respond($bodega);
     }
 
-    public function createItemBodega()
+    public function create_item_bodega()
     {
         try {
             $data = $this->req->getJSON(true);
@@ -68,7 +68,7 @@ class BodegasController extends ResourceController
                 return $this->failValidationErrors('No se recibieron datos válidos.');
             }
 
-            $result = $this->model->createItemDesdeBodega($data);
+            $result = $this->model->create_item_bodega($data);
 
             return $this->respondCreated([
                 'status'  => 'success',
@@ -97,7 +97,7 @@ class BodegasController extends ResourceController
         return $this->fail('Error al crear la bodega');
     }
 
-    public function updateItemBodega($id = null)
+    public function update_item_bodega($id = null)
     {
         try {
             if ($id === null) {
@@ -110,7 +110,7 @@ class BodegasController extends ResourceController
                 return $this->failValidationErrors('No se recibieron datos válidos.');
             }
 
-            $result = $this->model->updateItemDesdeBodega((int) $id, $data);
+            $result = $this->model->update_item_bodega((int) $id, $data);
 
             return $this->respond([
                 'status'  => 'success',

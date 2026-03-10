@@ -174,7 +174,7 @@ class BodegasModel extends BaseModel
         return null;
     }
 
-    public function createItemDesdeBodega(array $data): array
+    public function create_item_bodega(array $data): array
     {
         if (empty($data['nombre']) || empty($data['codigo'])) {
             throw new Exception('nombre y codigo son obligatorios.');
@@ -289,7 +289,8 @@ class BodegasModel extends BaseModel
             throw $e;
         }
     }
-    public function updateItemDesdeBodega(int $itemId, array $data): array
+
+    public function update_item_bodega(int $itemId, array $data): array
     {
 
         if (empty($data['nombre']) || empty($data['codigo'])) {

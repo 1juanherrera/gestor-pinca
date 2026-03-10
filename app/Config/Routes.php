@@ -38,8 +38,8 @@ $routes->group('api', function ($routes) {
 
     // BODEGAS
     $routes->get('bodegas', 'BodegasController::bodegas');
-    $routes->post('bodegas/item', 'BodegasController::createItemBodega');  
-    $routes->put('bodegas/item/(:num)', 'BodegasController::updateItemBodega/$1');
+    $routes->post('bodegas/item', 'BodegasController::create_item_bodega');  
+    $routes->put('bodegas/item/(:num)', 'BodegasController::update_item_bodega/$1');
     $routes->get('bodegas/inventario/(:num)', 'BodegasController::bodega_inventario/$1');
     $routes->get('bodegas/(:num)', 'BodegasController::show/$1');
     $routes->post('bodegas', 'BodegasController::create');
