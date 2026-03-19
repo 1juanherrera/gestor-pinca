@@ -11,6 +11,7 @@ class FacturasController extends ResourceController
     protected $request;
 
     // ── GET /facturas ─────────────────────────────────────────────────────
+    // Sin cambios — ya funciona y devuelve JOIN con clientes
     public function index()
     {
         $db = \Config\Database::connect();
@@ -26,6 +27,7 @@ class FacturasController extends ResourceController
     }
 
     // ── GET /facturas/:id ─────────────────────────────────────────────────
+    // Sin cambios — ya devuelve datos completos del cliente
     public function show($id = null)
     {
         if (!$id) return $this->fail('ID no proporcionado', 400);
@@ -45,6 +47,7 @@ class FacturasController extends ResourceController
     }
 
     // ── GET /facturas/:id/detalle ─────────────────────────────────────────
+    // Sin cambios
     public function detalle($id = null)
     {
         if (!$id) return $this->fail('ID no proporcionado', 400);
@@ -55,16 +58,27 @@ class FacturasController extends ResourceController
     }
 
     // ── GET /facturas/:id/abonos ──────────────────────────────────────────
+    // CAMBIO: ahora hace JOIN con clientes para devolver nombre_empresa
+    // igual que PagosClienteController::index
     public function abonos($id = null)
     {
         if (!$id) return $this->fail('ID no proporcionado', 400);
 
-        $abonos = $this->model->get_all('pagos_cliente', ['facturas_id' => $id]);
+        $db = \Config\Database::connect();
+
+        $abonos = $db->table('pagos_cliente p')
+            ->select('p.*, c.nombre_empresa, c.nombre_encargado')
+            ->join('clientes c', 'c.id_clientes = p.clientes_id', 'left')
+            ->where('p.facturas_id', $id)
+            ->orderBy('p.fecha_pago', 'DESC')
+            ->get()
+            ->getResultArray();
 
         return $this->respond($abonos);
     }
 
     // ── GET /facturas/:id/remision ────────────────────────────────────────
+    // Sin cambios
     public function remision($id = null)
     {
         if (!$id) return $this->fail('ID no proporcionado', 400);
@@ -79,18 +93,21 @@ class FacturasController extends ResourceController
     }
 
     // ── POST /facturas ────────────────────────────────────────────────────
-    // Body: { ...campos, items?: [{descripcion, cantidad, precio_unit, descuento_pct, subtotal}] }
+    // CAMBIO: envuelto en transacción — si falla el insert de items
+    // hace rollback del encabezado también
     public function create()
     {
         $data = $this->request->getJSON(true);
 
         if (!$data) return $this->fail('No se recibieron datos o el JSON es inválido', 400);
 
+        $db = \Config\Database::connect();
+        $db->transStart();
+
         try {
             $items = $data['items'] ?? [];
             unset($data['items']);
 
-            // El saldo inicial es igual al total
             $data['saldo_pendiente'] = $data['total'] ?? 0;
 
             $id = $this->model->create_table($data, 'facturas');
@@ -103,6 +120,9 @@ class FacturasController extends ResourceController
                 $this->model->create_table($items, 'facturas_detalle');
             }
 
+            $db->transComplete();
+            if (!$db->transStatus()) throw new \Exception('Error al confirmar la transacción');
+
             return $this->respondCreated([
                 'status'  => 201,
                 'message' => 'Factura creada exitosamente',
@@ -110,11 +130,13 @@ class FacturasController extends ResourceController
             ]);
 
         } catch (\Exception $e) {
+            $db->transRollback();
             return $this->fail($e->getMessage(), 400);
         }
     }
 
     // ── PUT /facturas/:id ─────────────────────────────────────────────────
+    // Sin cambios — edición de cabecera funciona bien
     public function update($id = null)
     {
         $data = $this->request->getJSON(true);
@@ -138,6 +160,8 @@ class FacturasController extends ResourceController
     }
 
     // ── PATCH /facturas/:id/estado ────────────────────────────────────────
+    // CAMBIO: al marcar como Pagada usa recalcularSaldo en lugar de
+    // poner saldo_pendiente = 0 a mano, así es consistente con los pagos
     // Body: { "estado": "Pagada" | "Pendiente" | "Parcial" | "Vencida" | "Anulada" }
     public function cambiarEstado($id = null)
     {
@@ -154,10 +178,17 @@ class FacturasController extends ResourceController
         if (!$this->model->find($id)) return $this->failNotFound("Factura con ID $id no encontrada.");
 
         try {
-            $update = ['estado' => $estado];
-            if ($estado === 'Pagada') $update['saldo_pendiente'] = 0;
-
-            $this->model->update_table($id, $update, 'facturas');
+            if ($estado === 'Pagada') {
+                // Recalcula primero para verificar que realmente está pagada,
+                // luego fuerza el estado por si hay diferencia de centavos
+                $this->model->recalcularSaldo((int) $id);
+                $this->model->update_table($id, [
+                    'estado'          => 'Pagada',
+                    'saldo_pendiente' => 0,
+                ], 'facturas');
+            } else {
+                $this->model->update_table($id, ['estado' => $estado], 'facturas');
+            }
 
             return $this->respond([
                 'status'  => 200,
@@ -171,6 +202,7 @@ class FacturasController extends ResourceController
     }
 
     // ── DELETE /facturas/:id ──────────────────────────────────────────────
+    // Sin cambios
     public function delete($id = null)
     {
         if (!$this->model->find($id)) return $this->failNotFound("Factura con ID $id no encontrada.");

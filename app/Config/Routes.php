@@ -117,6 +117,23 @@ $routes->group('api', function ($routes) {
     $routes->put   ('pagos_cliente/(:num)',           'PagosClienteController::update/$1');
     $routes->delete('pagos_cliente/(:num)',           'PagosClienteController::delete/$1');
 
+    $routes->get('cartera/resumen',                    'CarteraController::resumen');
+    $routes->get('cartera/aging',                      'CarteraController::aging');
+    $routes->get('cartera/estado_cuenta/(:num)',        'CarteraController::estadoCuenta/$1');
+ 
+    // ── GESTIONES DE COBRO (GestionesCobro Controller) ────────────
+    $routes->get   ('gestiones_cobro',                 'GestionesCobroController::index');
+    $routes->get   ('gestiones_cobro/(:num)',           'GestionesCobroController::show/$1');
+    $routes->post  ('gestiones_cobro',                 'GestionesCobroController::create');
+    $routes->put   ('gestiones_cobro/(:num)',           'GestionesCobroController::update/$1');
+    $routes->delete('gestiones_cobro/(:num)',           'GestionesCobroController::delete/$1');
+ 
+    // ── NOTAS CRÉDITO (NotasCreditoController) ────────────────────
+    $routes->get   ('notas_credito',                   'NotasCreditoController::index');
+    $routes->get   ('notas_credito/(:num)',             'NotasCreditoController::show/$1');
+    $routes->post  ('notas_credito',                   'NotasCreditoController::create');
+    $routes->patch ('notas_credito/(:num)/anular',      'NotasCreditoController::anular/$1');
+
     // ── COTIZACIONES  (?cliente_id=X) ─────────────────────────────────────
     $routes->get   ('cotizaciones',                  'CotizacionesController::index');
     $routes->get   ('cotizaciones/(:num)',            'CotizacionesController::show/$1');
