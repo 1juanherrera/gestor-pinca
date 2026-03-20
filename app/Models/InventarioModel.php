@@ -38,6 +38,12 @@ class InventarioModel extends Model
             ->set('cantidad', "cantidad - $cantidad", false)
             ->update();
 
+        // Eliminar registro si quedó en 0
+        $this->db->table('inventario')
+            ->where(['item_general_id' => $itemId, 'bodegas_id' => $origen])
+            ->where('cantidad', 0)
+            ->delete();
+
         // 3. SUMAR o INSERTAR en la bodega destino
         $checkDestino = $this->db->table('inventario')
             ->where(['item_general_id' => $itemId, 'bodegas_id' => $destino])
@@ -60,5 +66,17 @@ class InventarioModel extends Model
 
         $this->db->transComplete();
         return $this->db->transStatus();
+    }
+
+    public function removeFromBodega(int $itemId, int $bodegaId): bool
+    {
+        $affected = $this->db->table('inventario')
+            ->where([
+                'item_general_id' => $itemId,
+                'bodegas_id'      => $bodegaId,
+            ])
+            ->delete();
+
+        return $affected > 0;
     }
 }

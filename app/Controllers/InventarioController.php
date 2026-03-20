@@ -14,7 +14,6 @@ class InventarioController extends ResourceController
         $json = $this->request->getBody();
         $data = json_decode($json, true);
 
-        // Validar que haya data
         if (!$data) {
             return $this->failValidationErrors('No se recibieron datos válidos.');
         }
@@ -26,5 +25,18 @@ class InventarioController extends ResourceController
             ]);
         }
         return $this->fail('Error al realizar el traspaso');
+    }
+
+    // DELETE api/inventario/{item_id}/bodega/{bodega_id}
+    public function removeFromBodega(int $itemId, int $bodegaId)
+    {
+        $result = $this->model->removeFromBodega($itemId, $bodegaId);
+
+        if ($result) {
+            return $this->respond([
+                'mensaje' => 'Ítem eliminado del inventario correctamente',
+            ]);
+        }
+        return $this->fail('No se encontró el ítem en esta bodega', 404);
     }
 }
