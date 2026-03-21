@@ -22,7 +22,6 @@ class InventarioModel extends Model
 
         $this->db->transStart();
 
-        // 1. VALIDACIÓN: Verificar que el origen tenga suficiente stock
         $stockOrigen = $this->db->table('inventario')
             ->where(['item_general_id' => $itemId, 'bodegas_id' => $origen])
             ->get()->getRow();
@@ -32,19 +31,16 @@ class InventarioModel extends Model
             return false; 
         }
 
-        // 2. RESTAR de la bodega origen
         $this->db->table('inventario')
             ->where(['item_general_id' => $itemId, 'bodegas_id' => $origen])
             ->set('cantidad', "cantidad - $cantidad", false)
             ->update();
 
-        // Eliminar registro si quedó en 0
         $this->db->table('inventario')
             ->where(['item_general_id' => $itemId, 'bodegas_id' => $origen])
             ->where('cantidad', 0)
             ->delete();
 
-        // 3. SUMAR o INSERTAR en la bodega destino
         $checkDestino = $this->db->table('inventario')
             ->where(['item_general_id' => $itemId, 'bodegas_id' => $destino])
             ->get()->getRow();
@@ -78,5 +74,33 @@ class InventarioModel extends Model
             ->delete();
 
         return $affected > 0;
+    }
+
+    public function ingresarABodega(int $itemGeneralId, int $bodegaId, float $cantidad): bool
+    {
+        $this->db->transStart();
+
+        $existe = $this->db->table('inventario')
+            ->where(['item_general_id' => $itemGeneralId, 'bodegas_id' => $bodegaId])
+            ->get()->getRow();
+
+        if ($existe) {
+            $this->db->table('inventario')
+                ->where(['item_general_id' => $itemGeneralId, 'bodegas_id' => $bodegaId])
+                ->set('cantidad', "cantidad + $cantidad", false)
+                ->update();
+        } else {
+            $this->db->table('inventario')->insert([
+                'item_general_id' => $itemGeneralId,
+                'bodegas_id'      => $bodegaId,
+                'cantidad'        => $cantidad,
+                'estado'          => 1,
+                'tipo'            => 1,
+                'fecha_update'    => date('Y-m-d'),
+            ]);
+        }
+
+        $this->db->transComplete();
+        return $this->db->transStatus();
     }
 }

@@ -7,12 +7,7 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 $routes->group('api', function ($routes) {
-// USUARIOS
-    $routes->post('login', 'UsuarioController::login');
-    $routes->post('crear', 'UsuarioController::crear');
-});
-// ['filter' => 'jwt'],
-$routes->group('api', function ($routes) {
+
     // EMPRESA
     $routes->get('empresa', 'EmpresaController::empresa');
 
@@ -38,7 +33,7 @@ $routes->group('api', function ($routes) {
 
     // BODEGAS
     $routes->get('bodegas', 'BodegasController::bodegas');
-    $routes->post('bodegas/item', 'BodegasController::create_item_bodega');  
+    $routes->post('bodegas/item', 'BodegasController::create_item_bodega');
     $routes->put('bodegas/item/(:num)', 'BodegasController::update_item_bodega/$1');
     $routes->get('bodegas/inventario/(:num)', 'BodegasController::bodega_inventario/$1');
     $routes->get('bodegas/(:num)', 'BodegasController::show/$1');
@@ -46,11 +41,10 @@ $routes->group('api', function ($routes) {
     $routes->put('bodegas/(:num)', 'BodegasController::update/$1');
     $routes->delete('bodegas/(:num)', 'BodegasController::delete/$1');
 
-    
     // FORMULACIONES
     $routes->get('formulaciones', 'FormulacionesController::formulaciones');
     $routes->get('formulaciones/(:num)', 'FormulacionesController::show/$1');
-    $routes->get('formulacion_item/(:num)',  'FormulacionesController::showItem/$1');
+    $routes->get('formulacion_item/(:num)', 'FormulacionesController::showItem/$1');
     $routes->get('formulaciones/costos/(:num)', 'FormulacionesController::calcular_costos_volumen/$1');
     $routes->get('formulaciones/recalcular_costos/(:num)/(:segment)', 'FormulacionesController::recalcular_costos_por_volumen/$1/$2');
 
@@ -61,13 +55,14 @@ $routes->group('api', function ($routes) {
     $routes->post('proveedores', 'ProveedorController::create');
     $routes->put('proveedores/(:num)', 'ProveedorController::update/$1');
     $routes->delete('proveedores/(:num)', 'ProveedorController::delete/$1');
-    
+
     // ITEM PROVEEDORES
     $routes->get('item_proveedores', 'ItemProveedorController::get_item_proveedores');
     $routes->get('item_proveedores/(:num)', 'ItemProveedorController::show/$1');
     $routes->post('item_proveedores', 'ItemProveedorController::create');
     $routes->put('item_proveedores/(:num)', 'ItemProveedorController::update/$1');
     $routes->delete('item_proveedores/(:num)', 'ItemProveedorController::delete/$1');
+    $routes->patch('item_proveedores/(:num)/vincular', 'ItemProveedorController::vincular/$1');
 
     // CLIENTES
     $routes->get('clientes', 'ClientesController::clientes');
@@ -87,9 +82,9 @@ $routes->group('api', function ($routes) {
     $routes->patch('facturas/(:num)/estado', 'FacturasController::cambiarEstado/$1');
     $routes->delete('facturas/(:num)', 'FacturasController::delete/$1');
 
-
     // INVENTARIO
     $routes->post('inventario/traspaso', 'InventarioController::traspaso');
+    $routes->post('inventario/ingresar', 'InventarioController::ingresarABodega');
     $routes->delete('inventario/(:num)/bodega/(:num)', 'InventarioController::removeFromBodega/$1/$2');
 
     // COSTOS ITEM
@@ -105,53 +100,60 @@ $routes->group('api', function ($routes) {
     // CATEGORIAS
     $routes->get('categorias', 'CategoriaController::categorias');
 
-    // PREPARACIONES    
-    $routes->get('preparaciones',              'PreparacionesController::index');
-    $routes->post('preparaciones',             'PreparacionesController::create');
-    $routes->get('preparaciones/item/(:num)',  'PreparacionesController::byItem/$1');
-    $routes->get('preparaciones/(:num)',       'PreparacionesController::show/$1');
-    $routes->put('preparaciones/(:num)',       'PreparacionesController::update/$1'); 
+    // PREPARACIONES
+    $routes->get('preparaciones', 'PreparacionesController::index');
+    $routes->post('preparaciones', 'PreparacionesController::create');
+    $routes->get('preparaciones/item/(:num)', 'PreparacionesController::byItem/$1');
+    $routes->get('preparaciones/(:num)', 'PreparacionesController::show/$1');
+    $routes->put('preparaciones/(:num)', 'PreparacionesController::update/$1');
 
-    $routes->get('pagos_cliente',                 'PagosClienteController::index');
-    $routes->get('pagos_cliente/(:num)',           'PagosClienteController::show/$1');
-    $routes->post('pagos_cliente',                 'PagosClienteController::create');
-    $routes->put('pagos_cliente/(:num)',           'PagosClienteController::update/$1');
-    $routes->delete('pagos_cliente/(:num)',           'PagosClienteController::delete/$1');
+    // PAGOS CLIENTE
+    $routes->get('pagos_cliente', 'PagosClienteController::index');
+    $routes->get('pagos_cliente/(:num)', 'PagosClienteController::show/$1');
+    $routes->post('pagos_cliente', 'PagosClienteController::create');
+    $routes->put('pagos_cliente/(:num)', 'PagosClienteController::update/$1');
+    $routes->delete('pagos_cliente/(:num)', 'PagosClienteController::delete/$1');
 
-    $routes->get('cartera/resumen',                    'CarteraController::resumen');
-    $routes->get('cartera/aging',                      'CarteraController::aging');
-    $routes->get('cartera/estado_cuenta/(:num)',        'CarteraController::estadoCuenta/$1');
- 
-    // ── GESTIONES DE COBRO (GestionesCobro Controller) ────────────
-    $routes->get('gestiones_cobro',                 'GestionesCobroController::index');
-    $routes->get('gestiones_cobro/(:num)',           'GestionesCobroController::show/$1');
-    $routes->post('gestiones_cobro',                 'GestionesCobroController::create');
-    $routes->put('gestiones_cobro/(:num)',           'GestionesCobroController::update/$1');
-    $routes->delete('gestiones_cobro/(:num)',           'GestionesCobroController::delete/$1');
- 
-    // ── NOTAS CRÉDITO (NotasCreditoController) ────────────────────
-    $routes->get('notas_credito',                   'NotasCreditoController::index');
-    $routes->get('notas_credito/(:num)',             'NotasCreditoController::show/$1');
-    $routes->post('notas_credito',                   'NotasCreditoController::create');
-    $routes->patch('notas_credito/(:num)/anular',      'NotasCreditoController::anular/$1');
+    // CARTERA
+    $routes->get('cartera/resumen', 'CarteraController::resumen');
+    $routes->get('cartera/aging', 'CarteraController::aging');
+    $routes->get('cartera/estado_cuenta/(:num)', 'CarteraController::estadoCuenta/$1');
 
-    // ── COTIZACIONES  (?cliente_id=X) ─────────────────────────────────────
-    $routes->get('cotizaciones',                  'CotizacionesController::index');
-    $routes->get('cotizaciones/(:num)',            'CotizacionesController::show/$1');
-    $routes->get('cotizaciones/(:num)/detalle',   'CotizacionesController::detalle/$1');
-    $routes->post('cotizaciones',                  'CotizacionesController::create');
-    $routes->put('cotizaciones/(:num)',            'CotizacionesController::update/$1');
-    $routes->patch('cotizaciones/(:num)/estado',    'CotizacionesController::cambiarEstado/$1');
+    // GESTIONES DE COBRO
+    $routes->get('gestiones_cobro', 'GestionesCobroController::index');
+    $routes->get('gestiones_cobro/(:num)', 'GestionesCobroController::show/$1');
+    $routes->post('gestiones_cobro', 'GestionesCobroController::create');
+    $routes->put('gestiones_cobro/(:num)', 'GestionesCobroController::update/$1');
+    $routes->delete('gestiones_cobro/(:num)', 'GestionesCobroController::delete/$1');
+
+    // NOTAS CRÉDITO
+    $routes->get('notas_credito', 'NotasCreditoController::index');
+    $routes->get('notas_credito/(:num)', 'NotasCreditoController::show/$1');
+    $routes->post('notas_credito', 'NotasCreditoController::create');
+    $routes->patch('notas_credito/(:num)/anular', 'NotasCreditoController::anular/$1');
+
+    // COTIZACIONES
+    $routes->get('cotizaciones', 'CotizacionesController::index');
+    $routes->get('cotizaciones/(:num)', 'CotizacionesController::show/$1');
+    $routes->get('cotizaciones/(:num)/detalle', 'CotizacionesController::detalle/$1');
+    $routes->post('cotizaciones', 'CotizacionesController::create');
+    $routes->put('cotizaciones/(:num)', 'CotizacionesController::update/$1');
+    $routes->patch('cotizaciones/(:num)/estado', 'CotizacionesController::cambiarEstado/$1');
     $routes->post('cotizaciones/(:num)/convertir', 'CotizacionesController::convertir/$1');
-    $routes->delete('cotizaciones/(:num)',            'CotizacionesController::delete/$1');
+    $routes->delete('cotizaciones/(:num)', 'CotizacionesController::delete/$1');
 
-    // ── REMISIONES  (?cliente_id=X | ?factura_id=X) ───────────────────────
-    $routes->get('remisiones',                    'RemisionesController::index');
-    $routes->get('remisiones/(:num)',              'RemisionesController::show/$1');
-    $routes->get('remisiones/(:num)/detalle',     'RemisionesController::detalle/$1');
-    $routes->post('remisiones',                    'RemisionesController::create');
-    $routes->put('remisiones/(:num)',              'RemisionesController::update/$1');
-    $routes->patch('remisiones/(:num)/estado',      'RemisionesController::cambiarEstado/$1');
-    $routes->post('remisiones/(:num)/convertir',   'RemisionesController::convertir/$1');
-    $routes->delete('remisiones/(:num)',              'RemisionesController::delete/$1');
+    // REMISIONES
+    $routes->get('remisiones', 'RemisionesController::index');
+    $routes->get('remisiones/(:num)', 'RemisionesController::show/$1');
+    $routes->get('remisiones/(:num)/detalle', 'RemisionesController::detalle/$1');
+    $routes->post('remisiones', 'RemisionesController::create');
+    $routes->put('remisiones/(:num)', 'RemisionesController::update/$1');
+    $routes->patch('remisiones/(:num)/estado', 'RemisionesController::cambiarEstado/$1');
+    $routes->post('remisiones/(:num)/convertir', 'RemisionesController::convertir/$1');
+    $routes->delete('remisiones/(:num)', 'RemisionesController::delete/$1');
+
+    // COMPARADOR
+    $routes->get('comparador/por_item', 'ComparadorController::por_item');
+    $routes->get('comparador/por_proveedor/(:num)', 'ComparadorController::por_proveedor/$1');
+    $routes->get('comparador/historial/(:num)', 'ComparadorController::historial/$1');
 });
