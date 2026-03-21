@@ -12,25 +12,11 @@ class PreparacionesModel extends BaseModel
     }
 
     /**
-     * Crea una orden de preparación y guarda el desglose de materias primas.
-     *
-     * Payload esperado:
-     * {
-     *   "item_general_id": 1,
-     *   "unidad_id":       3,
-     *   "cantidad":        100,     ← volumen TOTAL en galones a producir
-     *   "fecha_inicio":    "2025-07-01",   (opcional)
-     *   "fecha_fin":       "2025-07-02",   (opcional)
-     *   "observaciones":   "...",          (opcional)
-     *   "detalle": [                       ← cantidades ya recalculadas desde el frontend
-     *     { "item_general_id": 31, "cantidad": 251.89 },
-     *     ...
-     *   ]
-     * }
+     * Crea UNA orden de preparación.
+     * Soporta detalle precalculado desde el frontend.
      */
     public function create_preparacion(array $data): array
     {
-        // ── Validación básica ──────────────────────────────────────────────
         foreach (['item_general_id', 'unidad_id', 'cantidad'] as $field) {
             if (empty($data[$field])) {
                 throw new Exception("Campo requerido faltante: {$field}");
@@ -45,7 +31,6 @@ class PreparacionesModel extends BaseModel
             throw new Exception('El volumen debe ser mayor a 0.');
         }
 
-        // ── Obtener escala de la unidad ────────────────────────────────────
         $unidad = $this->db->query(
             'SELECT * FROM unidad WHERE id_unidad = ? AND estados = 1',
             [$unidadId]
@@ -58,7 +43,6 @@ class PreparacionesModel extends BaseModel
         $escala          = (float) $unidad->escala;
         $cantidadEnvases = $escala > 0 ? $volumenGalones / $escala : 0;
 
-        // ── Obtener formulación activa del item ────────────────────────────
         $formulacion = $this->db->query(
             'SELECT id_formulaciones FROM formulaciones
              WHERE item_general_id = ? AND estado = 1 LIMIT 1',
@@ -69,7 +53,6 @@ class PreparacionesModel extends BaseModel
             throw new Exception("El item no tiene una formulación activa.");
         }
 
-        // ── Obtener ingredientes base de la formulación ────────────────────
         $ingredientes = $this->db->query(
             'SELECT igf.item_general_id, igf.cantidad
              FROM item_general_formulaciones igf
@@ -81,20 +64,14 @@ class PreparacionesModel extends BaseModel
             throw new Exception("La formulación no tiene ingredientes asignados.");
         }
 
-        // ── Detalle precalculado desde el frontend ─────────────────────────
-        // Si viene detalle del frontend (cantidades ya recalculadas para el volumen
-        // solicitado), lo usamos directamente. Si no, calculamos con factor de volumen.
-        $detalleExterno = $data['detalle'] ?? null;
-
-        // Indexar detalle externo por item_general_id para lookup O(1)
+        // Detalle precalculado desde el frontend (prioridad)
         $detalleMap = [];
-        if (!empty($detalleExterno) && is_array($detalleExterno)) {
-            foreach ($detalleExterno as $d) {
+        if (!empty($data['detalle']) && is_array($data['detalle'])) {
+            foreach ($data['detalle'] as $d) {
                 $detalleMap[(int) $d['item_general_id']] = (float) $d['cantidad'];
             }
         }
 
-        // Si no hay detalle externo, necesitamos el volumen base para calcular factor
         $factorVolumen = 1;
         if (empty($detalleMap)) {
             $itemCosto = $this->db->query(
@@ -102,15 +79,12 @@ class PreparacionesModel extends BaseModel
                  FROM costos_item WHERE item_general_id = ? LIMIT 1',
                 [$itemId]
             )->getRow();
-
             $volumenBase   = (float) ($itemCosto->volumen_base ?? 1);
             $factorVolumen = $volumenBase > 0 ? $volumenGalones / $volumenBase : 1;
         }
 
-        // Calcular total para porcentajes
         $totalCantidadBase = array_sum(array_map(fn($i) => (float) $i->cantidad, $ingredientes));
 
-        // ── Transacción ────────────────────────────────────────────────────
         $this->db->transStart();
 
         $this->db->query(
@@ -131,15 +105,10 @@ class PreparacionesModel extends BaseModel
 
         foreach ($ingredientes as $ing) {
             $ingId = (int) $ing->item_general_id;
+            $cantidadEscalada = isset($detalleMap[$ingId])
+                ? round($detalleMap[$ingId], 4)
+                : round((float) $ing->cantidad * $factorVolumen, 4);
 
-            // Prioridad: detalle del frontend → fallback: factor calculado
-            if (isset($detalleMap[$ingId])) {
-                $cantidadEscalada = round($detalleMap[$ingId], 4);
-            } else {
-                $cantidadEscalada = round((float) $ing->cantidad * $factorVolumen, 4);
-            }
-
-            // Porcentaje sobre el total de la formulación base
             $porcentaje = $totalCantidadBase > 0
                 ? round(((float) $ing->cantidad / $totalCantidadBase) * 100, 4)
                 : 0;
@@ -161,6 +130,31 @@ class PreparacionesModel extends BaseModel
         }
 
         return $this->get_preparacion_by_id($preparacionId);
+    }
+
+    /**
+     * Crea múltiples preparaciones en una sola llamada (para combinaciones).
+     * Cada elemento del array $lote sigue el mismo formato que create_preparacion.
+     *
+     * Devuelve un array con todas las preparaciones creadas.
+     */
+    public function create_preparaciones_lote(array $lote): array
+    {
+        if (empty($lote)) {
+            throw new Exception('El lote no puede estar vacío.');
+        }
+
+        $creadas = [];
+        foreach ($lote as $idx => $data) {
+            try {
+                $creadas[] = $this->create_preparacion($data);
+            } catch (Exception $e) {
+                // Si alguna falla, se reporta cuál con su índice
+                throw new Exception("Error en preparación #{$idx}: " . $e->getMessage());
+            }
+        }
+
+        return $creadas;
     }
 
     /**

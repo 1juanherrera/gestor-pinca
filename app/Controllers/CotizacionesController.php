@@ -58,28 +58,44 @@ class CotizacionesController extends ResourceController
     }
 
     // ── POST /cotizaciones ────────────────────────────────────────────────
-    // Body: { ...campos, items?: [{descripcion, cantidad, precio_unit, descuento_pct, subtotal}] }
     public function create()
     {
         $data = $this->request->getJSON(true);
-
         if (!$data) return $this->fail('No se recibieron datos o el JSON es inválido', 400);
 
         try {
             $items = $data['items'] ?? [];
-            unset($data['items']);
+            unset($data['items'], $data['cliente_libre']);
 
-            if (empty($data['numero']))  $data['numero'] = $this->generarNumero('COT');
-            if (empty($data['estado']))  $data['estado'] = 'Borrador';
+            if (empty($data['numero'])) $data['numero'] = $this->generarNumero('COT');
+            if (empty($data['estado'])) $data['estado'] = 'Borrador';
+
+            // Limpiar campos opcionales vacíos
+            $data['fecha_vencimiento'] = $data['fecha_vencimiento'] ?? null ?: null;
+            $data['observaciones']     = $data['observaciones']     ?? null ?: null;
+            $data['facturas_id']       = $data['facturas_id']       ?? null ?: null;
 
             $id = $this->model->create_table($data, 'cotizaciones');
             if (!$id) throw new \Exception(implode(', ', $this->model->errors()));
 
+            // Insertar ítems con query directa para evitar conflictos de allowedFields
             if (!empty($items)) {
-                foreach ($items as &$item) {
-                    $item['cotizaciones_id'] = $id;
+                $db = \Config\Database::connect();
+                foreach ($items as $item) {
+                    $db->query(
+                        "INSERT INTO cotizaciones_detalle
+                            (cotizaciones_id, descripcion, cantidad, precio_unit, descuento_pct, subtotal)
+                         VALUES (?, ?, ?, ?, ?, ?)",
+                        [
+                            $id,
+                            $item['descripcion']   ?? '',
+                            (float) ($item['cantidad']      ?? 0),
+                            (float) ($item['precio_unit']   ?? 0),
+                            (float) ($item['descuento_pct'] ?? 0),
+                            (float) ($item['subtotal']      ?? 0),
+                        ]
+                    );
                 }
-                $this->model->create_table($items, 'cotizaciones_detalle');
             }
 
             return $this->respondCreated([
@@ -97,7 +113,6 @@ class CotizacionesController extends ResourceController
     public function update($id = null)
     {
         $data = $this->request->getJSON(true);
-
         if (!$id)   return $this->fail('ID no proporcionado', 400);
         if (!$data) return $this->fail('No se recibieron datos o el JSON es inválido', 400);
 
@@ -109,6 +124,7 @@ class CotizacionesController extends ResourceController
                 throw new \Exception('No se puede editar una cotización ya convertida a factura');
             }
 
+            unset($data['items'], $data['cliente_libre']);
             $this->model->update_table($id, $data, 'cotizaciones');
 
             return $this->respond([
@@ -123,7 +139,6 @@ class CotizacionesController extends ResourceController
     }
 
     // ── PATCH /cotizaciones/:id/estado ────────────────────────────────────
-    // Body: { "estado": "Enviada" | "Aceptada" | "Rechazada" | "Vencida" }
     public function cambiarEstado($id = null)
     {
         if (!$id) return $this->fail('ID no proporcionado', 400);
@@ -158,7 +173,6 @@ class CotizacionesController extends ResourceController
     }
 
     // ── POST /cotizaciones/:id/convertir ──────────────────────────────────
-    // Convierte la cotización en una Factura nueva copiando todos sus ítems
     public function convertir($id = null)
     {
         if (!$id) return $this->fail('ID no proporcionado', 400);
@@ -170,15 +184,15 @@ class CotizacionesController extends ResourceController
             if ($cotizacion['estado'] === 'Convertida') {
                 throw new \Exception('Esta cotización ya fue convertida a factura');
             }
-
             if (!in_array($cotizacion['estado'], ['Aceptada', 'Enviada'])) {
                 throw new \Exception('Solo se pueden convertir cotizaciones en estado Aceptada o Enviada');
             }
 
             $facturaModel = new FacturasModel();
+            $numeroFac    = $this->generarNumero('FAC');
 
             $facturaData = [
-                'numero'            => $this->generarNumero('FAC'),
+                'numero'            => $numeroFac,
                 'cliente_id'        => $cotizacion['cliente_id'],
                 'fecha_emision'     => date('Y-m-d'),
                 'fecha_vencimiento' => date('Y-m-d', strtotime('+30 days')),
@@ -195,21 +209,27 @@ class CotizacionesController extends ResourceController
             $facturaId = $facturaModel->create_table($facturaData, 'facturas');
             if (!$facturaId) throw new \Exception('Error al generar la factura');
 
-            // Copiar ítems: cotizaciones_detalle → facturas_detalle
+            // Copiar ítems con query directa
             $items = $this->model->get_all('cotizaciones_detalle', ['cotizaciones_id' => $id]);
             if (!empty($items)) {
-                $itemsFactura = array_map(fn($item) => [
-                    'facturas_id'   => $facturaId,
-                    'descripcion'   => $item['descripcion'],
-                    'cantidad'      => $item['cantidad'],
-                    'precio_unit'   => $item['precio_unit'],
-                    'descuento_pct' => $item['descuento_pct'],
-                    'subtotal'      => $item['subtotal'],
-                ], $items);
-                $this->model->create_table($itemsFactura, 'facturas_detalle');
+                $db = \Config\Database::connect();
+                foreach ($items as $item) {
+                    $db->query(
+                        "INSERT INTO facturas_detalle
+                            (facturas_id, descripcion, cantidad, precio_unit, descuento_pct, subtotal)
+                         VALUES (?, ?, ?, ?, ?, ?)",
+                        [
+                            $facturaId,
+                            $item['descripcion'],
+                            $item['cantidad'],
+                            $item['precio_unit'],
+                            $item['descuento_pct'] ?? 0,
+                            $item['subtotal'],
+                        ]
+                    );
+                }
             }
 
-            // Marcar cotización como Convertida y guardar referencia
             $this->model->update_table($id, [
                 'estado'      => 'Convertida',
                 'facturas_id' => $facturaId,
@@ -217,7 +237,7 @@ class CotizacionesController extends ResourceController
 
             return $this->respondCreated([
                 'status'  => 201,
-                'message' => "Cotización convertida. Factura {$facturaData['numero']} creada.",
+                'message' => "Cotización convertida. Factura {$numeroFac} creada.",
                 'data'    => $facturaModel->find($facturaId),
             ]);
 
@@ -236,31 +256,29 @@ class CotizacionesController extends ResourceController
             if ($existing['estado'] === 'Convertida') {
                 throw new \Exception('No se puede eliminar una cotización ya convertida a factura');
             }
-
             $this->model->delete_table($id, 'cotizaciones');
-
             return $this->respondDeleted(['message' => "Cotización $id eliminada"]);
-
         } catch (\Exception $e) {
             return $this->fail($e->getMessage(), 400);
         }
     }
 
-    // ── PRIVADO: número correlativo COT-YYYY-0001 / FAC-YYYY-0001 ─────────
+    // ── Número correlativo ────────────────────────────────────────────────
     private function generarNumero(string $prefijo): string
     {
-        $tabla   = $prefijo === 'COT' ? 'cotizaciones' : 'facturas';
-        $db      = \Config\Database::connect();
-        $year    = date('Y');
+        $tabla = $prefijo === 'COT' ? 'cotizaciones' : 'facturas';
+        $db    = \Config\Database::connect();
+        $year  = date('Y');
 
         $last = $db->table($tabla)
             ->like('numero', "{$prefijo}-{$year}-", 'after')
-            ->orderBy("id_$tabla", 'DESC')
+            ->orderBy("id_{$tabla}", 'DESC')
             ->limit(1)
             ->get()
             ->getRowArray();
 
-        $seq = $last ? ((int) end(explode('-', $last['numero'])) + 1) : 1;
+        $parts = explode('-', $last['numero'] ?? '');
+        $seq   = $last ? ((int) end($parts) + 1) : 1;
 
         return "{$prefijo}-{$year}-" . str_pad($seq, 4, '0', STR_PAD_LEFT);
     }

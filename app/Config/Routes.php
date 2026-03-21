@@ -156,4 +156,16 @@ $routes->group('api', function ($routes) {
     $routes->get('comparador/por_item', 'ComparadorController::por_item');
     $routes->get('comparador/por_proveedor/(:num)', 'ComparadorController::por_proveedor/$1');
     $routes->get('comparador/historial/(:num)', 'ComparadorController::historial/$1');
+
+    // ÓRDENES DE COMPRA
+    $routes->get('ordenes_compra',                        'OrdenesCompraController::index');
+    // ✅ Específicas PRIMERO
+    $routes->get('ordenes_compra/(:num)/detalle',         'OrdenesCompraController::detalle/$1');
+    $routes->patch('ordenes_compra/(:num)/estado',        'OrdenesCompraController::cambiarEstado/$1');
+    $routes->post('ordenes_compra/(:num)/recibir/(:num)', 'OrdenesCompraController::recibirLinea/$1/$2');
+    // ✅ Genéricas DESPUÉS
+    $routes->get('ordenes_compra/(:num)',                 'OrdenesCompraController::show/$1');
+    $routes->post('ordenes_compra',                       'OrdenesCompraController::create');
+    $routes->put('ordenes_compra/(:num)',                 'OrdenesCompraController::update/$1');
+    $routes->delete('ordenes_compra/(:num)',              'OrdenesCompraController::delete/$1');
 });

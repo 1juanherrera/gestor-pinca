@@ -14,20 +14,15 @@ class RemisionesController extends ResourceController
     // ── GET /remisiones  (?cliente_id=X | ?factura_id=X) ─────────────────
     public function index()
     {
-        $db        = \Config\Database::connect();
         $clienteId = $this->request->getGet('cliente_id');
         $facturaId = $this->request->getGet('factura_id');
 
-        $query = $db->table('remisiones r')
-            ->select('r.*, c.nombre_empresa, c.nombre_encargado, f.numero AS numero_factura')
-            ->join('clientes c', 'c.id_clientes = r.cliente_id', 'left')
-            ->join('facturas f', 'f.id_facturas = r.facturas_id', 'left')
-            ->orderBy('r.id_remisiones', 'DESC');
-
-        if ($clienteId) $query->where('r.cliente_id', $clienteId);
-        if ($facturaId) $query->where('r.facturas_id', $facturaId);
-
-        return $this->respond($query->get()->getResultArray());
+        return $this->respond(
+            $this->model->get_remisiones(
+                $clienteId ? (int) $clienteId : null,
+                $facturaId ? (int) $facturaId : null,
+            )
+        );
     }
 
     // ── GET /remisiones/:id ───────────────────────────────────────────────
@@ -35,19 +30,11 @@ class RemisionesController extends ResourceController
     {
         if (!$id) return $this->fail('ID no proporcionado', 400);
 
-        $db = \Config\Database::connect();
-
-        $remision = $db->table('remisiones r')
-            ->select('r.*, c.nombre_empresa, c.nombre_encargado, c.direccion, f.numero AS numero_factura')
-            ->join('clientes c', 'c.id_clientes = r.cliente_id', 'left')
-            ->join('facturas f', 'f.id_facturas = r.facturas_id', 'left')
-            ->where('r.id_remisiones', $id)
-            ->get()
-            ->getRowArray();
-
-        if (!$remision) return $this->failNotFound("Remisión con ID $id no encontrada.");
-
-        return $this->respond($remision);
+        try {
+            return $this->respond($this->model->get_remision_by_id((int) $id));
+        } catch (\Exception $e) {
+            return $this->failNotFound($e->getMessage());
+        }
     }
 
     // ── GET /remisiones/:id/detalle ───────────────────────────────────────
@@ -55,17 +42,13 @@ class RemisionesController extends ResourceController
     {
         if (!$id) return $this->fail('ID no proporcionado', 400);
 
-        $items = $this->model->get_all('remisiones_detalle', ['remisiones_id' => $id]);
-
-        return $this->respond($items);
+        return $this->respond($this->model->get_detalle((int) $id));
     }
 
     // ── POST /remisiones ──────────────────────────────────────────────────
-    // Body: { ...campos, items?: [{descripcion, cantidad, precio_unit, subtotal}] }
     public function create()
     {
         $data = $this->request->getJSON(true);
-
         if (!$data) return $this->fail('No se recibieron datos o el JSON es inválido', 400);
 
         try {
@@ -79,16 +62,26 @@ class RemisionesController extends ResourceController
             if (!$id) throw new \Exception(implode(', ', $this->model->errors()));
 
             if (!empty($items)) {
-                foreach ($items as &$item) {
-                    $item['remisiones_id'] = $id;
+                $db = \Config\Database::connect();
+                foreach ($items as $item) {
+                    $db->query(
+                        "INSERT INTO remisiones_detalle (remisiones_id, descripcion, cantidad, precio_unit, subtotal)
+                         VALUES (?, ?, ?, ?, ?)",
+                        [
+                            $id,
+                            $item['descripcion'] ?? '',
+                            (float) ($item['cantidad']   ?? 0),
+                            (float) ($item['precio_unit'] ?? 0),
+                            (float) ($item['subtotal']    ?? 0),
+                        ]
+                    );
                 }
-                $this->model->create_table($items, 'remisiones_detalle');
             }
 
             return $this->respondCreated([
                 'status'  => 201,
                 'message' => 'Remisión creada exitosamente',
-                'data'    => $this->model->find($id),
+                'data'    => $this->model->get_remision_by_id($id),
             ]);
 
         } catch (\Exception $e) {
@@ -117,7 +110,7 @@ class RemisionesController extends ResourceController
             return $this->respond([
                 'status'  => 200,
                 'message' => "Remisión $id actualizada correctamente",
-                'data'    => $this->model->find($id),
+                'data'    => $this->model->get_remision_by_id((int) $id),
             ]);
 
         } catch (\Exception $e) {
@@ -126,14 +119,13 @@ class RemisionesController extends ResourceController
     }
 
     // ── PATCH /remisiones/:id/estado ──────────────────────────────────────
-    // Body: { "estado": "Facturada" | "Anulada" }
     public function cambiarEstado($id = null)
     {
         if (!$id) return $this->fail('ID no proporcionado', 400);
 
         $data       = $this->request->getJSON(true);
         $estado     = $data['estado'] ?? null;
-        $permitidos = ['Pendiente', 'Facturada', 'Anulada'];
+        $permitidos = ['Pendiente', 'Entregada', 'Facturada', 'Anulada'];
 
         if (!$estado || !in_array($estado, $permitidos)) {
             return $this->fail('Estado no válido. Permitidos: ' . implode(', ', $permitidos), 400);
@@ -152,7 +144,7 @@ class RemisionesController extends ResourceController
             return $this->respond([
                 'status'  => 200,
                 'message' => "Remisión marcada como $estado",
-                'data'    => $this->model->find($id),
+                'data'    => $this->model->get_remision_by_id((int) $id),
             ]);
 
         } catch (\Exception $e) {
@@ -161,7 +153,6 @@ class RemisionesController extends ResourceController
     }
 
     // ── POST /remisiones/:id/convertir ────────────────────────────────────
-    // Genera una Factura a partir de la remisión copiando sus ítems
     public function convertir($id = null)
     {
         if (!$id) return $this->fail('ID no proporcionado', 400);
@@ -177,10 +168,10 @@ class RemisionesController extends ResourceController
                 throw new \Exception('No se puede convertir una remisión anulada');
             }
 
-            $items     = $this->model->get_all('remisiones_detalle', ['remisiones_id' => $id]);
-            $subtotal  = array_sum(array_column($items, 'subtotal'));
-            $iva       = round($subtotal * 0.19, 2); // 19% IVA — ajusta si es necesario
-            $total     = $subtotal + $iva;
+            $items    = $this->model->get_detalle((int) $id);
+            $subtotal = array_sum(array_column($items, 'subtotal'));
+            $iva      = round($subtotal * 0.19, 2);
+            $total    = $subtotal + $iva;
 
             $facturaModel = new FacturasModel();
             $numeroFac    = $this->generarNumeroFactura();
@@ -203,7 +194,6 @@ class RemisionesController extends ResourceController
             $facturaId = $facturaModel->create_table($facturaData, 'facturas');
             if (!$facturaId) throw new \Exception('Error al generar la factura');
 
-            // Copiar ítems: remisiones_detalle → facturas_detalle
             if (!empty($items)) {
                 $itemsFactura = array_map(fn($item) => [
                     'facturas_id'   => $facturaId,
@@ -216,7 +206,6 @@ class RemisionesController extends ResourceController
                 $this->model->create_table($itemsFactura, 'facturas_detalle');
             }
 
-            // Vincular factura y marcar como Facturada
             $this->model->update_table($id, [
                 'estado'      => 'Facturada',
                 'facturas_id' => $facturaId,
@@ -253,7 +242,7 @@ class RemisionesController extends ResourceController
         }
     }
 
-    // ── PRIVADOS: generadores de número correlativo ───────────────────────
+    // ── Generadores de número correlativo ─────────────────────────────────
     private function generarNumero(): string
     {
         return $this->correlativo('remisiones', 'REM');
@@ -271,12 +260,13 @@ class RemisionesController extends ResourceController
 
         $last = $db->table($tabla)
             ->like('numero', "{$prefijo}-{$year}-", 'after')
-            ->orderBy("id_$tabla", 'DESC')
+            ->orderBy("id_{$tabla}", 'DESC')
             ->limit(1)
             ->get()
             ->getRowArray();
 
-        $seq = $last ? ((int) end(explode('-', $last['numero'])) + 1) : 1;
+        $parts = explode('-', $last['numero']);
+        $seq   = $last ? ((int) end($parts) + 1) : 1;
 
         return "{$prefijo}-{$year}-" . str_pad($seq, 4, '0', STR_PAD_LEFT);
     }
