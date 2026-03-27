@@ -10,6 +10,8 @@ class FormulacionesController extends ResourceController
 {
     protected $modelName = FormulacionesModel::class;
 
+    protected $request;
+
     public function showItem($itemId = null)
     {
         try {
@@ -72,6 +74,53 @@ class FormulacionesController extends ResourceController
             return $this->respond($costs);
         } catch (Exception $e) {
             return $this->fail($e->getMessage(), 400);
+        }
+    }
+
+    // POST /api/formulaciones
+    public function create()
+    {
+        try {
+            $data = $this->request->getJSON(true);
+
+            if (empty($data)) {
+                return $this->failValidationErrors('No se recibieron datos válidos.');
+            }
+
+            $result = $this->model->crearFormulacion($data);
+
+            return $this->respondCreated([
+                'status'  => 'success',
+                'message' => $result['message'],
+                'id'      => $result['formulacion_id'],
+            ]);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage(), 500);
+        }
+    }
+
+// PUT /api/formulaciones/:id
+    public function update($id = null)
+    {
+        try {
+            if (empty($id)) {
+                return $this->failValidationErrors('El ID es obligatorio.');
+            }
+
+            $data = $this->request->getJSON(true);
+
+            if (empty($data)) {
+                return $this->failValidationErrors('No se recibieron datos válidos.');
+            }
+
+            $result = $this->model->actualizarFormulacion((int) $id, $data);
+
+            return $this->respond([
+                'status'  => 'success',
+                'message' => $result['message'],
+            ]);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage(), 500);
         }
     }
 }

@@ -444,4 +444,137 @@ class FormulacionesModel extends BaseModel
             'formulaciones' => $formulacionesCombinadas
         ];
     }
+
+    // Crear formulación completa con materias primas
+    public function crearFormulacion(array $data): array
+    {
+        if (empty($data['item_general_id'])) {
+            throw new Exception('item_general_id es obligatorio.');
+        }
+        if (empty($data['materias_primas'])) {
+            throw new Exception('Debe agregar al menos una materia prima.');
+        }
+
+        $this->db->transStart();
+
+        try {
+            // Desactivar formulaciones anteriores del mismo item
+            $this->db->query('
+                UPDATE formulaciones SET estado = 0 
+                WHERE item_general_id = ?
+            ', [$data['item_general_id']]);
+
+            // Crear cabecera
+            $this->db->query('
+                INSERT INTO formulaciones (item_general_id, nombre, descripcion, estado, defecto)
+                VALUES (?, ?, ?, 1, 1)
+            ', [
+                $data['item_general_id'],
+                $data['nombre']      ?? 'PREPARACION',
+                $data['descripcion'] ?? null,
+            ]);
+
+            $formulacionId = $this->db->insertID();
+
+            // Insertar materias primas
+            foreach ($data['materias_primas'] as $mp) {
+                if (empty($mp['materia_prima_id'])) continue;
+                $this->db->query('
+                    INSERT INTO item_general_formulaciones (formulaciones_id, item_general_id, cantidad, porcentaje)
+                    VALUES (?, ?, ?, ?)
+                ', [
+                    $formulacionId,
+                    $mp['materia_prima_id'],
+                    $mp['cantidad']   ?? 0,
+                    $mp['porcentaje'] ?? 0,
+                ]);
+
+                // Actualizar costo_unitario de la materia prima si viene
+                if (!empty($mp['costo_unitario'])) {
+                    $this->db->query('
+                        UPDATE costos_item SET costo_unitario = ?
+                        WHERE item_general_id = ?
+                    ', [$mp['costo_unitario'], $mp['materia_prima_id']]);
+                }
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                throw new Exception('Error al guardar la formulación.');
+            }
+
+            return [
+                'success'       => true,
+                'message'       => 'Formulación creada correctamente.',
+                'formulacion_id' => $formulacionId,
+            ];
+
+        } catch (Exception $e) {
+            $this->db->transRollback();
+            throw $e;
+        }
+    }
+
+    // Actualizar formulación existente
+    public function actualizarFormulacion(int $formulacionId, array $data): array
+    {
+        if (empty($data['materias_primas'])) {
+            throw new Exception('Debe agregar al menos una materia prima.');
+        }
+
+        $this->db->transStart();
+
+        try {
+            // Actualizar cabecera
+            $this->db->query('
+                UPDATE formulaciones SET nombre = ?, descripcion = ?
+                WHERE id_formulaciones = ?
+            ', [
+                $data['nombre']      ?? 'PREPARACION',
+                $data['descripcion'] ?? null,
+                $formulacionId,
+            ]);
+
+            // Reemplazar materias primas
+            $this->db->query('
+                DELETE FROM item_general_formulaciones WHERE formulaciones_id = ?
+            ', [$formulacionId]);
+
+            foreach ($data['materias_primas'] as $mp) {
+                if (empty($mp['materia_prima_id'])) continue;
+                $this->db->query('
+                    INSERT INTO item_general_formulaciones (formulaciones_id, item_general_id, cantidad, porcentaje)
+                    VALUES (?, ?, ?, ?)
+                ', [
+                    $formulacionId,
+                    $mp['materia_prima_id'],
+                    $mp['cantidad']   ?? 0,
+                    $mp['porcentaje'] ?? 0,
+                ]);
+
+                if (!empty($mp['costo_unitario'])) {
+                    $this->db->query('
+                        UPDATE costos_item SET costo_unitario = ?
+                        WHERE item_general_id = ?
+                    ', [$mp['costo_unitario'], $mp['materia_prima_id']]);
+                }
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                throw new Exception('Error al actualizar la formulación.');
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Formulación actualizada correctamente.',
+            ];
+
+        } catch (Exception $e) {
+            $this->db->transRollback();
+            throw $e;
+        }
+    }
 }
