@@ -101,7 +101,7 @@ class GestionesCobroController extends ResourceController
         }
 
         try {
-            $this->model->update_table($id, $data, 'gestiones_cobro');
+            $this->model->update((int) $id, $data);
 
             return $this->respond([
                 'status'  => 200,
@@ -122,7 +122,7 @@ class GestionesCobroController extends ResourceController
         $existing = $this->model->find($id);
         if (!$existing) return $this->failNotFound("Gestión con ID $id no encontrada.");
 
-        $this->model->delete_table($id, 'gestiones_cobro');
+        $this->model->delete((int) $id);
 
         return $this->respondDeleted(['message' => "Gestión $id eliminada"]);
     }

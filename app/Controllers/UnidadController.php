@@ -28,7 +28,7 @@ class UnidadController extends ResourceController
 
     public function show($id = null)
     {
-        $unidad = $this->model->get($id, 'unidades');
+        $unidad = $this->model->get($id, 'unidad');
         if (!$unidad) {
             return $this->failNotFound("unidad con ID $id no encontrada.");
         }
@@ -43,7 +43,7 @@ class UnidadController extends ResourceController
         if (!$data) {
             return $this->failValidationErrors('No se recibieron datos válidos.');
         }
-        $insert_id = $this->model->create_table($data, 'unidades');
+        $insert_id = $this->model->create_table($data, 'unidad');
         if ($insert_id) {
             return $this->respondCreated([
                 'mensaje' => 'unidad creada correctamente',
@@ -62,11 +62,11 @@ class UnidadController extends ResourceController
             return $this->failValidationErrors('No se recibieron datos válidos.');
         }
         // Verificar que el registro exista antes de actualizar
-        if (!$this->model->get($id, 'unidades')) {
+        if (!$this->model->get($id, 'unidad')) {
             return $this->failNotFound("unidad con ID $id no encontrada.");
         }
         // Intentar actualizar
-        $updated = $this->model->update_table($id, $data, 'unidades');
+        $updated = $this->model->update_table($id, $data, 'unidad');
         if ($updated === false || (is_array($updated) && isset($updated['error']))) {
             return $this->fail('No se pudo actualizar la unidad.');
         }
@@ -83,11 +83,11 @@ class UnidadController extends ResourceController
             return $this->failValidationErrors('No se proporcionó un ID válido.');
         }
         // Verificar que la unidad exista
-        if (!$this->model->get($id, 'unidades')) {
+        if (!$this->model->get($id, 'unidad')) {
             return $this->failNotFound("unidad con ID $id no encontrada.");
         }
         // Intentar eliminar usando BaseModel
-        $deleted = $this->model->delete_table($id, 'unidades');
+        $deleted = $this->model->delete_table($id, 'unidad');
         if ($deleted === false || (is_array($deleted) && isset($deleted['error']))) {
             return $this->fail("No se pudo eliminar la unidad con ID $id.");
         }

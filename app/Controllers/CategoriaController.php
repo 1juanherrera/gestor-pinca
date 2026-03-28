@@ -43,7 +43,7 @@ class CategoriaController extends ResourceController
         if (!$data) {
             return $this->failValidationErrors('No se recibieron datos válidos.');
         }
-        $insert_id = $this->model->create_table($data, 'categorias');
+        $insert_id = $this->model->create_table($data, 'categoria');
         if ($insert_id) {
             return $this->respondCreated([
                 'mensaje' => 'categoria creada correctamente',
@@ -66,7 +66,7 @@ class CategoriaController extends ResourceController
             return $this->failNotFound("categoria con ID $id no encontrada.");
         }
         // Intentar actualizar
-        $updated = $this->model->update_table($id, $data, 'categorias');
+        $updated = $this->model->update_table($id, $data, 'categoria');
         if ($updated === false || (is_array($updated) && isset($updated['error']))) {
             return $this->fail('No se pudo actualizar la categoria.');
         }
@@ -87,7 +87,7 @@ class CategoriaController extends ResourceController
             return $this->failNotFound("categoria con ID $id no encontrada.");
         }
         // Intentar eliminar usando BaseModel
-        $deleted = $this->model->delete_table($id, 'categorias');
+        $deleted = $this->model->delete_table($id, 'categoria');
         if ($deleted === false || (is_array($deleted) && isset($deleted['error']))) {
             return $this->fail("No se pudo eliminar la categoria con ID $id.");
         }

@@ -21,7 +21,7 @@ services:
       MYSQL_ROOT_PASSWORD: password
     volumes:
       - db_data:/var/lib/mysql
-      - ./gestorpincadb.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./initdb:/docker-entrypoint-initdb.d/
     networks:
       - app-network
     

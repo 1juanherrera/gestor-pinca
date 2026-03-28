@@ -10,7 +10,7 @@ use Config\Paths;
 */
 if (isset($_SERVER['HTTP_ORIGIN']) && str_contains($_SERVER['HTTP_ORIGIN'], 'localhost:5173')) {
     header("Access-Control-Allow-Origin: http://localhost:5173");
-    header("Access-Control-Allow-Methods: GET, POST, DELETE, PUT, OPTIONS");
+    header("Access-Control-Allow-Methods: GET, POST, DELETE, PUT, PATCH, OPTIONS");
     header("Access-Control-Allow-Headers: Authorization, Content-Type");
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
         http_response_code(200);

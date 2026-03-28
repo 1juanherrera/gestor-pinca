@@ -102,7 +102,7 @@ class OrdenesCompraController extends ResourceController
 
             // Actualizar cabecera
             if (!empty($data)) {
-                $this->model->update_table($id, $data, 'ordenes_compra');
+                $this->model->update((int) $id, $data);
             }
 
             // Reemplazar líneas si se envían
@@ -163,7 +163,7 @@ class OrdenesCompraController extends ResourceController
             return $this->fail("No se puede cambiar de {$orden['estado']} a $nuevoEstado.", 400);
         }
 
-        $this->model->update_table($id, ['estado' => $nuevoEstado], 'ordenes_compra');
+        $this->model->update((int) $id, ['estado' => $nuevoEstado]);
 
         return $this->respond(['mensaje' => "Estado actualizado a $nuevoEstado"]);
     }
@@ -231,7 +231,7 @@ class OrdenesCompraController extends ResourceController
 
             // Si todas las líneas están recibidas → Recibida
             if ($this->model->todasRecibidas((int) $idOrden)) {
-                $this->model->update_table($idOrden, ['estado' => 'Recibida'], 'ordenes_compra');
+                $this->model->update((int) $idOrden, ['estado' => 'Recibida']);
             }
 
             return $this->respond(['mensaje' => 'Línea recibida correctamente']);

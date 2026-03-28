@@ -127,7 +127,7 @@ class NotasCreditoController extends ResourceController
         $db->transStart();
 
         try {
-            $this->model->update_table($id, ['estado' => 'Anulada'], 'notas_credito');
+            $this->model->update((int) $id, ['estado' => 'Anulada']);
 
             // Recalcula saldo de la factura sin contar esta nota
             $facturaModel = new FacturasModel();

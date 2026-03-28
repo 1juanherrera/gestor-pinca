@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: db
--- Tiempo de generación: 19-03-2026 a las 21:20:42
+-- Tiempo de generación: 16-01-2026 a las 21:54:38
 -- Versión del servidor: 8.0.44
 -- Versión de PHP: 8.3.26
 
@@ -45,7 +45,7 @@ INSERT INTO `bodegas` (`id_bodegas`, `nombre`, `descripcion`, `estado`, `instala
 (3, 'Juan Mina', 'Punto estratégico en la Vía Cordialidad, orientado al manejo de inventarios y distribución regional, con conexiones hacia rutas intermunicipales.', 1, 3),
 (8, 'Laboratorio', 'Área de bodega con acondicionamiento tipo laboratorio', 1, 1),
 (15, 'Centro de insumos', 'Área destinada al almacenamiento y distribución de insumos.', 1, 1),
-(16, 'Depósito especializado', 'Espacio seguro para almacenamiento bajo condiciones controladas.', 0, 1);
+(16, 'Depósito especializado', 'Espacio seguro para almacenamiento bajo condiciones controladas.', 1, 1);
 
 -- --------------------------------------------------------
 
@@ -83,20 +83,17 @@ CREATE TABLE `clientes` (
   `telefono` bigint DEFAULT NULL,
   `email` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `tipo` tinyint NOT NULL DEFAULT '2' COMMENT '1 Empresa 2 Particular',
-  `estado` tinyint NOT NULL DEFAULT '1' COMMENT '1 activo 2 inactivo',
-  `dias_credito` int DEFAULT '30' COMMENT 'Plazo de pago en días',
-  `limite_credito` decimal(12,2) DEFAULT '0.00' COMMENT 'Cupo máximo de crédito',
-  `credito_usado` decimal(12,2) DEFAULT '0.00' COMMENT 'Suma de saldos pendientes activos'
+  `estado` tinyint NOT NULL DEFAULT '1' COMMENT '1 activo 2 inactivo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 
 --
 -- Volcado de datos para la tabla `clientes`
 --
 
-INSERT INTO `clientes` (`id_clientes`, `nombre_encargado`, `nombre_empresa`, `numero_documento`, `direccion`, `telefono`, `email`, `tipo`, `estado`, `dias_credito`, `limite_credito`, `credito_usado`) VALUES
-(1, 'Carlos Mendoza', 'Distribuidora Andina S.A.S', 900123456, 'Calle 45 #32-10, Barranquilla', 3014567890, 'c.mendoza@andina.com', 2, 1, 30, 5000000.00, 125000.00),
-(2, 'Juliana Pérez', 'Soluciones del Caribe Ltda', 801987654, 'Carrera 21 #55-22, Cartagena', 3157894321, 'juliana.perez@caribe.com', 1, 1, 60, 10000000.00, 0.00),
-(3, 'Mauricio Torres', 'Pinturas Torres & Cía', 1023456789, 'Av. Murillo #12-80, Barranquilla', 3001122334, 'm.torres@ptorres.com', 2, 1, 30, 0.00, 0.00);
+INSERT INTO `clientes` (`id_clientes`, `nombre_encargado`, `nombre_empresa`, `numero_documento`, `direccion`, `telefono`, `email`, `tipo`, `estado`) VALUES
+(1, 'Carlos Mendoza', 'Distribuidora Andina S.A.S', 900123456, 'Calle 45 #32-10, Barranquilla', 3014567890, 'c.mendoza@andina.com', 2, 1),
+(2, 'Juliana Pérez', 'Soluciones del Caribe Ltda', 801987654, 'Carrera 21 #55-22, Cartagena', 3157894321, 'juliana.perez@caribe.com', 1, 2),
+(3, 'Mauricio Torres', 'Pinturas Torres & Cía', 1023456789, 'Av. Murillo #12-80, Barranquilla', 3001122334, 'm.torres@ptorres.com', 2, 1);
 
 -- --------------------------------------------------------
 
@@ -105,13 +102,13 @@ INSERT INTO `clientes` (`id_clientes`, `nombre_encargado`, `nombre_empresa`, `nu
 --
 
 CREATE TABLE `costos_item` (
-  `id_costos_item` int NOT NULL,
+  `id` int NOT NULL,
   `item_general_id` int NOT NULL,
   `costo_unitario` decimal(18,2) DEFAULT NULL,
   `costo_mp_galon` decimal(10,0) DEFAULT NULL,
   `costo_cunete` decimal(10,0) NOT NULL,
   `costo_tambor` decimal(10,0) NOT NULL,
-  `periodo` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `periodo` varchar(7) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `metodo_calculo` varchar(6) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `fecha_calculo` date DEFAULT NULL,
   `costo_mp_kg` decimal(10,0) DEFAULT NULL,
@@ -123,127 +120,126 @@ CREATE TABLE `costos_item` (
   `precio_venta` decimal(18,2) DEFAULT NULL,
   `cantidad_total` decimal(10,0) DEFAULT NULL,
   `costo_mod` decimal(10,0) DEFAULT NULL COMMENT '0  inactivo\r\n1 activo',
-  `estado` tinyint DEFAULT NULL,
-  `porcentaje_utilidad` decimal(10,0) DEFAULT NULL
+  `estado` tinyint DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `costos_item`
 --
 
-INSERT INTO `costos_item` (`id_costos_item`, `item_general_id`, `costo_unitario`, `costo_mp_galon`, `costo_cunete`, `costo_tambor`, `periodo`, `metodo_calculo`, `fecha_calculo`, `costo_mp_kg`, `envase`, `etiqueta`, `bandeja`, `plastico`, `volumen`, `precio_venta`, `cantidad_total`, `costo_mod`, `estado`, `porcentaje_utilidad`) VALUES
-(1, 1, 0.00, 2000, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 370, 2000.00, 0, 600, NULL, 40),
-(2, 31, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(3, 32, 11000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(4, 33, 34050.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(5, 34, 27144.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(6, 35, 12691.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(7, 36, 4372.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(8, 37, 11466.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(9, 38, 16300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(10, 39, 17000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(11, 40, 4400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(12, 41, 14300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(13, 42, 40.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(14, 43, 1550.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(15, 44, 4617.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(17, 46, 14300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(18, 47, 855.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(19, 48, 5400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(21, 50, 12215.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(23, 52, 14152.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(25, 54, 12718.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(27, 56, 11447.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(28, 57, 1690.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(30, 59, 722.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(31, 60, 715.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(32, 61, 4300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(33, 62, 4400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(34, 63, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(35, 64, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(36, 65, 1103.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(37, 66, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(38, 67, 43900.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(39, 68, 37300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(40, 69, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(41, 70, 7000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(42, 71, 19500.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(43, 72, 33500.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(44, 73, 37200.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(45, 74, 21850.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(46, 75, 10400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(47, 76, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(48, 77, 11466.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(49, 78, 13000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(50, 79, 17000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(51, 80, 2900.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(52, 81, 17000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(54, 83, 4617.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(55, 84, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(56, 85, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(57, 86, 11000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(58, 2, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 719, 20000.00, 0, 600, NULL, 40),
-(59, 3, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 398, 170000.00, 0, 600, NULL, NULL),
-(60, 4, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 440, 0.00, 0, 600, NULL, NULL),
-(61, 5, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 376, 0.00, 0, 600, NULL, NULL),
-(62, 6, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 397, 0.00, 0, 600, NULL, NULL),
-(63, 7, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 396, 0.00, 0, 600, NULL, NULL),
-(64, 8, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 712, 0.00, 0, 600, NULL, NULL),
-(65, 9, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 616, 0.00, 0, 600, NULL, NULL),
-(66, 10, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 711, 0.00, 0, 600, NULL, NULL),
-(67, 11, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 595, 0.00, 0, 600, NULL, NULL),
-(68, 12, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 599, 0.00, 0, 600, NULL, NULL),
-(69, 13, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 578, 0.00, 0, 600, NULL, NULL),
-(70, 14, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 813, 0.00, 0, 600, NULL, NULL),
-(71, 15, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 168, 0.00, 0, 600, NULL, NULL),
-(72, 16, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 212, 0.00, 0, 600, NULL, NULL),
-(73, 17, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 213, 0.00, 0, 600, NULL, NULL),
-(74, 18, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 801, 0.00, 0, 600, NULL, NULL),
-(75, 19, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 178, 0.00, 0, 600, NULL, NULL),
-(76, 20, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 328, 0.00, 0, 150, NULL, NULL),
-(77, 21, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 345, 0.00, 0, 150, NULL, NULL),
-(78, 22, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 488, 0.00, 0, 150, NULL, NULL),
-(79, 23, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 119, 0.00, 0, 150, NULL, NULL),
-(80, 24, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 961, 0.00, 0, 150, NULL, NULL),
-(81, 25, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 1018, 0.00, 0, 150, NULL, NULL),
-(82, 26, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 874, 0.00, 0, 150, NULL, NULL),
-(83, 27, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 851, 0.00, 0, 150, NULL, NULL),
-(84, 28, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 833, 0.00, 0, 150, NULL, NULL),
-(85, 29, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 748, 0.00, 0, 150, NULL, NULL),
-(86, 30, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 376, 0.00, 0, 150, NULL, NULL),
-(87, 87, 4372.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(88, 88, 4400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(89, 89, 4372.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(90, 90, 4372.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(92, 92, 16300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(93, 93, 14152.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(94, 94, 11466.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(95, 95, 17000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(96, 96, 11447.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(97, 97, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(98, 98, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(99, 99, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(108, 100, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-15', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(128, 114, 60.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 60, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(129, 115, 7880.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 7880, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(130, 116, 5900.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 5900, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(131, 117, 16000.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 16000, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(132, 118, 10000.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 10000, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(133, 119, 9200.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 9200, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(134, 120, 9800.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 9800, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(135, 121, 16600.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 16600, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(136, 122, 11100.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 11100, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(137, 123, 558.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 558, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(138, 124, 1520.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 1520, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(139, 125, 2450.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 2450, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(140, 126, 1800.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 1800, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(141, 127, 4850.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 4850, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(142, 128, 7200.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 7200, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(143, 129, 15000.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 15000, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(144, 130, 11700.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 11700, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(145, 131, 6905.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 6905, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(146, 132, 23000.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 23000, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(147, 133, 0.00, 0, 0, 0, NULL, 'Manual', '2026-01-16', 0, 0.00, 0.00, 0, 0, 1, 0.00, 1, 0, 1, NULL);
+INSERT INTO `costos_item` (`id`, `item_general_id`, `costo_unitario`, `costo_mp_galon`, `costo_cunete`, `costo_tambor`, `periodo`, `metodo_calculo`, `fecha_calculo`, `costo_mp_kg`, `envase`, `etiqueta`, `bandeja`, `plastico`, `volumen`, `precio_venta`, `cantidad_total`, `costo_mod`, `estado`) VALUES
+(1, 1, 0.00, 2000, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 370, 2000.00, 0, 600, NULL),
+(2, 31, 7000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(3, 32, 11000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(4, 33, 34050.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(5, 34, 27144.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(6, 35, 12691.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(7, 36, 4372.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(8, 37, 11466.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(9, 38, 16300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(10, 39, 17000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(11, 40, 4400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(12, 41, 14300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(13, 42, 40.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(14, 43, 1550.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(15, 44, 4617.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(17, 46, 14300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(18, 47, 855.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(19, 48, 5400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(21, 50, 12215.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(23, 52, 14152.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(25, 54, 12718.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(27, 56, 11447.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(28, 57, 1690.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(30, 59, 722.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(31, 60, 715.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(32, 61, 4300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(33, 62, 4400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(34, 63, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(35, 64, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(36, 65, 1103.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(37, 66, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(38, 67, 43900.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(39, 68, 37300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(40, 69, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(41, 70, 7000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(42, 71, 19500.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(43, 72, 33500.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(44, 73, 37200.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(45, 74, 21850.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(46, 75, 10400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(47, 76, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(48, 77, 11466.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(49, 78, 13000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(50, 79, 17000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(51, 80, 2900.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(52, 81, 17000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(54, 83, 4617.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(55, 84, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(56, 85, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(57, 86, 11000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(58, 2, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 719, 20000.00, 0, 600, NULL),
+(59, 3, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 398, 170000.00, 0, 600, NULL),
+(60, 4, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 440, 0.00, 0, 600, NULL),
+(61, 5, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 376, 0.00, 0, 600, NULL),
+(62, 6, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 397, 0.00, 0, 600, NULL),
+(63, 7, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 396, 0.00, 0, 600, NULL),
+(64, 8, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 712, 0.00, 0, 600, NULL),
+(65, 9, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 616, 0.00, 0, 600, NULL),
+(66, 10, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 711, 0.00, 0, 600, NULL),
+(67, 11, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 595, 0.00, 0, 600, NULL),
+(68, 12, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 599, 0.00, 0, 600, NULL),
+(69, 13, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 578, 0.00, 0, 600, NULL),
+(70, 14, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 813, 0.00, 0, 600, NULL),
+(71, 15, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 168, 0.00, 0, 600, NULL),
+(72, 16, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 212, 0.00, 0, 600, NULL),
+(73, 17, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 213, 0.00, 0, 600, NULL),
+(74, 18, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 801, 0.00, 0, 600, NULL),
+(75, 19, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 178, 0.00, 0, 600, NULL),
+(76, 20, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 328, 0.00, 0, 150, NULL),
+(77, 21, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 345, 0.00, 0, 150, NULL),
+(78, 22, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 488, 0.00, 0, 150, NULL),
+(79, 23, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 119, 0.00, 0, 150, NULL),
+(80, 24, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 961, 0.00, 0, 150, NULL),
+(81, 25, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 1018, 0.00, 0, 150, NULL),
+(82, 26, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 874, 0.00, 0, 150, NULL),
+(83, 27, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 851, 0.00, 0, 150, NULL),
+(84, 28, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 833, 0.00, 0, 150, NULL),
+(85, 29, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 748, 0.00, 0, 150, NULL),
+(86, 30, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 376, 0.00, 0, 150, NULL),
+(87, 87, 4372.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(88, 88, 4400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(89, 89, 4372.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(90, 90, 4372.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(92, 92, 16300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(93, 93, 14152.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(94, 94, 11466.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(95, 95, 17000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(96, 96, 11447.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(97, 97, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(98, 98, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(99, 99, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(108, 100, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-15', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL),
+(128, 114, 60.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 60, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(129, 115, 7880.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 7880, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(130, 116, 5900.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 5900, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(131, 117, 16000.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 16000, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(132, 118, 10000.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 10000, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(133, 119, 9200.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 9200, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(134, 120, 9800.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 9800, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(135, 121, 16600.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 16600, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(136, 122, 11100.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 11100, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(137, 123, 558.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 558, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(138, 124, 1520.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 1520, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(139, 125, 2450.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 2450, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(140, 126, 1800.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 1800, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(141, 127, 4850.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 4850, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(142, 128, 7200.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 7200, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(143, 129, 15000.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 15000, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(144, 130, 11700.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 11700, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(145, 131, 6905.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 6905, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(146, 132, 23000.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 23000, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL),
+(147, 133, 0.00, 0, 0, 0, NULL, 'Manual', '2026-01-16', 0, 0.00, 0.00, 0, 0, 1, 0.00, 1, 0, 1);
 
 -- --------------------------------------------------------
 
@@ -270,70 +266,6 @@ CREATE TABLE `costos_produccion` (
   `costo_mod` smallint DEFAULT NULL,
   `preparaciones_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `cotizaciones`
---
-
-CREATE TABLE `cotizaciones` (
-  `id_cotizaciones` int UNSIGNED NOT NULL,
-  `numero` varchar(20) NOT NULL,
-  `cliente_id` int NOT NULL,
-  `fecha_cotizacion` date NOT NULL,
-  `fecha_vencimiento` date NOT NULL,
-  `subtotal` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `descuento` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `impuestos` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `retencion` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `total` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `estado` enum('Borrador','Enviada','Aceptada','Rechazada','Vencida','Convertida') NOT NULL DEFAULT 'Borrador',
-  `observaciones` text,
-  `facturas_id` int DEFAULT NULL,
-  `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Volcado de datos para la tabla `cotizaciones`
---
-
-INSERT INTO `cotizaciones` (`id_cotizaciones`, `numero`, `cliente_id`, `fecha_cotizacion`, `fecha_vencimiento`, `subtotal`, `descuento`, `impuestos`, `retencion`, `total`, `estado`, `observaciones`, `facturas_id`, `creado_en`) VALUES
-(1, 'COT-2025-0001', 1, '2025-11-05', '2026-04-20', 300000.00, 0.00, 57000.00, 7000.00, 350000.00, 'Convertida', 'Origen de FAC-20', 1, '2026-03-07 14:04:50'),
-(2, 'COT-2025-0002', 2, '2024-12-20', '2025-01-10', 300000.00, 0.00, 57000.00, 7000.00, 750000.00, 'Aceptada', 'Origen de factura 89211291', 2, '2026-03-07 14:04:50'),
-(3, 'COT-2025-0003', 1, '2025-03-01', '2025-03-20', 520000.00, 0.00, 98800.00, 0.00, 618800.00, 'Enviada', 'Propuesta pintura exterior', NULL, '2026-03-07 14:04:50'),
-(4, 'COT-2025-0004', 2, '2025-03-10', '2026-03-25', 980000.00, 50000.00, 177100.00, 0.00, 1107100.00, 'Borrador', 'En revisión interna', NULL, '2026-03-07 14:04:50'),
-(5, 'COT-2025-0005', 1, '2026-03-07', '2026-03-15', 250000.00, 0.00, 47500.00, 0.00, 297500.00, 'Rechazada', 'Cliente prefirió otra propuesta', NULL, '2026-03-07 14:04:50');
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `cotizaciones_detalle`
---
-
-CREATE TABLE `cotizaciones_detalle` (
-  `id_detalle` int UNSIGNED NOT NULL,
-  `cotizaciones_id` int UNSIGNED NOT NULL,
-  `descripcion` varchar(255) NOT NULL,
-  `cantidad` decimal(10,2) NOT NULL DEFAULT '1.00',
-  `precio_unit` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `descuento_pct` decimal(5,2) NOT NULL DEFAULT '0.00',
-  `subtotal` decimal(12,2) NOT NULL DEFAULT '0.00'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Volcado de datos para la tabla `cotizaciones_detalle`
---
-
-INSERT INTO `cotizaciones_detalle` (`id_detalle`, `cotizaciones_id`, `descripcion`, `cantidad`, `precio_unit`, `descuento_pct`, `subtotal`) VALUES
-(1, 1, 'Pintura base agua blanca 4L', 2.00, 85000.00, 0.00, 170000.00),
-(2, 1, 'Sellador multiusos 3.6L', 1.00, 88000.00, 0.00, 88000.00),
-(3, 1, 'Rodillos premium 9\"', 5.00, 8400.00, 0.00, 42000.00),
-(4, 3, 'Pintura exterior mate 4L', 4.00, 92000.00, 0.00, 368000.00),
-(5, 3, 'Lija al agua grano 220', 20.00, 7600.00, 0.00, 152000.00),
-(6, 4, 'Pintura epóxica 4L', 6.00, 125000.00, 5.00, 712500.00),
-(7, 4, 'Catalizador epóxico 1L', 6.00, 45000.00, 0.00, 270000.00),
-(8, 5, 'Thinner acrílico galón', 5.00, 50000.00, 0.00, 250000.00);
 
 -- --------------------------------------------------------
 
@@ -384,72 +316,21 @@ CREATE TABLE `facturas` (
   `numero` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `cliente_id` int DEFAULT NULL,
   `fecha_emision` date DEFAULT NULL,
-  `fecha_vencimiento` date DEFAULT NULL,
   `total` decimal(10,2) DEFAULT NULL,
-  `saldo_pendiente` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `observaciones` text COLLATE utf8mb4_general_ci,
-  `estado` enum('Pendiente','Parcial','Pagada','Vencida','Anulada') COLLATE utf8mb4_general_ci DEFAULT 'Pendiente',
+  `estado` varchar(9) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Pendiente, Pagada',
   `subtotal` decimal(10,2) DEFAULT NULL,
-  `descuento` decimal(12,2) NOT NULL DEFAULT '0.00',
   `impuestos` decimal(10,2) DEFAULT NULL,
   `retencion` decimal(10,2) DEFAULT NULL,
-  `movimiento_inventario_id` int DEFAULT NULL,
-  `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `movimiento_inventario_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 
 --
 -- Volcado de datos para la tabla `facturas`
 --
 
-INSERT INTO `facturas` (`id_facturas`, `numero`, `cliente_id`, `fecha_emision`, `fecha_vencimiento`, `total`, `saldo_pendiente`, `observaciones`, `estado`, `subtotal`, `descuento`, `impuestos`, `retencion`, `movimiento_inventario_id`, `creado_en`) VALUES
-(1, 'FAC-20', 1, '2025-11-12', '2025-12-12', 350000.00, 125000.00, NULL, 'Parcial', 300000.00, 0.00, 57000.00, 7000.00, 6, '2026-03-07 14:01:47'),
-(2, '89211291', 2, '2025-01-12', '2025-02-11', 750000.00, 0.00, NULL, 'Pagada', 300000.00, 0.00, 57000.00, 7000.00, 6, '2026-03-07 14:01:47');
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `facturas_detalle`
---
-
-CREATE TABLE `facturas_detalle` (
-  `id_detalle` int UNSIGNED NOT NULL,
-  `facturas_id` int NOT NULL,
-  `descripcion` varchar(255) NOT NULL,
-  `cantidad` decimal(10,2) NOT NULL DEFAULT '1.00',
-  `precio_unit` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `descuento_pct` decimal(5,2) NOT NULL DEFAULT '0.00',
-  `subtotal` decimal(12,2) NOT NULL DEFAULT '0.00'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Volcado de datos para la tabla `facturas_detalle`
---
-
-INSERT INTO `facturas_detalle` (`id_detalle`, `facturas_id`, `descripcion`, `cantidad`, `precio_unit`, `descuento_pct`, `subtotal`) VALUES
-(1, 1, 'Pintura base agua blanca 4L', 2.00, 85000.00, 0.00, 170000.00),
-(2, 1, 'Sellador multiusos 3.6L', 1.00, 88000.00, 0.00, 88000.00),
-(3, 1, 'Rodillos premium 9\"', 5.00, 8400.00, 0.00, 42000.00),
-(4, 2, 'Pintura esmalte negro mate 1L', 3.00, 52000.00, 0.00, 156000.00),
-(5, 2, 'Thinner acrílico 1/4', 4.00, 18000.00, 0.00, 72000.00),
-(6, 2, 'Brocha 3\" cerda natural', 3.00, 24000.00, 0.00, 72000.00),
-(7, 1, 'Pintura base agua blanca 4L', 2.00, 85000.00, 0.00, 170000.00),
-(8, 1, 'Sellador multiusos 3.6L', 1.00, 88000.00, 0.00, 88000.00),
-(9, 1, 'Rodillos premium 9\"', 5.00, 8400.00, 0.00, 42000.00),
-(10, 2, 'Pintura esmalte negro mate 1L', 3.00, 52000.00, 0.00, 156000.00),
-(11, 2, 'Thinner acrílico 1/4', 4.00, 18000.00, 0.00, 72000.00),
-(12, 2, 'Brocha 3\" cerda natural', 3.00, 24000.00, 0.00, 72000.00),
-(13, 1, 'Pintura base agua blanca 4L', 2.00, 85000.00, 0.00, 170000.00),
-(14, 1, 'Sellador multiusos 3.6L', 1.00, 88000.00, 0.00, 88000.00),
-(15, 1, 'Rodillos premium 9\"', 5.00, 8400.00, 0.00, 42000.00),
-(16, 2, 'Pintura esmalte negro mate 1L', 3.00, 52000.00, 0.00, 156000.00),
-(17, 2, 'Thinner acrílico 1/4', 4.00, 18000.00, 0.00, 72000.00),
-(18, 2, 'Brocha 3\" cerda natural', 3.00, 24000.00, 0.00, 72000.00),
-(19, 1, 'Pintura base agua blanca 4L', 2.00, 85000.00, 0.00, 170000.00),
-(20, 1, 'Sellador multiusos 3.6L', 1.00, 88000.00, 0.00, 88000.00),
-(21, 1, 'Rodillos premium 9\"', 5.00, 8400.00, 0.00, 42000.00),
-(22, 2, 'Pintura esmalte negro mate 1L', 3.00, 52000.00, 0.00, 156000.00),
-(23, 2, 'Thinner acrílico 1/4', 4.00, 18000.00, 0.00, 72000.00),
-(24, 2, 'Brocha 3\" cerda natural', 3.00, 24000.00, 0.00, 72000.00);
+INSERT INTO `facturas` (`id_facturas`, `numero`, `cliente_id`, `fecha_emision`, `total`, `estado`, `subtotal`, `impuestos`, `retencion`, `movimiento_inventario_id`) VALUES
+(1, 'FAC-20', 1, '2025-11-12', 350000.00, 'Pendiente', 300000.00, 57000.00, 7000.00, 6),
+(2, '89211291', 2, '2025-01-12', 750000.00, 'Pagada', 300000.00, 57000.00, 7000.00, 6);
 
 -- --------------------------------------------------------
 
@@ -502,33 +383,6 @@ INSERT INTO `formulaciones` (`id_formulaciones`, `nombre`, `descripcion`, `estad
 (29, 'PREPARACION PASTA ESMALTE BLANCO', NULL, 1, 1, 29),
 (30, 'PREPARACION PASTA ESMALTE TABACO', NULL, 1, 1, 30),
 (48, 'Formulación - VINILO T1 BLANCO', NULL, 1, 1, 133);
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `gestiones_cobro`
---
-
-CREATE TABLE `gestiones_cobro` (
-  `id_gestion` int NOT NULL,
-  `facturas_id` int NOT NULL,
-  `clientes_id` int NOT NULL,
-  `usuario_id` int DEFAULT NULL,
-  `tipo` enum('llamada','email','visita','whatsapp') NOT NULL,
-  `resultado` varchar(255) DEFAULT NULL,
-  `proxima_gestion` date DEFAULT NULL,
-  `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Volcado de datos para la tabla `gestiones_cobro`
---
-
-INSERT INTO `gestiones_cobro` (`id_gestion`, `facturas_id`, `clientes_id`, `usuario_id`, `tipo`, `resultado`, `proxima_gestion`, `creado_en`) VALUES
-(1, 1, 1, NULL, 'llamada', 'No contestó. Se dejó mensaje de voz.', '2026-01-10', '2026-03-19 14:38:34'),
-(2, 1, 1, NULL, 'whatsapp', 'Prometió pagar la próxima semana.', '2026-01-20', '2026-03-19 14:38:34'),
-(3, 1, 1, NULL, 'llamada', 'No cumplió. Nuevo compromiso para el 25.', '2026-01-25', '2026-03-19 14:38:34'),
-(4, 1, 1, NULL, 'visita', 'No estaba el encargado. Se dejó comunicado.', '2026-02-01', '2026-03-19 14:38:34');
 
 -- --------------------------------------------------------
 
@@ -608,7 +462,7 @@ INSERT INTO `inventario` (`id_inventario`, `cantidad`, `fecha_update`, `apartada
 (28, 0.00, NULL, 0, 28, 0, NULL, 1, 1),
 (29, 0.00, NULL, 0, 29, 0, NULL, 1, 1),
 (30, 0.00, NULL, 0, 30, 0, NULL, 1, 1),
-(31, 200.00, NULL, 0, 31, 0, NULL, 1, 1),
+(31, 20.00, NULL, 0, 31, 0, NULL, 1, 1),
 (32, 5.00, NULL, 0, 32, 0, NULL, 1, 1),
 (33, 0.00, NULL, 0, 33, 0, NULL, 1, 1),
 (34, 0.00, NULL, 0, 34, 0, NULL, 1, 1),
@@ -721,16 +575,16 @@ CREATE TABLE `item_general` (
 --
 
 INSERT INTO `item_general` (`id_item_general`, `nombre`, `codigo`, `tipo`, `categoria_id`, `viscosidad`, `p_g`, `color`, `brillo_60`, `secado`, `cubrimiento`, `molienda`, `ph`, `poder_tintoreo`, `unidad_id`, `costo_produccion`) VALUES
-(1, 'BARNIZ TRANSPARENTE BRILLANTE', 'BAR001', 0, 1, '95-100 KU', '3,4+/-0,05 Kg', 'STD', '>=95', '12 HORAS', '', '', '', '', 5, 0.00),
-(2, 'ESMALTE BLANCO', 'ESM002', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', '', '>=90', '12 HORAS', '100+/-5 %', '', '', '', 4, 7000.00),
+(1, 'BARNIZ TRANSPARENTE BRILLANTE', 'BAR001', 0, 4, '95-100 KU', '3,4+/-0,05 Kg', 'STD', '>=95', '12 HORAS', NULL, NULL, NULL, NULL, 1, 0.00),
+(2, 'ESMALTE BLANCO', 'ESM002', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '12 HORAS', '100+/-5 %', '7.5 H', NULL, NULL, 2, 7000.00),
 (3, 'ESMALTE CAOBA', 'ESM003', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '6 HORAS', '100+/-5%', '7.5 H', NULL, NULL, 3, 11000.00),
 (4, 'ESMALTE NEGRO MATE', 'ESM004', 0, 1, '105-110 KU', '3,9+/-0,05 Kg', NULL, '<=15', '12 HORAS', '100+/-5%', '6 H', NULL, NULL, 4, 34050.00),
-(5, 'ESMALTE ROJO FIESTA', 'ESM005', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', '', '>= 90°', '12 HORAS', '100+/-5%', '', '', '', 1, 27144.00),
-(6, 'ESMALTE NEGRO BRILLANTE', 'ESM006', 0, 1, '100-105 KU', '3.4+/-0.05 Kg', '', '>= 90', '12 HORAS', '100+/-5%', '', '', '', 3, 12691.00),
-(7, 'ESMALTE VERDE ESMERALDA', 'ESM007', 0, 1, '100-105 KU', '3.6+/-0,05 Kg', '', '>=90', '12 HORAS', '100+/-5%', '', '', '', 1, 4372.00),
-(8, 'ESMALTE GRIS PLATA', 'ESM008', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', '', '>=90', '12 HORAS', '100+/-5 %', '', '', '', 7, 11466.00),
+(5, 'ESMALTE ROJO FIESTA', 'ESM005', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>= 90°', '12 HORAS', '100+/-5%', '7.5 H', NULL, NULL, NULL, 27144.00),
+(6, 'ESMALTE NEGRO BRILLANTE', 'ESM006', 0, 1, '100-105 KU', '3.4+/-0.05 Kg', NULL, '>= 90', '12 HORAS', '100+/-5%', '7.5 H', NULL, NULL, NULL, 12691.00),
+(7, 'ESMALTE VERDE ESMERALDA', 'ESM007', 0, 1, '100-105 KU', '3.6+/-0,05 Kg', NULL, '>=90', '12 HORAS', '100+/-5%', '7.5 H', NULL, NULL, NULL, 4372.00),
+(8, 'ESMALTE GRIS PLATA', 'ESM008', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '12 HORAS', '100+/-5 %', '7.5 H', NULL, NULL, NULL, 11466.00),
 (9, 'ESMALTE AZUL ESPAÑOL', 'ESM009', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '12 HORAS', '100+/-5 %', '7.5 H', NULL, NULL, NULL, 16300.00),
-(10, 'ESMALTE BLANCO MATE', 'ESM010', 0, 1, '95-100', '4,2 +/- 0,1 Kg', '', '15', '12 HORAS', '100+/-5', '', '', '', 3, 17000.00),
+(10, 'ESMALTE BLANCO MATE', 'ESM010', 0, 1, '95-100', '4,2 +/- 0,1 Kg', NULL, '15', '12 HORAS', '100+/-5', '6 H', NULL, NULL, NULL, 17000.00),
 (11, 'ESMALTE AMARILLO', 'ESM011', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '12 HORAS', '100+/-5', '7.5 H', NULL, NULL, NULL, 4400.00),
 (12, 'ESMALTE NARANJA', 'ESM012', 0, 1, '100-105', '3.5+/-0.05', NULL, '>=90', '12 HORAS', '100+/-5', '7.5 H', NULL, NULL, NULL, 14300.00),
 (13, 'ESMALTE TABACO', 'ESM013', 0, 1, '100-105KU', '3.5+/-0.05', NULL, '>=90', '12 HORAS', '100+/-5', '7.5 H', NULL, NULL, NULL, 40.00),
@@ -751,7 +605,7 @@ INSERT INTO `item_general` (`id_item_general`, `nombre`, `codigo`, `tipo`, `cate
 (28, 'PASTA ESMALTE ROJO OXIDO', 'PAS028', 0, 2, '100 KU', '5,55', 'STD', NULL, NULL, NULL, '>7H', '-', 'STD', NULL, 1690.00),
 (29, 'PASTA ESMALTE BLANCO', 'PAS029', 0, 2, '120', '5,78', 'STD', NULL, NULL, NULL, '7,5', '-', '100 +/- 0.5 %', NULL, 10303.00),
 (30, 'PASTA ESMALTE TABACO', 'PAS030', 2, 2, '95-100', '5.71-5.91', 'STD', NULL, NULL, NULL, '7,5', '-', 'STD', NULL, 722.00),
-(31, 'RESINA MEDIA EN SOYA AL 50%', 'RAM014', 1, 0, '', '', '', '', '', '', '', '', '', 0, 715.00),
+(31, 'RESINA MEDIA EN SOYA AL 50%', 'RAM014', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 715.00),
 (32, 'METIL ETIL CETOXIMA', 'AAN002', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4300.00),
 (33, 'OCTOATO DE COBALTO AL 12%', 'SOC011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4400.00),
 (34, 'OCTOATO DE ZIRCONIO AL 24%', 'SOZ024', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8000.00),
@@ -854,7 +708,7 @@ CREATE TABLE `item_general_formulaciones` (
 
 INSERT INTO `item_general_formulaciones` (`id_item_general_formulaciones`, `formulaciones_id`, `cantidad`, `porcentaje`, `item_general_id`) VALUES
 (1, 2, 914.00, NULL, 31),
-(2, 1, 32.00, NULL, 31),
+(2, 1, 932.00, NULL, 31),
 (3, 1, 3.72, NULL, 32),
 (4, 1, 6.52, NULL, 33),
 (5, 1, 10.25, NULL, 34),
@@ -1246,33 +1100,6 @@ INSERT INTO `movimiento_inventario` (`id_movimiento_inventario`, `tipo_movimient
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `notas_credito`
---
-
-CREATE TABLE `notas_credito` (
-  `id_nota_credito` int NOT NULL,
-  `numero` varchar(20) NOT NULL,
-  `facturas_id` int NOT NULL,
-  `clientes_id` int NOT NULL,
-  `usuario_id` int DEFAULT NULL,
-  `fecha` date NOT NULL,
-  `monto` decimal(12,2) NOT NULL,
-  `motivo` varchar(255) DEFAULT NULL,
-  `estado` enum('Activa','Anulada') DEFAULT 'Activa',
-  `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Volcado de datos para la tabla `notas_credito`
---
-
-INSERT INTO `notas_credito` (`id_nota_credito`, `numero`, `facturas_id`, `clientes_id`, `usuario_id`, `fecha`, `monto`, `motivo`, `estado`, `creado_en`) VALUES
-(1, 'NC-001', 1, 1, NULL, '2026-01-15', 50000.00, 'Devolución 2 galones por defecto de color', 'Activa', '2026-03-19 14:38:34'),
-(2, 'NC-002', 1, 1, NULL, '2026-01-20', 25000.00, 'Ajuste por flete — registrada por error', 'Anulada', '2026-03-19 14:38:34');
-
--- --------------------------------------------------------
-
---
 -- Estructura de tabla para la tabla `pagos_cliente`
 --
 
@@ -1280,23 +1107,11 @@ CREATE TABLE `pagos_cliente` (
   `id_pagos_cliente` int NOT NULL,
   `fecha_pago` date DEFAULT NULL,
   `monto` decimal(7,1) DEFAULT NULL,
-  `metodo_pago` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `tipo` enum('pago_total','abono') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'pago_total',
-  `numero_referencia` varchar(80) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `observaciones` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `metodo_pago` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `observaciones` varchar(0) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `clientes_id` int DEFAULT NULL,
-  `facturas_id` int DEFAULT NULL,
-  `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `usuario_id` int DEFAULT NULL
+  `facturas_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
-
---
--- Volcado de datos para la tabla `pagos_cliente`
---
-
-INSERT INTO `pagos_cliente` (`id_pagos_cliente`, `fecha_pago`, `monto`, `metodo_pago`, `tipo`, `numero_referencia`, `observaciones`, `clientes_id`, `facturas_id`, `creado_en`, `usuario_id`) VALUES
-(1, '2025-01-15', 750000.0, 'transferencia', 'pago_total', 'TRF-20250115-001', 'Pago total factura 89211291', 2, 2, '2026-03-07 14:04:50', NULL),
-(2, '2025-11-20', 175000.0, 'nequi', 'abono', 'NEQ-20251120-033', 'Primer abono FAC-20', 1, 1, '2026-03-07 14:04:50', NULL);
 
 -- --------------------------------------------------------
 
@@ -1310,18 +1125,9 @@ CREATE TABLE `preparaciones` (
   `fecha_inicio` date DEFAULT NULL,
   `fecha_fin` date DEFAULT NULL,
   `cantidad` decimal(10,2) DEFAULT NULL,
-  `observaciones` text,
-  `estado` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0=PENDIENTE, 1=EN_PROCESO, 2=COMPLETADA, 3=CANCELADA',
   `item_general_id` int DEFAULT NULL,
   `unidad_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
-
---
--- Volcado de datos para la tabla `preparaciones`
---
-
-INSERT INTO `preparaciones` (`id_preparaciones`, `fecha_creacion`, `fecha_inicio`, `fecha_fin`, `cantidad`, `observaciones`, `estado`, `item_general_id`, `unidad_id`) VALUES
-(7, '2026-03-07 08:10:42', NULL, NULL, 20.00, NULL, 2, 1, 2);
 
 -- --------------------------------------------------------
 
@@ -1331,22 +1137,10 @@ INSERT INTO `preparaciones` (`id_preparaciones`, `fecha_creacion`, `fecha_inicio
 
 CREATE TABLE `preparaciones_has_item_general` (
   `preparaciones_id_preparaciones` int NOT NULL,
-  `item_general_id` int NOT NULL,
+  `item_general_id_item_general` int NOT NULL,
   `cantidad` decimal(10,2) DEFAULT NULL,
   `porcentajes` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
-
---
--- Volcado de datos para la tabla `preparaciones_has_item_general`
---
-
-INSERT INTO `preparaciones_has_item_general` (`preparaciones_id_preparaciones`, `item_general_id`, `cantidad`, `porcentajes`) VALUES
-(7, 31, 251.89, 74),
-(7, 32, 1.01, 0),
-(7, 33, 1.76, 1),
-(7, 34, 2.77, 1),
-(7, 35, 2.52, 1),
-(7, 36, 81.35, 24);
 
 -- --------------------------------------------------------
 
@@ -1375,60 +1169,6 @@ INSERT INTO `proveedor` (`id_proveedor`, `nombre_encargado`, `nombre_empresa`, `
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `remisiones`
---
-
-CREATE TABLE `remisiones` (
-  `id_remisiones` int UNSIGNED NOT NULL,
-  `numero` varchar(20) NOT NULL,
-  `cliente_id` int NOT NULL,
-  `fecha_remision` date NOT NULL,
-  `estado` enum('Pendiente','Facturada','Anulada') NOT NULL DEFAULT 'Pendiente',
-  `direccion_entrega` varchar(255) DEFAULT NULL,
-  `observaciones` text,
-  `facturas_id` int DEFAULT NULL,
-  `movimiento_inventario_id` int DEFAULT NULL,
-  `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Volcado de datos para la tabla `remisiones`
---
-
-INSERT INTO `remisiones` (`id_remisiones`, `numero`, `cliente_id`, `fecha_remision`, `estado`, `direccion_entrega`, `observaciones`, `facturas_id`, `movimiento_inventario_id`, `creado_en`) VALUES
-(1, 'REM-2025-0001', 1, '2025-11-10', 'Facturada', 'Calle 45 #32-10, Barranquilla', 'Entrega materiales FAC-20', 1, 6, '2026-03-07 14:04:50'),
-(2, 'REM-2025-0002', 2, '2025-01-12', 'Facturada', 'Carrera 21 #55-22, Cartagena', 'Entrega completa factura 89211291', 2, NULL, '2026-03-07 14:04:50'),
-(3, 'REM-2025-0003', 1, '2025-03-15', 'Pendiente', 'Calle 45 #32-10, Barranquilla', 'Despacho pendiente de firma', NULL, NULL, '2026-03-07 14:04:50');
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `remisiones_detalle`
---
-
-CREATE TABLE `remisiones_detalle` (
-  `id_detalle` int UNSIGNED NOT NULL,
-  `remisiones_id` int UNSIGNED NOT NULL,
-  `descripcion` varchar(255) NOT NULL,
-  `cantidad` decimal(10,2) NOT NULL DEFAULT '1.00',
-  `precio_unit` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `subtotal` decimal(12,2) NOT NULL DEFAULT '0.00'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Volcado de datos para la tabla `remisiones_detalle`
---
-
-INSERT INTO `remisiones_detalle` (`id_detalle`, `remisiones_id`, `descripcion`, `cantidad`, `precio_unit`, `subtotal`) VALUES
-(1, 1, 'Pintura base agua blanca 4L', 2.00, 85000.00, 170000.00),
-(2, 1, 'Rodillos premium 9\"', 5.00, 8400.00, 42000.00),
-(3, 2, 'Pintura esmalte negro mate 1L', 3.00, 52000.00, 156000.00),
-(4, 2, 'Thinner acrílico 1/4', 4.00, 18000.00, 72000.00),
-(5, 3, 'Pintura exterior mate 4L', 4.00, 92000.00, 368000.00);
-
--- --------------------------------------------------------
-
---
 -- Estructura de tabla para la tabla `unidad`
 --
 
@@ -1436,23 +1176,22 @@ CREATE TABLE `unidad` (
   `id_unidad` int NOT NULL,
   `nombre` varchar(100) DEFAULT NULL,
   `descripcion` varchar(500) DEFAULT NULL,
-  `estados` tinyint DEFAULT NULL,
-  `escala` decimal(10,5) DEFAULT NULL
+  `estados` tinyint DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Volcado de datos para la tabla `unidad`
 --
 
-INSERT INTO `unidad` (`id_unidad`, `nombre`, `descripcion`, `estados`, `escala`) VALUES
-(1, 'TAMBOR', '', 1, 55.00000),
-(2, 'CUÑETE', '', 1, 5.00000),
-(3, 'GALON', '', 1, 1.00000),
-(4, '1/2 GALON', '', 1, 0.50000),
-(5, '1/4 GALON', '', 1, 0.25000),
-(6, '1/8 GALON', '', 1, 0.12500),
-(7, '1/16 GALON', '', 1, 0.06250),
-(8, '1/32 GALON', '', 1, 0.03125);
+INSERT INTO `unidad` (`id_unidad`, `nombre`, `descripcion`, `estados`) VALUES
+(1, 'TAMBOR', '', 1),
+(2, 'CUÑETE', '', 1),
+(3, 'GALON', '', 1),
+(4, '1/2 GALON', '', 1),
+(5, '1/4 GALON', '', 1),
+(6, '1/8 GALON', '', 1),
+(7, '1/16 GALON', '', 1),
+(8, '1/32 GALON', '', 1);
 
 -- --------------------------------------------------------
 
@@ -1500,7 +1239,7 @@ ALTER TABLE `clientes`
 -- Indices de la tabla `costos_item`
 --
 ALTER TABLE `costos_item`
-  ADD PRIMARY KEY (`id_costos_item`),
+  ADD PRIMARY KEY (`id`),
   ADD KEY `item_general_id` (`item_general_id`);
 
 --
@@ -1510,22 +1249,6 @@ ALTER TABLE `costos_produccion`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `id_UNIQUE` (`id`),
   ADD KEY `fk_costos_produccion_preparaciones1_idx` (`preparaciones_id`);
-
---
--- Indices de la tabla `cotizaciones`
---
-ALTER TABLE `cotizaciones`
-  ADD PRIMARY KEY (`id_cotizaciones`),
-  ADD UNIQUE KEY `numero` (`numero`),
-  ADD KEY `cliente_id` (`cliente_id`),
-  ADD KEY `facturas_id` (`facturas_id`);
-
---
--- Indices de la tabla `cotizaciones_detalle`
---
-ALTER TABLE `cotizaciones_detalle`
-  ADD PRIMARY KEY (`id_detalle`),
-  ADD KEY `cotizaciones_id` (`cotizaciones_id`);
 
 --
 -- Indices de la tabla `detalle_facturas`
@@ -1551,28 +1274,12 @@ ALTER TABLE `facturas`
   ADD KEY `fk_facturas_movimientos_inventario1_idx` (`movimiento_inventario_id`);
 
 --
--- Indices de la tabla `facturas_detalle`
---
-ALTER TABLE `facturas_detalle`
-  ADD PRIMARY KEY (`id_detalle`),
-  ADD KEY `facturas_id` (`facturas_id`);
-
---
 -- Indices de la tabla `formulaciones`
 --
 ALTER TABLE `formulaciones`
   ADD PRIMARY KEY (`id_formulaciones`),
   ADD UNIQUE KEY `id_formulaciones_UNIQUE` (`id_formulaciones`),
   ADD KEY `fk_formulaciones_item_general1_idx` (`item_general_id`);
-
---
--- Indices de la tabla `gestiones_cobro`
---
-ALTER TABLE `gestiones_cobro`
-  ADD PRIMARY KEY (`id_gestion`),
-  ADD KEY `fk_gestiones_factura` (`facturas_id`),
-  ADD KEY `fk_gestiones_cliente` (`clientes_id`),
-  ADD KEY `fk_gestiones_usuario` (`usuario_id`);
 
 --
 -- Indices de la tabla `instalaciones`
@@ -1623,24 +1330,13 @@ ALTER TABLE `movimiento_inventario`
   ADD UNIQUE KEY `id_movimiento_inventario_UNIQUE` (`id_movimiento_inventario`);
 
 --
--- Indices de la tabla `notas_credito`
---
-ALTER TABLE `notas_credito`
-  ADD PRIMARY KEY (`id_nota_credito`),
-  ADD UNIQUE KEY `numero` (`numero`),
-  ADD KEY `fk_notas_factura` (`facturas_id`),
-  ADD KEY `fk_notas_cliente` (`clientes_id`),
-  ADD KEY `fk_notas_usuario` (`usuario_id`);
-
---
 -- Indices de la tabla `pagos_cliente`
 --
 ALTER TABLE `pagos_cliente`
   ADD PRIMARY KEY (`id_pagos_cliente`),
   ADD UNIQUE KEY `id_pagos_cliente_UNIQUE` (`id_pagos_cliente`),
   ADD KEY `fk_pagos_cliente_clientes1_idx` (`clientes_id`),
-  ADD KEY `fk_pagos_cliente_facturas1_idx` (`facturas_id`),
-  ADD KEY `fk_pagos_usuario` (`usuario_id`);
+  ADD KEY `fk_pagos_cliente_facturas1_idx` (`facturas_id`);
 
 --
 -- Indices de la tabla `preparaciones`
@@ -1654,8 +1350,8 @@ ALTER TABLE `preparaciones`
 -- Indices de la tabla `preparaciones_has_item_general`
 --
 ALTER TABLE `preparaciones_has_item_general`
-  ADD PRIMARY KEY (`preparaciones_id_preparaciones`,`item_general_id`),
-  ADD KEY `fk_preparaciones_has_item_general_item_general1_idx` (`item_general_id`),
+  ADD PRIMARY KEY (`preparaciones_id_preparaciones`,`item_general_id_item_general`),
+  ADD KEY `fk_preparaciones_has_item_general_item_general1_idx` (`item_general_id_item_general`),
   ADD KEY `fk_preparaciones_has_item_general_preparaciones1_idx` (`preparaciones_id_preparaciones`);
 
 --
@@ -1664,23 +1360,6 @@ ALTER TABLE `preparaciones_has_item_general`
 ALTER TABLE `proveedor`
   ADD PRIMARY KEY (`id_proveedor`),
   ADD UNIQUE KEY `id_proveedor_UNIQUE` (`id_proveedor`);
-
---
--- Indices de la tabla `remisiones`
---
-ALTER TABLE `remisiones`
-  ADD PRIMARY KEY (`id_remisiones`),
-  ADD UNIQUE KEY `numero` (`numero`),
-  ADD KEY `cliente_id` (`cliente_id`),
-  ADD KEY `facturas_id` (`facturas_id`),
-  ADD KEY `movimiento_inventario_id` (`movimiento_inventario_id`);
-
---
--- Indices de la tabla `remisiones_detalle`
---
-ALTER TABLE `remisiones_detalle`
-  ADD PRIMARY KEY (`id_detalle`),
-  ADD KEY `remisiones_id` (`remisiones_id`);
 
 --
 -- Indices de la tabla `unidad`
@@ -1721,25 +1400,13 @@ ALTER TABLE `clientes`
 -- AUTO_INCREMENT de la tabla `costos_item`
 --
 ALTER TABLE `costos_item`
-  MODIFY `id_costos_item` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=164;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=164;
 
 --
 -- AUTO_INCREMENT de la tabla `costos_produccion`
 --
 ALTER TABLE `costos_produccion`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `cotizaciones`
---
-ALTER TABLE `cotizaciones`
-  MODIFY `id_cotizaciones` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT de la tabla `cotizaciones_detalle`
---
-ALTER TABLE `cotizaciones_detalle`
-  MODIFY `id_detalle` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_facturas`
@@ -1760,22 +1427,10 @@ ALTER TABLE `facturas`
   MODIFY `id_facturas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
--- AUTO_INCREMENT de la tabla `facturas_detalle`
---
-ALTER TABLE `facturas_detalle`
-  MODIFY `id_detalle` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
-
---
 -- AUTO_INCREMENT de la tabla `formulaciones`
 --
 ALTER TABLE `formulaciones`
   MODIFY `id_formulaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
-
---
--- AUTO_INCREMENT de la tabla `gestiones_cobro`
---
-ALTER TABLE `gestiones_cobro`
-  MODIFY `id_gestion` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `instalaciones`
@@ -1814,40 +1469,22 @@ ALTER TABLE `movimiento_inventario`
   MODIFY `id_movimiento_inventario` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
--- AUTO_INCREMENT de la tabla `notas_credito`
---
-ALTER TABLE `notas_credito`
-  MODIFY `id_nota_credito` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
 -- AUTO_INCREMENT de la tabla `pagos_cliente`
 --
 ALTER TABLE `pagos_cliente`
-  MODIFY `id_pagos_cliente` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_pagos_cliente` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `preparaciones`
 --
 ALTER TABLE `preparaciones`
-  MODIFY `id_preparaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id_preparaciones` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `proveedor`
 --
 ALTER TABLE `proveedor`
   MODIFY `id_proveedor` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
-
---
--- AUTO_INCREMENT de la tabla `remisiones`
---
-ALTER TABLE `remisiones`
-  MODIFY `id_remisiones` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
--- AUTO_INCREMENT de la tabla `remisiones_detalle`
---
-ALTER TABLE `remisiones_detalle`
-  MODIFY `id_detalle` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `unidad`
@@ -1884,19 +1521,6 @@ ALTER TABLE `costos_produccion`
   ADD CONSTRAINT `fk_costos_produccion_preparaciones` FOREIGN KEY (`preparaciones_id`) REFERENCES `preparaciones` (`id_preparaciones`);
 
 --
--- Filtros para la tabla `cotizaciones`
---
-ALTER TABLE `cotizaciones`
-  ADD CONSTRAINT `cotizaciones_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id_clientes`),
-  ADD CONSTRAINT `cotizaciones_ibfk_2` FOREIGN KEY (`facturas_id`) REFERENCES `facturas` (`id_facturas`);
-
---
--- Filtros para la tabla `cotizaciones_detalle`
---
-ALTER TABLE `cotizaciones_detalle`
-  ADD CONSTRAINT `cotizaciones_detalle_ibfk_1` FOREIGN KEY (`cotizaciones_id`) REFERENCES `cotizaciones` (`id_cotizaciones`) ON DELETE CASCADE;
-
---
 -- Filtros para la tabla `detalle_facturas`
 --
 ALTER TABLE `detalle_facturas`
@@ -1910,24 +1534,10 @@ ALTER TABLE `facturas`
   ADD CONSTRAINT `fk_facturas_movimientos_inventario1` FOREIGN KEY (`movimiento_inventario_id`) REFERENCES `movimiento_inventario` (`id_movimiento_inventario`);
 
 --
--- Filtros para la tabla `facturas_detalle`
---
-ALTER TABLE `facturas_detalle`
-  ADD CONSTRAINT `facturas_detalle_ibfk_1` FOREIGN KEY (`facturas_id`) REFERENCES `facturas` (`id_facturas`) ON DELETE CASCADE;
-
---
 -- Filtros para la tabla `formulaciones`
 --
 ALTER TABLE `formulaciones`
   ADD CONSTRAINT `fk_formulaciones_item_general1` FOREIGN KEY (`item_general_id`) REFERENCES `item_general` (`id_item_general`) ON DELETE CASCADE ON UPDATE RESTRICT;
-
---
--- Filtros para la tabla `gestiones_cobro`
---
-ALTER TABLE `gestiones_cobro`
-  ADD CONSTRAINT `fk_gestiones_cliente` FOREIGN KEY (`clientes_id`) REFERENCES `clientes` (`id_clientes`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_gestiones_factura` FOREIGN KEY (`facturas_id`) REFERENCES `facturas` (`id_facturas`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_gestiones_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id_usuarios`) ON DELETE SET NULL;
 
 --
 -- Filtros para la tabla `instalaciones`
@@ -1942,34 +1552,6 @@ ALTER TABLE `inventario`
   ADD CONSTRAINT `fk_inventario_bodega` FOREIGN KEY (`bodegas_id`) REFERENCES `bodegas` (`id_bodegas`),
   ADD CONSTRAINT `fk_inventario_item_general1` FOREIGN KEY (`item_general_id`) REFERENCES `item_general` (`id_item_general`) ON DELETE CASCADE ON UPDATE RESTRICT,
   ADD CONSTRAINT `fk_inventario_movimientos_inventario1` FOREIGN KEY (`movimiento_inventario_id`) REFERENCES `movimiento_inventario` (`id_movimiento_inventario`);
-
---
--- Filtros para la tabla `notas_credito`
---
-ALTER TABLE `notas_credito`
-  ADD CONSTRAINT `fk_notas_cliente` FOREIGN KEY (`clientes_id`) REFERENCES `clientes` (`id_clientes`),
-  ADD CONSTRAINT `fk_notas_factura` FOREIGN KEY (`facturas_id`) REFERENCES `facturas` (`id_facturas`),
-  ADD CONSTRAINT `fk_notas_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id_usuarios`) ON DELETE SET NULL;
-
---
--- Filtros para la tabla `pagos_cliente`
---
-ALTER TABLE `pagos_cliente`
-  ADD CONSTRAINT `fk_pagos_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id_usuarios`);
-
---
--- Filtros para la tabla `remisiones`
---
-ALTER TABLE `remisiones`
-  ADD CONSTRAINT `remisiones_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id_clientes`),
-  ADD CONSTRAINT `remisiones_ibfk_2` FOREIGN KEY (`facturas_id`) REFERENCES `facturas` (`id_facturas`),
-  ADD CONSTRAINT `remisiones_ibfk_3` FOREIGN KEY (`movimiento_inventario_id`) REFERENCES `movimiento_inventario` (`id_movimiento_inventario`);
-
---
--- Filtros para la tabla `remisiones_detalle`
---
-ALTER TABLE `remisiones_detalle`
-  ADD CONSTRAINT `remisiones_detalle_ibfk_1` FOREIGN KEY (`remisiones_id`) REFERENCES `remisiones` (`id_remisiones`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
