@@ -26,10 +26,10 @@ class Database extends Config
      */
     public array $default = [
         'DSN'          => '',
-        'hostname'     => 'localhost',
-        'username'     => 'root',
-        'password'     => '',
-        'database'     => 'gestorpincadb2',
+        'hostname'     => 'gestor-pinca-db',
+        'username'     => 'user',
+        'password'     => 'password',
+        'database'     => 'gestorpincadb',
         'DBDriver'     => 'MySQLi',
         'DBPrefix'     => '',
         'pConnect'     => false,

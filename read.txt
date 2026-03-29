@@ -16,3 +16,10 @@ Proveedor principal Para agilizar pedidos.
 Estado (Activo/Inactivo) Para ocultar productos sin eliminarlos.
 IVA (%)	Para cálculo automático de precio con impuestos.
 Fecha de ingreso / caducidad (si aplica) Importante para materia prima química.
+
+
+MISMO PRODUCTO POR PROVEEDOR COMPARACION
+LISTA DE MATERIAS PRIMAS 
+OPCION DE COTIZACIONES Y FORMUACIONEs, PRODUCCION formal e informal
+
+PERSONAL PARA PAPÁ -> VENTA -> COSTO DE VENTA -> PORCENTAJE DE GANANCIAS
