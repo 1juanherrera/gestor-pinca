@@ -217,11 +217,13 @@ class FormulacionesModel extends BaseModel
         }
 
         // 1. Obtener datos del Item General
-        $sql = 'SELECT 
+        $sql = 'SELECT
                     ig.id_item_general,
                     ig.nombre,
                     ig.codigo,
                     ig.tipo,
+                    ig.precio_venta_manual,
+                    ig.precio_manual_activo,
                     ig.viscosidad,
                     ig.p_g,
                     ig.color,
@@ -365,20 +367,22 @@ class FormulacionesModel extends BaseModel
 
         return [
             'item' => [
-                'id' => $item->id_item_general,
-                'nombre' => $item->nombre,
-                'codigo' => $item->codigo,
-                'tipo' => $item->tipo,
-                'viscosidad' => $item->viscosidad,
-                'p_g' => $item->p_g,
-                'color' => $item->color,
-                'secado' => $item->secado,
-                'cubrimiento' => $item->cubrimiento,
-                'brillo_60' => $item->brillo_60,
-                'cantidad' => (float) $item->cantidad,
-                'volumen_base' => (float) $item->volumen_base,
-                'volumen_nuevo' => $newVolume ?? (float) $item->volumen_base,
-                'factor_volumen' => $factorVolumen
+                'id'                   => $item->id_item_general,
+                'nombre'               => $item->nombre,
+                'codigo'               => $item->codigo,
+                'tipo'                 => $item->tipo,
+                'viscosidad'           => $item->viscosidad,
+                'p_g'                  => $item->p_g,
+                'color'                => $item->color,
+                'secado'               => $item->secado,
+                'cubrimiento'          => $item->cubrimiento,
+                'brillo_60'            => $item->brillo_60,
+                'cantidad'             => (float) $item->cantidad,
+                'volumen_base'         => (float) $item->volumen_base,
+                'volumen_nuevo'        => $newVolume ?? (float) $item->volumen_base,
+                'factor_volumen'       => $factorVolumen,
+                'precio_venta_manual'  => $item->precio_venta_manual,
+                'precio_manual_activo' => (int) $item->precio_manual_activo,
             ],
             'costos' => [
                 'id_costos_item' => $item->id_costos_item,

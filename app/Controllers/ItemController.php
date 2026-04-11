@@ -90,6 +90,25 @@ class ItemController extends ResourceController
         }
     }
 
+    public function updatePrecioManual($id = null)
+    {
+        if (!$id) return $this->fail('ID no proporcionado', 400);
+
+        $data = $this->request->getJSON(true);
+        if (!$data) return $this->fail('No se recibieron datos válidos.', 400);
+
+        try {
+            $this->model->update_precio_manual($id, $data);
+            return $this->respond([
+                'success' => true,
+                'mensaje' => "Precio manual del item $id actualizado correctamente",
+                'data'    => $data,
+            ]);
+        } catch (\Exception $e) {
+            return $this->fail($e->getMessage(), 400);
+        }
+    }
+
     public function delete($id = null)
     {
         if (!$this->model->find($id)) {

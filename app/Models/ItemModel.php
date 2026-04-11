@@ -20,7 +20,10 @@ class ItemModel extends BaseModel
         'ph',
         'poder_tintoreo',
         'unidad_id',
+        'unidad_almacenaje_id',
         'costo_produccion',
+        'precio_venta_manual',
+        'precio_manual_activo',
     ];
 
     public function __construct(){
@@ -35,13 +38,19 @@ class ItemModel extends BaseModel
 
     public function get_items_all($where = null){
 
-        $sql = 'SELECT 
+        $sql = 'SELECT
                     ig.*,
                     c.nombre AS categoria,
-                    ci.costo_unitario
+                    ci.costo_unitario,
+                    u.nombre  AS unidad_nombre,
+                    u.escala  AS escala_venta,
+                    ua.nombre AS unidad_almacenaje,
+                    ua.escala AS escala_almacenaje
                 FROM item_general ig
-                LEFT JOIN categoria c ON ig.categoria_id = c.id_categoria
-                LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general';
+                LEFT JOIN categoria c   ON ig.categoria_id         = c.id_categoria
+                LEFT JOIN costos_item ci ON ci.item_general_id     = ig.id_item_general
+                LEFT JOIN unidad u       ON ig.unidad_id           = u.id_unidad
+                LEFT JOIN unidad ua      ON ig.unidad_almacenaje_id = ua.id_unidad';
 
         $tipos = [
             0 => 'PRODUCTO',
@@ -101,6 +110,23 @@ class ItemModel extends BaseModel
         }
 
         return $item;
+    }
+
+    public function update_precio_manual($id, $data)
+    {
+        $allowed = array_intersect_key($data, array_flip(['precio_venta_manual', 'precio_manual_activo']));
+
+        if (empty($allowed)) {
+            throw new \Exception('No hay campos válidos para actualizar.');
+        }
+
+        $exists = $this->db->table('item_general')->where('id_item_general', $id)->countAllResults();
+        if (!$exists) {
+            throw new \Exception("Item con ID {$id} no encontrado.");
+        }
+
+        $this->db->table('item_general')->where('id_item_general', $id)->update($allowed);
+        return true;
     }
 
     public function create_full_item($data)

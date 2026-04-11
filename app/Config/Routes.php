@@ -21,6 +21,7 @@ $routes->group('api', function ($routes) {
     $routes->get('item_general/(:num)', 'ItemController::show/$1');
     $routes->post('item_general', 'ItemController::create');
     $routes->put('item_general/(:num)', 'ItemController::update/$1');
+    $routes->patch('item_general/(:num)/precio-manual', 'ItemController::updatePrecioManual/$1');
     $routes->delete('item_general/(:num)', 'ItemController::delete/$1');
 
     // INSTALACIONES

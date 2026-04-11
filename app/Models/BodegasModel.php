@@ -52,24 +52,29 @@ class BodegasModel extends BaseModel
             $sql = "SELECT
                         ig.id_item_general, ig.nombre, ig.codigo,
                         inv.cantidad, ig.tipo, ca.nombre AS categoria,
-                        u.nombre AS unidad, c.costo_mp_galon, c.precio_venta,
-                        c.costo_unitario,
+                        u.nombre  AS unidad,  u.escala  AS escala_venta,
                         u.id_unidad AS unidad_id, ca.id_categoria AS categoria_id,
-                        f.id_formulaciones AS formulacion_id
+                        c.costo_mp_galon, c.precio_venta, c.costo_unitario,
+                        f.id_formulaciones AS formulacion_id,
+                        ig.precio_venta_manual, ig.precio_manual_activo,
+                        ig.unidad_almacenaje_id,
+                        ua.nombre AS unidad_almacenaje,
+                        ua.escala AS escala_almacenaje
                     FROM inventario inv
                     JOIN item_general ig ON inv.item_general_id = ig.id_item_general
-                    LEFT JOIN costos_item c ON c.item_general_id = ig.id_item_general
-                    LEFT JOIN categoria ca ON ig.categoria_id = ca.id_categoria
-                    LEFT JOIN unidad u ON ig.unidad_id = u.id_unidad
-                    LEFT JOIN formulaciones f 
+                    LEFT JOIN costos_item c  ON c.item_general_id  = ig.id_item_general
+                    LEFT JOIN categoria ca   ON ig.categoria_id    = ca.id_categoria
+                    LEFT JOIN unidad u       ON ig.unidad_id       = u.id_unidad
+                    LEFT JOIN unidad ua      ON ig.unidad_almacenaje_id = ua.id_unidad
+                    LEFT JOIN formulaciones f
                         ON f.id_formulaciones = (
-                            SELECT id_formulaciones 
-                            FROM formulaciones 
-                            WHERE item_general_id = ig.id_item_general 
-                            AND estado = 1 
+                            SELECT id_formulaciones
+                            FROM formulaciones
+                            WHERE item_general_id = ig.id_item_general
+                            AND estado = 1
                             LIMIT 1
                         )
-                    $whereConditions 
+                    $whereConditions
                     LIMIT $perPage OFFSET $offset";
 
             $inventario = $this->db->query($sql, $params)->getResult();
@@ -307,20 +312,23 @@ class BodegasModel extends BaseModel
             // 1. UPDATE item_general
             $this->db->query('
                 UPDATE item_general SET
-                    nombre        = ?,
-                    codigo        = ?,
-                    tipo          = ?,
-                    categoria_id  = ?,
-                    unidad_id     = ?,
-                    viscosidad    = ?,
-                    p_g           = ?,
-                    color         = ?,
-                    brillo_60     = ?,
-                    secado        = ?,
-                    cubrimiento   = ?,
-                    molienda      = ?,
-                    ph            = ?,
-                    poder_tintoreo = ?
+                    nombre                = ?,
+                    codigo                = ?,
+                    tipo                  = ?,
+                    categoria_id          = ?,
+                    unidad_id             = ?,
+                    unidad_almacenaje_id  = ?,
+                    viscosidad            = ?,
+                    p_g                   = ?,
+                    color                 = ?,
+                    brillo_60             = ?,
+                    secado                = ?,
+                    cubrimiento           = ?,
+                    molienda              = ?,
+                    ph                    = ?,
+                    poder_tintoreo        = ?,
+                    precio_venta_manual   = ?,
+                    precio_manual_activo  = ?
                 WHERE id_item_general = ?
             ', [
                 $data['nombre'],
@@ -328,15 +336,18 @@ class BodegasModel extends BaseModel
                 $data['tipo'],
                 $data['categoria_id'],
                 $data['unidad_id'],
-                $data['viscosidad']    ?? null,
-                $data['p_g']           ?? null,
-                $data['color']         ?? null,
-                $data['brillo_60']     ?? null,
-                $data['secado']        ?? null,
-                $data['cubrimiento']   ?? null,
-                $data['molienda']      ?? null,
-                $data['ph']            ?? null,
-                $data['poder_tintoreo'] ?? null,
+                $data['unidad_almacenaje_id'] ?? null,
+                $data['viscosidad']           ?? null,
+                $data['p_g']                  ?? null,
+                $data['color']                ?? null,
+                $data['brillo_60']            ?? null,
+                $data['secado']               ?? null,
+                $data['cubrimiento']          ?? null,
+                $data['molienda']             ?? null,
+                $data['ph']                   ?? null,
+                $data['poder_tintoreo']       ?? null,
+                $data['precio_venta_manual']  ?? null,
+                $data['precio_manual_activo'] ?? 0,
                 $itemId
             ]);
 
