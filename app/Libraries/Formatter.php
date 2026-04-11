@@ -34,11 +34,17 @@ class Formatter
 
     public static function fromCOP($valor)
     {
-        if (is_numeric($valor)) {
+        if (is_int($valor) || is_float($valor)) {
             return (float) $valor;
         }
 
-        $limpio = str_replace(['$', 'COP', 'cop', ' ', '.', "\xc2\xa0"], '', trim($valor));
+        $strVal = (string) $valor;
+
+        if (is_numeric($strVal) && strpos($strVal, '.') === false && strpos($strVal, ',') === false) {
+            return (float) $strVal;
+        }
+
+        $limpio = str_replace(['$', 'COP', 'cop', ' ', '.', "\xc2\xa0"], '', trim($strVal));
 
         $limpio = str_replace(',', '.', $limpio);
 

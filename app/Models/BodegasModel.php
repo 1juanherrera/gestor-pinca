@@ -49,10 +49,11 @@ class BodegasModel extends BaseModel
                         $whereConditions";
             $totalItems = $this->db->query($countSql, $params)->getRow()->total;
 
-            $sql = "SELECT 
-                        ig.id_item_general, ig.nombre, ig.codigo, 
+            $sql = "SELECT
+                        ig.id_item_general, ig.nombre, ig.codigo,
                         inv.cantidad, ig.tipo, ca.nombre AS categoria,
                         u.nombre AS unidad, c.costo_mp_galon, c.precio_venta,
+                        c.costo_unitario,
                         u.id_unidad AS unidad_id, ca.id_categoria AS categoria_id,
                         f.id_formulaciones AS formulacion_id
                     FROM inventario inv

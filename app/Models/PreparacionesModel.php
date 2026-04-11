@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Exception;
+use App\Models\MovimientoInventarioModel;
 
 class PreparacionesModel extends BaseModel
 {
@@ -121,6 +122,27 @@ class PreparacionesModel extends BaseModel
             );
         }
 
+        // Costos indirectos para esta preparación
+        if (!empty($data['costos_indirectos']) && is_array($data['costos_indirectos'])) {
+            foreach ($data['costos_indirectos'] as $ci) {
+                $nombre        = trim($ci['nombre']        ?? '');
+                $categoria     = trim($ci['categoria']     ?? 'otros');
+                $valorAplicado = (float) ($ci['valor_aplicado'] ?? 0);
+                if ($nombre && $valorAplicado > 0) {
+                    $this->db->query(
+                        'INSERT INTO preparaciones_costos_indirectos
+                            (preparaciones_id, costos_indirectos_id, valor_aplicado, nombre, categoria)
+                         VALUES (?, NULL, ?, ?, ?)',
+                        [$preparacionId, $valorAplicado, $nombre, $categoria]
+                    );
+                }
+            }
+        }
+
+        // Descontar las cantidades del inventario
+        $responsable = $data['responsable'] ?? null;
+        $this->_ajustarInventarioPorPreparacion($preparacionId, -1, $responsable);
+
         $this->db->transComplete();
 
         if (!$this->db->transStatus()) {
@@ -130,6 +152,75 @@ class PreparacionesModel extends BaseModel
         }
 
         return $this->get_preparacion_by_id($preparacionId);
+    }
+
+    /**
+     * Ajusta el inventario de las materias primas para una preparación.
+     * $multiplicador = -1 para descontar (al crear o reactivar)
+     * $multiplicador =  1 para sumar (al cancelar)
+     */
+    private function _ajustarInventarioPorPreparacion(int $prepId, int $multiplicador, string $responsable = null): void
+    {
+        $ingredientes = $this->db->query(
+            'SELECT phig.item_general_id, phig.cantidad, COALESCE(ci.costo_unitario, 0) as costo_unitario 
+             FROM preparaciones_has_item_general phig
+             LEFT JOIN costos_item ci ON ci.item_general_id = phig.item_general_id
+             WHERE phig.preparaciones_id_preparaciones = ?',
+            [$prepId]
+        )->getResult();
+
+        $movimientoModel = new MovimientoInventarioModel();
+
+        foreach ($ingredientes as $ing) {
+            $itemId = (int) $ing->item_general_id;
+            $diff = (float) $ing->cantidad * $multiplicador;
+            $costoUnitario = (float) $ing->costo_unitario;
+
+            if ($diff == 0) continue;
+
+            $stock = $this->db->query(
+                'SELECT id_inventario, cantidad, bodegas_id FROM inventario WHERE item_general_id = ? ORDER BY cantidad DESC LIMIT 1',
+                [$itemId]
+            )->getRow();
+
+            $bodegaId = $stock ? (int) $stock->bodegas_id : 1;
+            $saldoAnterior = $stock ? (float) $stock->cantidad : 0.0;
+            $saldoNuevo = $saldoAnterior + $diff;
+
+            if (!$stock) {
+                // Si no existe stock para el ítem, lo creamos en la bodega por defecto (1)
+                $this->db->query(
+                    'INSERT INTO inventario (item_general_id, bodegas_id, cantidad, estado, tipo, fecha_update) VALUES (?, ?, ?, 1, 1, NOW())',
+                    [$itemId, $bodegaId, $diff]
+                );
+            } else {
+                $this->db->query(
+                    'UPDATE inventario SET cantidad = cantidad + ?, fecha_update = NOW() WHERE id_inventario = ?',
+                    [$diff, $stock->id_inventario]
+                );
+            }
+
+            // Registrar movimiento en el kardex
+            $tipoMovimiento = $multiplicador < 0 ? 'SALIDA' : 'ENTRADA';
+            $descripcion = $multiplicador < 0 
+                ? "Consumo por orden de producción #{$prepId}"
+                : "Reintegro por cancelación de orden #{$prepId}";
+
+            $movimientoModel->registrarMovimiento([
+                'tipo_movimiento'  => $tipoMovimiento,
+                'cantidad'         => abs($diff), // Se guarda la cantidad absoluta del movimiento
+                'fecha_movimiento' => date('Y-m-d H:i:s'),
+                'descripcion'      => $descripcion,
+                'referencia_tipo'  => 'ORDEN_PRODUCCION',
+                'item_general_id'  => $itemId,
+                'bodega_id'        => $bodegaId,
+                'referencia_id'    => $prepId,
+                'costo_unitario'   => $costoUnitario,
+                'saldo_anterior'   => $saldoAnterior,
+                'saldo_nuevo'      => $saldoNuevo,
+                'responsable'      => $responsable
+            ]);
+        }
     }
 
     /**
@@ -178,11 +269,22 @@ class PreparacionesModel extends BaseModel
 
         $detalle = $this->db->query(
             'SELECT phig.item_general_id, phig.cantidad, phig.porcentajes,
-                    ig.nombre, ig.codigo
+                    ig.nombre, ig.codigo,
+                    COALESCE(ci.costo_unitario, 0) as materia_prima_costo_unitario,
+                    (phig.cantidad * COALESCE(ci.costo_unitario, 0)) as costo_total_materia
              FROM preparaciones_has_item_general phig
              INNER JOIN item_general ig ON ig.id_item_general = phig.item_general_id
+             LEFT JOIN costos_item ci ON ig.id_item_general = ci.item_general_id
              WHERE phig.preparaciones_id_preparaciones = ?
              ORDER BY phig.item_general_id ASC',
+            [$id]
+        )->getResult();
+
+        $costosIndirectos = $this->db->query(
+            'SELECT id, nombre, categoria, valor_aplicado
+             FROM preparaciones_costos_indirectos
+             WHERE preparaciones_id = ?
+             ORDER BY categoria, nombre',
             [$id]
         )->getResult();
 
@@ -190,27 +292,35 @@ class PreparacionesModel extends BaseModel
         $escala  = (float) $prep->escala;
 
         return [
-            'id_preparaciones' => $prep->id_preparaciones,
-            'item_general_id'  => $prep->item_general_id,
-            'item_nombre'      => $prep->item_nombre,
-            'item_codigo'      => $prep->item_codigo,
-            'unidad_id'        => $prep->unidad_id,
-            'unidad_nombre'    => $prep->unidad_nombre,
-            'escala'           => $escala,
-            'cantidad'         => (float) $prep->cantidad,
-            'volumen_galones'  => round((float) $prep->cantidad * $escala, 4),
-            'observaciones'    => $prep->observaciones,
-            'estado'           => $estados[$prep->estado] ?? 'PENDIENTE',
-            'fecha_creacion'   => $prep->fecha_creacion,
-            'fecha_inicio'     => $prep->fecha_inicio,
-            'fecha_fin'        => $prep->fecha_fin,
-            'detalle'          => array_map(fn($d) => [
+            'id_preparaciones'  => $prep->id_preparaciones,
+            'item_general_id'   => $prep->item_general_id,
+            'item_nombre'       => $prep->item_nombre,
+            'item_codigo'       => $prep->item_codigo,
+            'unidad_id'         => $prep->unidad_id,
+            'unidad_nombre'     => $prep->unidad_nombre,
+            'escala'            => $escala,
+            'cantidad'          => (float) $prep->cantidad,
+            'volumen_galones'   => round((float) $prep->cantidad * $escala, 4),
+            'observaciones'     => $prep->observaciones,
+            'estado'            => $estados[$prep->estado] ?? 'PENDIENTE',
+            'fecha_creacion'    => $prep->fecha_creacion,
+            'fecha_inicio'      => $prep->fecha_inicio,
+            'fecha_fin'         => $prep->fecha_fin,
+            'detalle'           => array_map(fn($d) => [
                 'item_general_id' => $d->item_general_id,
                 'nombre'          => $d->nombre,
                 'codigo'          => $d->codigo,
                 'cantidad'        => (float) $d->cantidad,
                 'porcentajes'     => (float) $d->porcentajes,
+                'materia_prima_costo_unitario' => (float) $d->materia_prima_costo_unitario,
+                'costo_total_materia'          => (float) $d->costo_total_materia,
             ], $detalle),
+            'costos_indirectos' => array_map(fn($ci) => [
+                'id'             => $ci->id,
+                'nombre'         => $ci->nombre,
+                'categoria'      => $ci->categoria,
+                'valor_aplicado' => (float) $ci->valor_aplicado,
+            ], $costosIndirectos),
         ];
     }
 
@@ -268,18 +378,81 @@ class PreparacionesModel extends BaseModel
     {
         $allowed = ['estado', 'observaciones', 'fecha_inicio', 'fecha_fin'];
         $fields  = array_intersect_key($data, array_flip($allowed));
+        $responsable = $data['responsable'] ?? null;
 
         if (empty($fields)) {
             throw new Exception('No hay campos válidos para actualizar.');
         }
 
+        $oldPrep = $this->db->query('SELECT estado FROM preparaciones WHERE id_preparaciones = ?', [$id])->getRow();
+        if (!$oldPrep) {
+            throw new Exception("Preparación con ID {$id} no encontrada.");
+        }
+        $oldEstado = (int) $oldPrep->estado;
+
         $set      = implode(', ', array_map(fn($k) => "{$k} = ?", array_keys($fields)));
         $values   = array_values($fields);
         $values[] = $id;
 
+        $this->db->transStart();
+
         $this->db->query("UPDATE preparaciones SET {$set} WHERE id_preparaciones = ?", $values);
 
+        if (isset($fields['estado'])) {
+            $newEstado = (int) $fields['estado'];
+            // 3 = CANCELADA
+            if ($oldEstado !== 3 && $newEstado === 3) {
+                // Cancelada -> Restaurar inventario (sumar)
+                $this->_ajustarInventarioPorPreparacion($id, 1, $responsable);
+            } elseif ($oldEstado === 3 && $newEstado !== 3) {
+                // Reactivada -> Descontar inventario (restar)
+                $this->_ajustarInventarioPorPreparacion($id, -1, $responsable);
+            }
+        }
+
+        $this->db->transComplete();
+
+        if (!$this->db->transStatus()) {
+            throw new Exception('Error al actualizar la preparación y el inventario.');
+        }
+
         return $this->get_preparacion_by_id($id);
+    }
+
+    // ── Costos indirectos por preparación ────────────────────────────────────────
+
+    public function add_costo_indirecto(int $prepId, string $nombre, string $categoria, float $valor): array
+    {
+        $this->db->query(
+            'INSERT INTO preparaciones_costos_indirectos
+                (preparaciones_id, costos_indirectos_id, valor_aplicado, nombre, categoria)
+             VALUES (?, NULL, ?, ?, ?)',
+            [$prepId, $valor, $nombre, $categoria]
+        );
+        return [
+            'id'             => $this->db->insertID(),
+            'nombre'         => $nombre,
+            'categoria'      => $categoria,
+            'valor_aplicado' => $valor,
+        ];
+    }
+
+    public function update_costo_indirecto(int $id, array $data): bool
+    {
+        $allowed = ['nombre', 'categoria', 'valor_aplicado'];
+        $fields  = array_intersect_key($data, array_flip($allowed));
+        if (empty($fields)) return false;
+        $set    = implode(', ', array_map(fn($k) => "{$k} = ?", array_keys($fields)));
+        $values = array_values($fields);
+        $values[] = $id;
+        $this->db->query("UPDATE preparaciones_costos_indirectos SET {$set} WHERE id = ?", $values);
+        return true;
+    }
+
+    public function delete_costo_indirecto(int $id): bool
+    {
+        $this->db->query('DELETE FROM preparaciones_costos_indirectos WHERE id = ?', [$id]);
+        return true;
     }
 
     /**

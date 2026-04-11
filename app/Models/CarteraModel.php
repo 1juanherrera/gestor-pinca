@@ -73,7 +73,8 @@ class CarteraModel extends BaseModel
         $facturas = $db->table('facturas f')
             ->select('f.id_facturas, f.numero, f.cliente_id, f.saldo_pendiente,
                       f.fecha_vencimiento, f.estado,
-                      c.nombre_empresa, c.nombre_encargado,
+                      c.nombre_empresa, c.nombre_encargado, c.ciudad,
+                      c.plazo_pago, c.tipo AS cliente_tipo,
                       DATEDIFF(CURDATE(), f.fecha_vencimiento) AS dias_mora')
             ->join('clientes c', 'c.id_clientes = f.cliente_id', 'left')
             ->whereIn('f.estado', ['Pendiente', 'Parcial', 'Vencida'])

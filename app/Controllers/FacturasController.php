@@ -17,7 +17,8 @@ class FacturasController extends ResourceController
         $db = \Config\Database::connect();
 
         $facturas = $db->table('facturas f')
-            ->select('f.*, c.nombre_empresa, c.nombre_encargado')
+            ->select('f.*, c.nombre_empresa, c.nombre_encargado, c.numero_documento AS nit_cliente,
+                      c.tipo AS cliente_tipo, c.ciudad, c.plazo_pago')
             ->join('clientes c', 'c.id_clientes = f.cliente_id', 'left')
             ->orderBy('f.id_facturas', 'DESC')
             ->get()

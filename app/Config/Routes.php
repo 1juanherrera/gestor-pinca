@@ -92,6 +92,16 @@ $routes->group('api', function ($routes) {
     // COSTOS ITEM
     $routes->put('costos_item/(:num)', 'CostosItemController::update/$1');
 
+    // COSTOS INDIRECTOS
+    $routes->get('costos_indirectos/resumen',     'CostosIndirectosController::resumen');
+    $routes->get('costos_indirectos/item/(:num)', 'CostosIndirectosController::costosItem/$1');
+    $routes->post('costos_indirectos/item/(:num)','CostosIndirectosController::asignarItem/$1');
+    $routes->get('costos_indirectos/(:num)',      'CostosIndirectosController::show/$1');
+    $routes->get('costos_indirectos',             'CostosIndirectosController::index');
+    $routes->post('costos_indirectos',            'CostosIndirectosController::create');
+    $routes->put('costos_indirectos/(:num)',      'CostosIndirectosController::update/$1');
+    $routes->delete('costos_indirectos/(:num)',   'CostosIndirectosController::delete/$1');
+
     // UNIDADES
     $routes->get('unidades', 'UnidadController::unidades');
     $routes->get('unidades/(:num)', 'UnidadController::show/$1');
@@ -105,9 +115,14 @@ $routes->group('api', function ($routes) {
     // PREPARACIONES
     $routes->get('preparaciones', 'PreparacionesController::index');
     $routes->post('preparaciones', 'PreparacionesController::create');
+    $routes->get('preparaciones/costos_resumen',  'PreparacionesController::costosResumen');
     $routes->get('preparaciones/item/(:num)', 'PreparacionesController::byItem/$1');
     $routes->get('preparaciones/(:num)', 'PreparacionesController::show/$1');
     $routes->put('preparaciones/(:num)', 'PreparacionesController::update/$1');
+    // Costos indirectos por preparación
+    $routes->post('preparaciones/(:num)/costos',             'PreparacionesController::addCosto/$1');
+    $routes->put('preparaciones/(:num)/costos/(:num)',        'PreparacionesController::updateCosto/$1/$2');
+    $routes->delete('preparaciones/(:num)/costos/(:num)',     'PreparacionesController::deleteCosto/$1/$2');
 
     // PAGOS CLIENTE
     $routes->get('pagos_cliente', 'PagosClienteController::index');
@@ -158,6 +173,9 @@ $routes->group('api', function ($routes) {
     $routes->get('comparador/por_item', 'ComparadorController::por_item');
     $routes->get('comparador/por_proveedor/(:num)', 'ComparadorController::por_proveedor/$1');
     $routes->get('comparador/historial/(:num)', 'ComparadorController::historial/$1');
+    
+    // MOVIMIENTOS DE INVENTARIO
+    $routes->get('movimientos', 'MovimientoInventarioController::index');
 
     // ÓRDENES DE COMPRA
     $routes->get('ordenes_compra',                        'OrdenesCompraController::index');
