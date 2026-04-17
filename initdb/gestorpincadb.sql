@@ -1552,6 +1552,38 @@ ALTER TABLE `inventario`
   ADD CONSTRAINT `fk_inventario_bodega` FOREIGN KEY (`bodegas_id`) REFERENCES `bodegas` (`id_bodegas`),
   ADD CONSTRAINT `fk_inventario_item_general1` FOREIGN KEY (`item_general_id`) REFERENCES `item_general` (`id_item_general`) ON DELETE CASCADE ON UPDATE RESTRICT,
   ADD CONSTRAINT `fk_inventario_movimientos_inventario1` FOREIGN KEY (`movimiento_inventario_id`) REFERENCES `movimiento_inventario` (`id_movimiento_inventario`);
+--
+-- Tabla: tambores
+--
+CREATE TABLE IF NOT EXISTS `tambores` (
+  `id_tambor`        INT            NOT NULL AUTO_INCREMENT,
+  `numero_tambor`    VARCHAR(20)    NOT NULL,
+  `item_general_id`  INT            NOT NULL,
+  `bodegas_id`       INT            NOT NULL,
+  `cantidad_inicial` DECIMAL(10,2)  NOT NULL,
+  `cantidad_actual`  DECIMAL(10,2)  NOT NULL,
+  `estado`           TINYINT        DEFAULT 0 COMMENT '0=cerrado 1=abierto 2=vacío',
+  `fecha_ingreso`    DATE           DEFAULT NULL,
+  PRIMARY KEY (`id_tambor`),
+  CONSTRAINT `fk_tambores_item`   FOREIGN KEY (`item_general_id`) REFERENCES `item_general` (`id_item_general`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tambores_bodega` FOREIGN KEY (`bodegas_id`)      REFERENCES `bodegas`       (`id_bodegas`)      ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Tabla: tambor_movimientos
+--
+CREATE TABLE IF NOT EXISTS `tambor_movimientos` (
+  `id_tambor_movimiento` INT            NOT NULL AUTO_INCREMENT,
+  `tambor_id`            INT            NOT NULL,
+  `tipo`                 TINYINT        DEFAULT NULL COMMENT '1=entrada 2=salida',
+  `cantidad`             DECIMAL(10,2)  DEFAULT NULL,
+  `referencia_tipo`      VARCHAR(50)    DEFAULT NULL,
+  `referencia_id`        INT            DEFAULT NULL,
+  `fecha`                DATE           DEFAULT NULL,
+  PRIMARY KEY (`id_tambor_movimiento`),
+  CONSTRAINT `fk_tambor_mov_tambor` FOREIGN KEY (`tambor_id`) REFERENCES `tambores` (`id_tambor`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

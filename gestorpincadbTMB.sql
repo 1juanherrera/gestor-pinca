@@ -3,8 +3,8 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: db
--- Tiempo de generación: 11-04-2026 a las 14:15:11
--- Versión del servidor: 8.0.45
+-- Tiempo de generación: 17-04-2026 a las 22:01:50
+-- Versión del servidor: 8.0.44
 -- Versión de PHP: 8.3.26
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -41,11 +41,14 @@ CREATE TABLE `bodegas` (
 
 INSERT INTO `bodegas` (`id_bodegas`, `nombre`, `descripcion`, `estado`, `instalaciones_id`) VALUES
 (1, 'Bodega principal', 'BODEGA INSUMOS, MATERIAS PRIMAS Y PRODUCTOS', 1, 1),
-(2, 'Villa Olimpica', 'Instalación de acopio y despacho situada en la zona de Villa Olímpica, ideal para operaciones urbanas gracias a su cercanía con áreas residenciales y comerciales.', 1, 2),
+(2, 'Bodega 1', 'Aditivos técnicos, impermeabilizantes de alto desempeño y maquinaria pesada.', 1, 2),
 (3, 'Juan Mina', 'Punto estratégico en la Vía Cordialidad, orientado al manejo de inventarios y distribución regional, con conexiones hacia rutas intermunicipales.', 1, 3),
 (8, 'Laboratorio', 'Área de bodega con acondicionamiento tipo laboratorio', 1, 1),
 (15, 'Centro de insumos', 'Área destinada al almacenamiento y distribución de insumos.', 1, 1),
-(16, 'Depósito especializado', 'Espacio seguro para almacenamiento bajo condiciones controladas.', 0, 1);
+(16, 'Depósito especializado', 'Espacio seguro para almacenamiento bajo condiciones controladas.', 0, 1),
+(18, 'Bodega 2', 'Resinas base, solventes y una amplia gama de pinturas para acabados horneables.', 1, 2),
+(19, 'Bodega 3', 'Estación de colorimetría con pastas pigmentadas, anticorrosivos y productos listos para despacho.', 1, 2),
+(21, 'Patio', 'Almacenamiento masivo de solventes industriales, aglutinantes y selladores por volumen.', 1, 2);
 
 -- --------------------------------------------------------
 
@@ -80,7 +83,7 @@ CREATE TABLE `clientes` (
   `nombre_empresa` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `numero_documento` bigint DEFAULT NULL,
   `direccion` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `ciudad` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `ciudad` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `plazo_pago` int DEFAULT '30' COMMENT 'Días de plazo: 0, 15, 30, 60, 90',
   `telefono` bigint DEFAULT NULL,
   `email` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
@@ -149,7 +152,7 @@ CREATE TABLE `costos_item` (
 --
 
 INSERT INTO `costos_item` (`id_costos_item`, `item_general_id`, `costo_unitario`, `costo_mp_galon`, `costo_cunete`, `costo_tambor`, `periodo`, `metodo_calculo`, `fecha_calculo`, `costo_mp_kg`, `envase`, `etiqueta`, `bandeja`, `plastico`, `volumen`, `precio_venta`, `cantidad_total`, `costo_mod`, `estado`, `porcentaje_utilidad`) VALUES
-(1, 1, 0.00, 2000, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 4200.00, 350.00, 140, 153, 370, 2000.00, 0, 600, NULL, 40),
+(1, 1, 0.00, 2000, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 4200.00, 350.00, 140, 153, 370, 2000.00, 0, 600, NULL, 20),
 (2, 31, 7000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (3, 32, 11000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (4, 33, 34050.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
@@ -791,126 +794,129 @@ CREATE TABLE `item_general` (
   `ph` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `poder_tintoreo` varchar(13) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `unidad_id` int DEFAULT NULL,
-  `costo_produccion` decimal(10,2) DEFAULT NULL
+  `costo_produccion` decimal(10,2) DEFAULT NULL,
+  `precio_venta_manual` decimal(12,2) DEFAULT NULL,
+  `precio_manual_activo` tinyint(1) DEFAULT '0',
+  `unidad_almacenaje_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 
 --
 -- Volcado de datos para la tabla `item_general`
 --
 
-INSERT INTO `item_general` (`id_item_general`, `nombre`, `codigo`, `tipo`, `categoria_id`, `viscosidad`, `p_g`, `color`, `brillo_60`, `secado`, `cubrimiento`, `molienda`, `ph`, `poder_tintoreo`, `unidad_id`, `costo_produccion`) VALUES
-(1, 'BARNIZ TRANSPARENTE BRILLANTE', 'BAR001', 0, 1, '95-100 KU', '3,4+/-0,05 Kg', 'STD', '>=95', '12 HORAS', '', '', '', '', 5, 0.00),
-(2, 'ESMALTE BLANCO', 'ESM002', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', '', '>=90', '12 HORAS', '100+/-5 %', '', '', '', 4, 7000.00),
-(3, 'ESMALTE CAOBA', 'ESM003', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '6 HORAS', '100+/-5%', '7.5 H', NULL, NULL, 3, 11000.00),
-(4, 'ESMALTE NEGRO MATE', 'ESM004', 0, 1, '105-110 KU', '3,9+/-0,05 Kg', NULL, '<=15', '12 HORAS', '100+/-5%', '6 H', NULL, NULL, 4, 34050.00),
-(5, 'ESMALTE ROJO FIESTA', 'ESM005', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', '', '>= 90°', '12 HORAS', '100+/-5%', '', '', '', 1, 27144.00),
-(6, 'ESMALTE NEGRO BRILLANTE', 'ESM006', 0, 1, '100-105 KU', '3.4+/-0.05 Kg', '', '>= 90', '12 HORAS', '100+/-5%', '', '', '', 3, 12691.00),
-(7, 'ESMALTE VERDE ESMERALDA', 'ESM007', 0, 1, '100-105 KU', '3.6+/-0,05 Kg', '', '>=90', '12 HORAS', '100+/-5%', '', '', '', 1, 4372.00),
-(8, 'ESMALTE GRIS PLATA', 'ESM008', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', '', '>=90', '12 HORAS', '100+/-5 %', '', '', '', 7, 11466.00),
-(9, 'ESMALTE AZUL ESPAÑOL', 'ESM009', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '12 HORAS', '100+/-5 %', '7.5 H', NULL, NULL, NULL, 16300.00),
-(10, 'ESMALTE BLANCO MATE', 'ESM010', 0, 1, '95-100', '4,2 +/- 0,1 Kg', '', '15', '12 HORAS', '100+/-5', '', '', '', 3, 17000.00),
-(11, 'ESMALTE AMARILLO', 'ESM011', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '12 HORAS', '100+/-5', '7.5 H', NULL, NULL, NULL, 4400.00),
-(12, 'ESMALTE NARANJA', 'ESM012', 0, 1, '100-105', '3.5+/-0.05', NULL, '>=90', '12 HORAS', '100+/-5', '7.5 H', NULL, NULL, NULL, 14300.00),
-(13, 'ESMALTE TABACO', 'ESM013', 0, 1, '100-105KU', '3.5+/-0.05', NULL, '>=90', '12 HORAS', '100+/-5', '7.5 H', NULL, NULL, NULL, 40.00),
-(14, 'ANTICORROSIVO GRIS', 'ANT014', 0, 3, '105-110 KU', '4.2+/-0.05 Kg', NULL, 'MATE', '6 HORAS', '100+/-5', '5,5', NULL, NULL, NULL, 1550.00),
-(15, 'ANTICORROSIVO NEGRO', 'ANT015', 0, 3, '105-110 KU', '4.2+/-0.05 Kg', NULL, 'MATE', '6 HORAS', '100+/-5', '5,5', NULL, NULL, NULL, 4617.00),
-(16, 'ANTICORROSIVO AMARILLO', 'ANT016', 0, 3, '105-110 KU', '4.2+/-0.05 Kg', NULL, 'MATE', '6 HORAS', '100+/-5', '5,5', NULL, NULL, NULL, 8640.00),
-(17, 'ANTICORROSIVO ROJO', 'ANT017', 0, 3, '105-110 KU', '4.2+/-0.05 Kg', NULL, 'MATE', '6 HORAS', '100+/-5', '5,5', NULL, NULL, NULL, 14300.00),
-(18, 'ANTICORROSIVO BLANCO', 'ANT018', 0, 3, '105-110 KU', '4.2+/-0.05 Kg', NULL, 'MATE', '6 HORAS', '100+/-5', '5,5', NULL, NULL, NULL, 855.00),
-(19, 'ANTICORROSIVO VERDE', 'ANT019', 0, 3, '105-110 KU', '4.2+/-0.05 Kg', NULL, 'MATE', '6 HORAS', '100+/-5', '5,5', NULL, NULL, NULL, 5400.00),
-(20, 'PASTA ESMALTE VERDE ENTONADOR', 'PAS020', 0, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8105.00),
-(21, 'PASTA ESMALTE AZUL ENTONADOR', 'PAS021', 0, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 12215.00),
-(22, 'PASTA ESMALTE NEGRO', 'PAS022', 2, 2, '100 KU', '4,55', 'STD', NULL, NULL, NULL, '>7H', '-', 'STD', NULL, 19945.00),
-(23, 'PASTA ESMALTE ROJO CARMIN 57:1', 'PAS023', 0, 2, '100 KU', '5,55', 'STD', NULL, NULL, NULL, '>7H', '-', 'STD', NULL, 14152.00),
-(24, 'PASTA ESMALTE NARANJA', 'PAS024', 2, 2, '100 KU', '5,55', 'STD', NULL, NULL, NULL, '>7H', '-', 'STD', NULL, 11447.00),
-(25, 'PASTA ESMALTE AMARILLO', 'PAS025', 0, 2, '100 KU', '5,55', 'STD', NULL, NULL, NULL, '>7H', '-', 'STD', NULL, 12718.00),
-(26, 'PASTA ESMALTE CAOBA', 'PAS026', 2, 2, '100 KU', '5,55', 'STD', NULL, NULL, NULL, '>7H', '-', 'STD', NULL, 7742.00),
-(27, 'PASTA ESMALTE AMARILLO OXIDO', 'PAS027', 2, 2, '100 KU', '5,55', 'STD', NULL, NULL, NULL, '>7H', '-', 'STD', NULL, 11447.00),
-(28, 'PASTA ESMALTE ROJO OXIDO', 'PAS028', 0, 2, '100 KU', '5,55', 'STD', NULL, NULL, NULL, '>7H', '-', 'STD', NULL, 1690.00),
-(29, 'PASTA ESMALTE BLANCO', 'PAS029', 0, 2, '120', '5,78', 'STD', NULL, NULL, NULL, '7,5', '-', '100 +/- 0.5 %', NULL, 10303.00),
-(30, 'PASTA ESMALTE TABACO', 'PAS030', 2, 2, '95-100', '5.71-5.91', 'STD', NULL, NULL, NULL, '7,5', '-', 'STD', NULL, 722.00),
-(31, 'RESINA MEDIA EN SOYA AL 50%', 'RAM014', 1, 0, '', '', '', '', '', '', '', '', '', 0, 715.00),
-(32, 'METIL ETIL CETOXIMA', 'AAN002', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4300.00),
-(33, 'OCTOATO DE COBALTO AL 12%', 'SOC011', 1, 0, '', '', '', '', '', '', '', '', '', 0, 4400.00),
-(34, 'OCTOATO DE ZIRCONIO AL 24%', 'SOZ024', 1, 0, '', '', '', '', '', '', '', '', '', 0, 8000.00),
-(35, 'OCTOATO DE CALCIO AL 10%', 'SOC010', 1, 0, '', '', '', '', '', '', '', '', '', 0, 8000.00),
-(36, 'DISOLVENTE 2232 #3', 'SAA011', 1, 0, '', '', '', '', '', '', '', '', '', 0, 1103.00),
-(37, 'DIOXIDO DE TITANIO SULFATO', 'PED010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00),
-(38, 'OCTOATO DE ZINC AL 16%', 'SOZ016', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 43900.00),
-(39, 'BENTOCLAY BP 184', 'AAS005', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 37300.00),
-(40, 'ETANOL AL 96%', 'SAA022', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00),
-(41, 'DISASTAB GAT', 'AEM005', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 7000.00),
-(42, 'AGUA', 'SIA040', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 19500.00),
-(43, 'SULFATO DE MAGNESIO', 'AET004', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 33500.00),
-(44, 'VARSOL', 'SAV010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 37200.00),
-(46, 'DISASTAB GAT', 'AEM004', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 10400.00),
-(47, 'MICROTALC C 20', 'CTA011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8000.00),
-(48, 'CELITE 499', 'MSI006', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11466.00),
-(50, 'PASTA ESMALTE ROJO 57:1', 'PE1033', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 17000.00),
-(52, 'PASTA AMARILLO CROMO MEDIO', 'PE1010', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 17000.00),
-(54, 'PASTA VERDE FTALO', 'PE1040', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4617.00),
-(56, 'PASTA ESMALTE AZUL FTALO 15:3', 'PE1021', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00),
-(57, 'OMYACARB UF', 'CCC002', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11000.00),
-(59, 'MICROTALC C 20', 'CTA025', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(60, 'CARBONATO DE CALCIO HI WHITE', 'CCC004', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(61, 'LECITINA DE SOYA', 'AHU002', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(62, 'ETANOL AL 96%', 'SAM023', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(63, 'OXIDO DE HIERRO AMARILLO Y 4021', 'PEA010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(64, 'OXIDO DE HIERRO ROJO R-5530', 'PER030', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(65, 'MICROTALC 20', 'CTA020', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(66, 'TROYSPERSE CD1', 'ADI002', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(67, 'PIGMENTO VERDE FTALO 7', 'PEV053', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(68, 'PIGMENTO AZUL FTALO 15;3', 'PEA041', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(69, 'EDAPLAN 918 / LANSPERSE SUV', 'ADI010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(70, 'RESINA MEDIA EN SOYA AL 50%', 'MS-45', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(71, 'POW CARBON BLACK CHEMO', 'PEN081', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(72, 'PIGMENTO ROJO CARMIN 57:1', 'PER031', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(73, 'PIGMENTO NARANJA MOLIBDENO', 'PEN023', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(74, 'PIGMENTO MARILLO DE CROMO AL 73', 'PEA011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(75, 'PIGMENTO OXIFERR CAOBA MARRON M 4781', 'PEC081', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(76, 'PIGMENTO OXIFERR AMARILLO Y-4011', 'PEA013', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(77, 'DIOXIDO DE TITANIO SULFATO 2196', 'PED007', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(78, 'OXIFER TABACO R-4370', 'PET080', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8105.00),
-(79, 'BENTOCLAY BP 184', 'AAS012', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(80, 'METANOL', 'SAM023', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(81, 'ORGANOCLAY BK 884', 'AAS005', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(83, 'DISOLVENTE 2232 / VARSOL', 'SAA011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(84, 'EDAPLAN 915', 'ADI010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(85, 'CHEMOSPERSE 77', 'ADI011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(86, 'ADIMON 84', 'AAN002', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00),
-(87, 'DISOLVENTE #3', 'SAA011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4372.00),
-(88, 'ETANOL 96%', 'SAA022', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4400.00),
-(89, 'DISOLVENTE 2232', 'SAA011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4372.00),
-(90, 'DISOLVENTE 3', 'SAA011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4372.00),
-(92, 'OCTOATO DE ZINC 16%', 'SOZ016', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 16300.00),
-(93, 'PASTA ESMALTE AMARILLO CROMO MEDIO', 'PE1010', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 14152.00),
-(94, 'DIOXIDO DE TITANIO SULFATO 2196', 'PED010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11466.00),
-(95, 'BENTOCLAY BP184', 'AAS005', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 17000.00),
-(96, 'PASTA ESMALTE AZUL 15:3', 'PE1021', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11447.00),
-(97, 'EDAPLAN 918', 'ADI010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00),
-(98, 'EDAPLAN 918 / LANSPERSE SUV', 'ADI010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00),
-(99, 'CHEMOSPERSE 77', 'ADI010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00),
-(100, 'PIGMENTO OXIFERR ROJO R-5530', 'PER030', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(114, 'Agua (MP)', 'MP-001', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(115, 'TPF (MP)', 'MP-002', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(116, 'Dispersante (MP)', 'MP-003', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(117, 'Masellose (MP)', 'MP-004', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(118, 'Tergitol (MP)', 'MP-005', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(119, 'Dietilen (MP)', 'MP-006', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(120, 'Texanol (MP)', 'MP-007', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(121, 'Antiespumante (MP)', 'MP-008', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(122, 'Titanio (MP)', 'MP-009', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(123, 'Carbonato de calcio (MP)', 'MP-010', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(124, 'Talco Ty 400 (MP)', 'MP-011', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(125, 'Caolin (MP)', 'MP-012', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(126, 'Carbonato UF (MP)', 'MP-013', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(127, 'Acronal (MP)', 'MP-014', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(128, 'Bactericida (MP)', 'MP-015', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(129, 'Aceite Pino (MP)', 'MP-016', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(130, 'Aisol 700 (MP)', 'MP-017', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(131, 'Amoniaco (MP)', 'MP-018', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(132, 'Fungicida (MP)', 'MP-019', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(133, 'VINILO T1 BLANCO', 'EBT012', 0, 1, '', '', '', '', '', '', '', '', '', NULL, 1.00);
+INSERT INTO `item_general` (`id_item_general`, `nombre`, `codigo`, `tipo`, `categoria_id`, `viscosidad`, `p_g`, `color`, `brillo_60`, `secado`, `cubrimiento`, `molienda`, `ph`, `poder_tintoreo`, `unidad_id`, `costo_produccion`, `precio_venta_manual`, `precio_manual_activo`, `unidad_almacenaje_id`) VALUES
+(1, 'BARNIZ TRANSPARENTE BRILLANTE', 'BAR001', 0, 1, '95-100 KU', '3,4+/-0,05 Kg', 'STD', '>=95', '12 HORAS', '', '', '', '', 5, 0.00, 56000.00, 1, 5),
+(2, 'ESMALTE BLANCO', 'ESM002', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', '', '>=90', '12 HORAS', '100+/-5 %', '', '', '', 4, 7000.00, NULL, 0, NULL),
+(3, 'ESMALTE CAOBA', 'ESM003', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '6 HORAS', '100+/-5%', '7.5 H', NULL, NULL, 3, 11000.00, NULL, 0, NULL),
+(4, 'ESMALTE NEGRO MATE', 'ESM004', 0, 1, '105-110 KU', '3,9+/-0,05 Kg', NULL, '<=15', '12 HORAS', '100+/-5%', '6 H', NULL, NULL, 4, 34050.00, NULL, 0, NULL),
+(5, 'ESMALTE ROJO FIESTA', 'ESM005', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', '', '>= 90°', '12 HORAS', '100+/-5%', '', '', '', 1, 27144.00, NULL, 0, NULL),
+(6, 'ESMALTE NEGRO BRILLANTE', 'ESM006', 0, 1, '100-105 KU', '3.4+/-0.05 Kg', '', '>= 90', '12 HORAS', '100+/-5%', '', '', '', 3, 12691.00, NULL, 0, NULL),
+(7, 'ESMALTE VERDE ESMERALDA', 'ESM007', 0, 1, '100-105 KU', '3.6+/-0,05 Kg', '', '>=90', '12 HORAS', '100+/-5%', '', '', '', 1, 4372.00, NULL, 0, NULL),
+(8, 'ESMALTE GRIS PLATA', 'ESM008', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', '', '>=90', '12 HORAS', '100+/-5 %', '', '', '', 7, 11466.00, NULL, 0, NULL),
+(9, 'ESMALTE AZUL ESPAÑOL', 'ESM009', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '12 HORAS', '100+/-5 %', '7.5 H', NULL, NULL, NULL, 16300.00, NULL, 0, NULL),
+(10, 'ESMALTE BLANCO MATE', 'ESM010', 0, 1, '95-100', '4,2 +/- 0,1 Kg', '', '15', '12 HORAS', '100+/-5', '', '', '', 3, 17000.00, NULL, 0, NULL),
+(11, 'ESMALTE AMARILLO', 'ESM011', 0, 1, '100-105 KU', '3,6+/-0,05 Kg', NULL, '>=90', '12 HORAS', '100+/-5', '7.5 H', NULL, NULL, NULL, 4400.00, NULL, 0, NULL),
+(12, 'ESMALTE NARANJA', 'ESM012', 0, 1, '100-105', '3.5+/-0.05', NULL, '>=90', '12 HORAS', '100+/-5', '7.5 H', NULL, NULL, NULL, 14300.00, NULL, 0, NULL),
+(13, 'ESMALTE TABACO', 'ESM013', 0, 1, '100-105KU', '3.5+/-0.05', NULL, '>=90', '12 HORAS', '100+/-5', '7.5 H', NULL, NULL, NULL, 40.00, NULL, 0, NULL),
+(14, 'ANTICORROSIVO GRIS', 'ANT014', 0, 3, '105-110 KU', '4.2+/-0.05 Kg', NULL, 'MATE', '6 HORAS', '100+/-5', '5,5', NULL, NULL, NULL, 1550.00, NULL, 0, NULL),
+(15, 'ANTICORROSIVO NEGRO', 'ANT015', 0, 3, '105-110 KU', '4.2+/-0.05 Kg', NULL, 'MATE', '6 HORAS', '100+/-5', '5,5', NULL, NULL, NULL, 4617.00, NULL, 0, NULL),
+(16, 'ANTICORROSIVO AMARILLO', 'ANT016', 0, 3, '105-110 KU', '4.2+/-0.05 Kg', NULL, 'MATE', '6 HORAS', '100+/-5', '5,5', NULL, NULL, NULL, 8640.00, NULL, 0, NULL),
+(17, 'ANTICORROSIVO ROJO', 'ANT017', 0, 3, '105-110 KU', '4.2+/-0.05 Kg', NULL, 'MATE', '6 HORAS', '100+/-5', '5,5', NULL, NULL, NULL, 14300.00, NULL, 0, NULL),
+(18, 'ANTICORROSIVO BLANCO', 'ANT018', 0, 3, '105-110 KU', '4.2+/-0.05 Kg', NULL, 'MATE', '6 HORAS', '100+/-5', '5,5', NULL, NULL, NULL, 855.00, NULL, 0, NULL),
+(19, 'ANTICORROSIVO VERDE', 'ANT019', 0, 3, '105-110 KU', '4.2+/-0.05 Kg', NULL, 'MATE', '6 HORAS', '100+/-5', '5,5', NULL, NULL, NULL, 5400.00, NULL, 0, NULL),
+(20, 'PASTA ESMALTE VERDE ENTONADOR', 'PAS020', 0, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8105.00, NULL, 0, NULL),
+(21, 'PASTA ESMALTE AZUL ENTONADOR', 'PAS021', 0, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 12215.00, NULL, 0, NULL),
+(22, 'PASTA ESMALTE NEGRO', 'PAS022', 2, 2, '100 KU', '4,55', 'STD', NULL, NULL, NULL, '>7H', '-', 'STD', NULL, 19945.00, NULL, 0, NULL),
+(23, 'PASTA ESMALTE ROJO CARMIN 57:1', 'PAS023', 0, 2, '100 KU', '5,55', 'STD', NULL, NULL, NULL, '>7H', '-', 'STD', NULL, 14152.00, NULL, 0, NULL),
+(24, 'PASTA ESMALTE NARANJA', 'PAS024', 2, 2, '100 KU', '5,55', 'STD', NULL, NULL, NULL, '>7H', '-', 'STD', NULL, 11447.00, NULL, 0, NULL),
+(25, 'PASTA ESMALTE AMARILLO', 'PAS025', 0, 2, '100 KU', '5,55', 'STD', NULL, NULL, NULL, '>7H', '-', 'STD', NULL, 12718.00, NULL, 0, NULL),
+(26, 'PASTA ESMALTE CAOBA', 'PAS026', 2, 2, '100 KU', '5,55', 'STD', NULL, NULL, NULL, '>7H', '-', 'STD', NULL, 7742.00, NULL, 0, NULL),
+(27, 'PASTA ESMALTE AMARILLO OXIDO', 'PAS027', 2, 2, '100 KU', '5,55', 'STD', NULL, NULL, NULL, '>7H', '-', 'STD', NULL, 11447.00, NULL, 0, NULL),
+(28, 'PASTA ESMALTE ROJO OXIDO', 'PAS028', 0, 2, '100 KU', '5,55', 'STD', NULL, NULL, NULL, '>7H', '-', 'STD', NULL, 1690.00, NULL, 0, NULL),
+(29, 'PASTA ESMALTE BLANCO', 'PAS029', 0, 2, '120', '5,78', 'STD', NULL, NULL, NULL, '7,5', '-', '100 +/- 0.5 %', NULL, 10303.00, NULL, 0, NULL),
+(30, 'PASTA ESMALTE TABACO', 'PAS030', 2, 2, '95-100', '5.71-5.91', 'STD', NULL, NULL, NULL, '7,5', '-', 'STD', NULL, 722.00, NULL, 0, NULL),
+(31, 'RESINA MEDIA EN SOYA AL 50%', 'RAM014', 1, 0, '', '', '', '', '', '', '', '', '', 0, 715.00, NULL, 0, NULL),
+(32, 'METIL ETIL CETOXIMA', 'AAN002', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4300.00, NULL, 0, NULL),
+(33, 'OCTOATO DE COBALTO AL 12%', 'SOC011', 1, 0, '', '', '', '', '', '', '', '', '', 0, 4400.00, NULL, 0, NULL),
+(34, 'OCTOATO DE ZIRCONIO AL 24%', 'SOZ024', 1, 0, '', '', '', '', '', '', '', '', '', 0, 8000.00, NULL, 0, NULL),
+(35, 'OCTOATO DE CALCIO AL 10%', 'SOC010', 1, 0, '', '', '', '', '', '', '', '', '', 0, 8000.00, NULL, 0, NULL),
+(36, 'DISOLVENTE 2232 #3', 'SAA011', 1, 0, '', '', '', '', '', '', '', '', '', 0, 1103.00, NULL, 0, NULL),
+(37, 'DIOXIDO DE TITANIO SULFATO', 'PED010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00, NULL, 0, NULL),
+(38, 'OCTOATO DE ZINC AL 16%', 'SOZ016', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 43900.00, NULL, 0, NULL),
+(39, 'BENTOCLAY BP 184', 'AAS005', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 37300.00, NULL, 0, NULL),
+(40, 'ETANOL AL 96%', 'SAA022', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00, NULL, 0, NULL),
+(41, 'DISASTAB GAT', 'AEM005', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 7000.00, NULL, 0, NULL),
+(42, 'AGUA', 'SIA040', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 19500.00, NULL, 0, NULL),
+(43, 'SULFATO DE MAGNESIO', 'AET004', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 33500.00, NULL, 0, NULL),
+(44, 'VARSOL', 'SAV010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 37200.00, NULL, 0, NULL),
+(46, 'DISASTAB GAT', 'AEM004', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 10400.00, NULL, 0, NULL),
+(47, 'MICROTALC C 20', 'CTA011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8000.00, NULL, 0, NULL),
+(48, 'CELITE 499', 'MSI006', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11466.00, NULL, 0, NULL),
+(50, 'PASTA ESMALTE ROJO 57:1', 'PE1033', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 17000.00, NULL, 0, NULL),
+(52, 'PASTA AMARILLO CROMO MEDIO', 'PE1010', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 17000.00, NULL, 0, NULL),
+(54, 'PASTA VERDE FTALO', 'PE1040', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4617.00, NULL, 0, NULL),
+(56, 'PASTA ESMALTE AZUL FTALO 15:3', 'PE1021', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00, NULL, 0, NULL),
+(57, 'OMYACARB UF', 'CCC002', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11000.00, NULL, 0, NULL),
+(59, 'MICROTALC C 20', 'CTA025', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(60, 'CARBONATO DE CALCIO HI WHITE', 'CCC004', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(61, 'LECITINA DE SOYA', 'AHU002', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(62, 'ETANOL AL 96%', 'SAM023', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(63, 'OXIDO DE HIERRO AMARILLO Y 4021', 'PEA010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(64, 'OXIDO DE HIERRO ROJO R-5530', 'PER030', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(65, 'MICROTALC 20', 'CTA020', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(66, 'TROYSPERSE CD1', 'ADI002', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(67, 'PIGMENTO VERDE FTALO 7', 'PEV053', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(68, 'PIGMENTO AZUL FTALO 15;3', 'PEA041', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(69, 'EDAPLAN 918 / LANSPERSE SUV', 'ADI010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(70, 'RESINA MEDIA EN SOYA AL 50%', 'MS-45', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(71, 'POW CARBON BLACK CHEMO', 'PEN081', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(72, 'PIGMENTO ROJO CARMIN 57:1', 'PER031', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(73, 'PIGMENTO NARANJA MOLIBDENO', 'PEN023', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(74, 'PIGMENTO MARILLO DE CROMO AL 73', 'PEA011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(75, 'PIGMENTO OXIFERR CAOBA MARRON M 4781', 'PEC081', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(76, 'PIGMENTO OXIFERR AMARILLO Y-4011', 'PEA013', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(77, 'DIOXIDO DE TITANIO SULFATO 2196', 'PED007', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(78, 'OXIFER TABACO R-4370', 'PET080', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8105.00, NULL, 0, NULL),
+(79, 'BENTOCLAY BP 184', 'AAS012', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(80, 'METANOL', 'SAM023', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(81, 'ORGANOCLAY BK 884', 'AAS005', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(83, 'DISOLVENTE 2232 / VARSOL', 'SAA011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(84, 'EDAPLAN 915', 'ADI010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(85, 'CHEMOSPERSE 77', 'ADI011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(86, 'ADIMON 84', 'AAN002', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL),
+(87, 'DISOLVENTE #3', 'SAA011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4372.00, NULL, 0, NULL),
+(88, 'ETANOL 96%', 'SAA022', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4400.00, NULL, 0, NULL),
+(89, 'DISOLVENTE 2232', 'SAA011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4372.00, NULL, 0, NULL),
+(90, 'DISOLVENTE 3', 'SAA011', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4372.00, NULL, 0, NULL),
+(92, 'OCTOATO DE ZINC 16%', 'SOZ016', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 16300.00, NULL, 0, NULL),
+(93, 'PASTA ESMALTE AMARILLO CROMO MEDIO', 'PE1010', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 14152.00, NULL, 0, NULL),
+(94, 'DIOXIDO DE TITANIO SULFATO 2196', 'PED010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11466.00, NULL, 0, NULL),
+(95, 'BENTOCLAY BP184', 'AAS005', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 17000.00, NULL, 0, NULL),
+(96, 'PASTA ESMALTE AZUL 15:3', 'PE1021', 2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11447.00, NULL, 0, NULL),
+(97, 'EDAPLAN 918', 'ADI010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00, NULL, 0, NULL),
+(98, 'EDAPLAN 918 / LANSPERSE SUV', 'ADI010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00, NULL, 0, NULL),
+(99, 'CHEMOSPERSE 77', 'ADI010', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00, NULL, 0, NULL),
+(100, 'PIGMENTO OXIFERR ROJO R-5530', 'PER030', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(114, 'Agua (MP)', 'MP-001', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(115, 'TPF (MP)', 'MP-002', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(116, 'Dispersante (MP)', 'MP-003', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(117, 'Masellose (MP)', 'MP-004', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(118, 'Tergitol (MP)', 'MP-005', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(119, 'Dietilen (MP)', 'MP-006', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(120, 'Texanol (MP)', 'MP-007', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(121, 'Antiespumante (MP)', 'MP-008', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(122, 'Titanio (MP)', 'MP-009', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(123, 'Carbonato de calcio (MP)', 'MP-010', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(124, 'Talco Ty 400 (MP)', 'MP-011', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(125, 'Caolin (MP)', 'MP-012', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(126, 'Carbonato UF (MP)', 'MP-013', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(127, 'Acronal (MP)', 'MP-014', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(128, 'Bactericida (MP)', 'MP-015', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(129, 'Aceite Pino (MP)', 'MP-016', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(130, 'Aisol 700 (MP)', 'MP-017', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(131, 'Amoniaco (MP)', 'MP-018', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(132, 'Fungicida (MP)', 'MP-019', 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(133, 'VINILO T1 BLANCO', 'EBT012', 0, 1, '', '', '', '', '', '', '', '', '', NULL, 1.00, NULL, 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -1327,7 +1333,7 @@ CREATE TABLE `movimiento_inventario` (
   `costo_unitario` decimal(15,2) DEFAULT NULL COMMENT 'Costo unitario en el instante exacto del movimiento',
   `saldo_anterior` decimal(15,2) DEFAULT NULL COMMENT 'Cantidad en bodega antes del movimiento',
   `saldo_nuevo` decimal(15,2) DEFAULT NULL COMMENT 'Cantidad en bodega después del movimiento',
-  `responsable` varchar(150) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Nombre de la persona responsable del movimiento'
+  `responsable` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Nombre de la persona responsable del movimiento'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 
 --
@@ -1704,6 +1710,39 @@ INSERT INTO `remisiones_detalle` (`id_detalle`, `remisiones_id`, `descripcion`, 
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `tambores`
+--
+
+CREATE TABLE `tambores` (
+  `id_tambor` int NOT NULL,
+  `numero_tambor` varchar(20) COLLATE utf8mb4_general_ci NOT NULL,
+  `item_general_id` int NOT NULL,
+  `bodegas_id` int NOT NULL,
+  `cantidad_inicial` decimal(10,2) NOT NULL,
+  `cantidad_actual` decimal(10,2) NOT NULL,
+  `estado` tinyint DEFAULT '0' COMMENT '0=cerrado 1=abierto 2=vacío',
+  `fecha_ingreso` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `tambor_movimientos`
+--
+
+CREATE TABLE `tambor_movimientos` (
+  `id_tambor_movimiento` int NOT NULL,
+  `tambor_id` int NOT NULL,
+  `tipo` tinyint DEFAULT NULL COMMENT '1=entrada 2=salida',
+  `cantidad` decimal(10,2) DEFAULT NULL,
+  `referencia_tipo` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `referencia_id` int DEFAULT NULL,
+  `fecha` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `unidad`
 --
 
@@ -1885,7 +1924,8 @@ ALTER TABLE `item_general`
   ADD PRIMARY KEY (`id_item_general`),
   ADD UNIQUE KEY `id_item_general_UNIQUE` (`id_item_general`),
   ADD KEY `fk_item_general_categoria1_idx` (`categoria_id`),
-  ADD KEY `fk_item_general_unidad_id_idx` (`unidad_id`);
+  ADD KEY `fk_item_general_unidad_id_idx` (`unidad_id`),
+  ADD KEY `fk_item_almacenaje` (`unidad_almacenaje_id`);
 
 --
 -- Indices de la tabla `item_general_formulaciones`
@@ -1998,6 +2038,21 @@ ALTER TABLE `remisiones_detalle`
   ADD KEY `remisiones_id` (`remisiones_id`);
 
 --
+-- Indices de la tabla `tambores`
+--
+ALTER TABLE `tambores`
+  ADD PRIMARY KEY (`id_tambor`),
+  ADD KEY `fk_tambores_item` (`item_general_id`),
+  ADD KEY `fk_tambores_bodega` (`bodegas_id`);
+
+--
+-- Indices de la tabla `tambor_movimientos`
+--
+ALTER TABLE `tambor_movimientos`
+  ADD PRIMARY KEY (`id_tambor_movimiento`),
+  ADD KEY `fk_tambor_mov_tambor` (`tambor_id`);
+
+--
 -- Indices de la tabla `unidad`
 --
 ALTER TABLE `unidad`
@@ -2018,7 +2073,7 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `bodegas`
 --
 ALTER TABLE `bodegas`
-  MODIFY `id_bodegas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id_bodegas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT de la tabla `categoria`
@@ -2195,6 +2250,18 @@ ALTER TABLE `remisiones_detalle`
   MODIFY `id_detalle` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
+-- AUTO_INCREMENT de la tabla `tambores`
+--
+ALTER TABLE `tambores`
+  MODIFY `id_tambor` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `tambor_movimientos`
+--
+ALTER TABLE `tambor_movimientos`
+  MODIFY `id_tambor_movimiento` int NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `unidad`
 --
 ALTER TABLE `unidad`
@@ -2295,6 +2362,12 @@ ALTER TABLE `inventario`
   ADD CONSTRAINT `fk_inventario_movimientos_inventario1` FOREIGN KEY (`movimiento_inventario_id`) REFERENCES `movimiento_inventario` (`id_movimiento_inventario`);
 
 --
+-- Filtros para la tabla `item_general`
+--
+ALTER TABLE `item_general`
+  ADD CONSTRAINT `fk_item_almacenaje` FOREIGN KEY (`unidad_almacenaje_id`) REFERENCES `unidad` (`id_unidad`);
+
+--
 -- Filtros para la tabla `movimiento_inventario`
 --
 ALTER TABLE `movimiento_inventario`
@@ -2351,37 +2424,17 @@ ALTER TABLE `remisiones_detalle`
   ADD CONSTRAINT `remisiones_detalle_ibfk_1` FOREIGN KEY (`remisiones_id`) REFERENCES `remisiones` (`id_remisiones`) ON DELETE CASCADE;
 
 --
--- Tabla: tambores
+-- Filtros para la tabla `tambores`
 --
-CREATE TABLE IF NOT EXISTS `tambores` (
-  `id_tambor`        INT            NOT NULL AUTO_INCREMENT,
-  `numero_tambor`    VARCHAR(20)    NOT NULL,
-  `item_general_id`  INT            NOT NULL,
-  `bodegas_id`       INT            NOT NULL,
-  `cantidad_inicial` DECIMAL(10,2)  NOT NULL,
-  `cantidad_actual`  DECIMAL(10,2)  NOT NULL,
-  `estado`           TINYINT        DEFAULT 0 COMMENT '0=cerrado 1=abierto 2=vacío',
-  `fecha_ingreso`    DATE           DEFAULT NULL,
-  PRIMARY KEY (`id_tambor`),
-  CONSTRAINT `fk_tambores_item`   FOREIGN KEY (`item_general_id`) REFERENCES `item_general` (`id_item_general`) ON DELETE CASCADE,
-  CONSTRAINT `fk_tambores_bodega` FOREIGN KEY (`bodegas_id`)      REFERENCES `bodegas`       (`id_bodegas`)      ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+ALTER TABLE `tambores`
+  ADD CONSTRAINT `fk_tambores_bodega` FOREIGN KEY (`bodegas_id`) REFERENCES `bodegas` (`id_bodegas`) ON DELETE RESTRICT,
+  ADD CONSTRAINT `fk_tambores_item` FOREIGN KEY (`item_general_id`) REFERENCES `item_general` (`id_item_general`) ON DELETE CASCADE;
 
 --
--- Tabla: tambor_movimientos
+-- Filtros para la tabla `tambor_movimientos`
 --
-CREATE TABLE IF NOT EXISTS `tambor_movimientos` (
-  `id_tambor_movimiento` INT            NOT NULL AUTO_INCREMENT,
-  `tambor_id`            INT            NOT NULL,
-  `tipo`                 TINYINT        DEFAULT NULL COMMENT '1=entrada 2=salida',
-  `cantidad`             DECIMAL(10,2)  DEFAULT NULL,
-  `referencia_tipo`      VARCHAR(50)    DEFAULT NULL,
-  `referencia_id`        INT            DEFAULT NULL,
-  `fecha`                DATE           DEFAULT NULL,
-  PRIMARY KEY (`id_tambor_movimiento`),
-  CONSTRAINT `fk_tambor_mov_tambor` FOREIGN KEY (`tambor_id`) REFERENCES `tambores` (`id_tambor`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+ALTER TABLE `tambor_movimientos`
+  ADD CONSTRAINT `fk_tambor_mov_tambor` FOREIGN KEY (`tambor_id`) REFERENCES `tambores` (`id_tambor`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

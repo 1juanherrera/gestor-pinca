@@ -178,6 +178,14 @@ $routes->group('api', function ($routes) {
     // MOVIMIENTOS DE INVENTARIO
     $routes->get('movimientos', 'MovimientoInventarioController::index');
 
+    // TAMBORES
+    $routes->get('tambores/disponibles',        'TamborController::disponibles');
+    $routes->get('tambores/(:num)',              'TamborController::show/$1');
+    $routes->get('tambores',                     'TamborController::index');
+    $routes->post('tambores',                    'TamborController::create');
+    $routes->put('tambores/(:num)',              'TamborController::update/$1');
+    $routes->post('tambores/(:num)/consumir',   'TamborController::consumir/$1');
+
     // ÓRDENES DE COMPRA
     $routes->get('ordenes_compra',                        'OrdenesCompraController::index');
     // ✅ Específicas PRIMERO
