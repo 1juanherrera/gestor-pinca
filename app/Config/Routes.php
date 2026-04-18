@@ -18,6 +18,7 @@ $routes->group('api', function ($routes) {
     // ITEMS
     $routes->get('item_general', 'ItemController::item_general');
     $routes->get('items', 'ItemController::get_items_all');
+    $routes->get('item_general/(:num)/inventario', 'ItemController::inventario_por_item/$1');
     $routes->get('item_general/(:num)', 'ItemController::show/$1');
     $routes->post('item_general', 'ItemController::create');
     $routes->put('item_general/(:num)', 'ItemController::update/$1');
@@ -37,6 +38,7 @@ $routes->group('api', function ($routes) {
     $routes->post('bodegas/item', 'BodegasController::create_item_bodega');
     $routes->put('bodegas/item/(:num)', 'BodegasController::update_item_bodega/$1');
     $routes->get('bodegas/inventario/(:num)', 'BodegasController::bodega_inventario/$1');
+    $routes->patch('inventario/(:num)/cantidad', 'BodegasController::patch_cantidad/$1');
     $routes->get('bodegas/(:num)', 'BodegasController::show/$1');
     $routes->post('bodegas', 'BodegasController::create');
     $routes->put('bodegas/(:num)', 'BodegasController::update/$1');

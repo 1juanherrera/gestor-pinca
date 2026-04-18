@@ -49,7 +49,13 @@ class BodegasModel extends BaseModel
                         $whereConditions";
             $totalItems = $this->db->query($countSql, $params)->getRow()->total;
 
+            if (!empty($tipo) && $tipo === 'pendientes') {
+                $whereConditions .= " AND inv.cantidad IS NULL ";
+                $tipo = '';
+            }
+
             $sql = "SELECT
+                        inv.id_inventario,
                         ig.id_item_general, ig.nombre, ig.codigo,
                         inv.cantidad, ig.tipo, ca.nombre AS categoria,
                         u.nombre  AS unidad,  u.escala  AS escala_venta,

@@ -117,4 +117,27 @@ class ItemController extends ResourceController
         $this->model->delete($id);
         return $this->respondDeleted(['mensaje' => "Item $id eliminado"]);
     }
+
+    public function inventario_por_item($id = null)
+    {
+        if (!$id) return $this->fail('ID no proporcionado', 400);
+
+        $db = \Config\Database::connect();
+
+        $rows = $db->query("
+            SELECT
+                inv.id_inventario,
+                inv.cantidad,
+                inv.bodegas_id,
+                COALESCE(b.nombre, CONCAT('Bodega #', inv.bodegas_id))  AS bodega,
+                ins.nombre AS sede
+            FROM inventario inv
+            LEFT JOIN bodegas b         ON b.id_bodegas        = inv.bodegas_id
+            LEFT JOIN instalaciones ins ON ins.id_instalaciones = b.instalaciones_id
+            WHERE inv.item_general_id = ?
+            ORDER BY bodega ASC
+        ", [$id])->getResultArray();
+
+        return $this->respond($rows);
+    }
 }
