@@ -37,39 +37,54 @@ class ItemProveedorController extends ResourceController
 
     public function create()
     {
-        $json = $this->request->getBody();
-        $data = json_decode($json, true);
+        $data = json_decode($this->request->getBody(), true);
         if (!$data) {
             return $this->failValidationErrors('No se recibieron datos válidos.');
         }
-        $insert_id = $this->model->create_table($data, 'item_proveedor');
-        if ($insert_id) {
+
+        try {
+            $itemGeneralId = $this->model->resolverItemGeneral($data);
+            $insertId      = $this->model->create_table($data, 'item_proveedor');
+
+            if (!$insertId) {
+                return $this->fail('Error al crear el Item Proveedor');
+            }
+
             return $this->respondCreated([
-                'mensaje' => 'Item Proveedor creado correctamente',
-                'id'      => $insert_id,
+                'mensaje'         => 'Item Proveedor creado correctamente',
+                'id'              => $insertId,
+                'item_general_id' => $itemGeneralId,
             ]);
+        } catch (\Exception $e) {
+            return $this->fail($e->getMessage(), 400);
         }
-        return $this->fail('Error al crear el Item Proveedor');
     }
 
     public function update($id = null)
     {
-        $json = $this->request->getBody();
-        $data = json_decode($json, true);
+        $data = json_decode($this->request->getBody(), true);
         if (!$data) {
             return $this->failValidationErrors('No se recibieron datos válidos.');
         }
         if (!$this->model->get($id, 'item_proveedor')) {
             return $this->failNotFound("Item Proveedor con ID $id no encontrado.");
         }
-        $updated = $this->model->update_table($id, $data, 'item_proveedor');
-        if ($updated === false || (is_array($updated) && isset($updated['error']))) {
-            return $this->fail('No se pudo actualizar el Item Proveedor.');
+
+        try {
+            $this->model->resolverItemGeneral($data);
+            $updated = $this->model->update_table($id, $data, 'item_proveedor');
+
+            if ($updated === false || (is_array($updated) && isset($updated['error']))) {
+                return $this->fail('No se pudo actualizar el Item Proveedor.');
+            }
+
+            return $this->respond([
+                'mensaje'         => "Item Proveedor con ID $id actualizado correctamente",
+                'item_general_id' => $data['item_general_id'],
+            ]);
+        } catch (\Exception $e) {
+            return $this->fail($e->getMessage(), 400);
         }
-        return $this->respond([
-            'mensaje' => "Item Proveedor con ID $id actualizada correctamente",
-            'data'    => $data
-        ]);
     }
 
     public function delete($id = null)
@@ -136,8 +151,10 @@ class ItemProveedorController extends ResourceController
                     : null;
             }
 
-            // Actualizar vínculo en item_proveedor
-            $this->model->vincular((int) $id, $itemGeneralId);
+            // Actualizar vínculo + unidad de compra + factor de conversión
+            $unidadCompraId   = isset($data['unidad_compra_id'])   ? (int)   $data['unidad_compra_id']   : null;
+            $factorConversion = isset($data['factor_conversion'])  ? (float) $data['factor_conversion']  : 1.0;
+            $this->model->vincular((int) $id, $itemGeneralId, $unidadCompraId, $factorConversion);
 
             // Caso C: ingresar al inventario si se pasan bodega + cantidad
             if ($itemGeneralId && !empty($data['bodegas_id']) && !empty($data['cantidad'])) {

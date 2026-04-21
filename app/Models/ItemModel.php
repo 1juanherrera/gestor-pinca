@@ -416,5 +416,94 @@ class ItemModel extends BaseModel
             throw new \Exception($e->getMessage());
         }
     }
+
+    /**
+     * Búsqueda fuzzy de item_general por nombre.
+     * Maneja errores tipográficos combinando LIKE por token + SOUNDEX fonético.
+     * Devuelve hasta $limit resultados ordenados por relevancia descendente.
+     */
+    /**
+     * @param array<int> $tipos  Filtra por tipo: 1=Materia Prima, 2=Insumo, 0=Producto, 3=Otro.
+     *                           Array vacío = sin filtro.
+     */
+    public function buscarFuzzy(string $query, int $limit = 10, array $tipos = []): array
+    {
+        $query = trim($query);
+        if ($query === '') return [];
+
+        $queryUpper = strtoupper($query);
+        $tokens     = array_filter(array_unique(explode(' ', $queryUpper)));
+
+        if (empty($tokens)) return [];
+
+        $whereParts = [];
+        $scoreParts = [];
+        $params     = [];
+
+        foreach ($tokens as $token) {
+            if (strlen($token) < 2) continue;
+
+            $whereParts[] = "UPPER(ig.nombre) LIKE ?";
+            $scoreParts[] = "CASE WHEN UPPER(ig.nombre) LIKE ? THEN 3 ELSE 0 END";
+            $params[]     = "%{$token}%";
+            $params[]     = "%{$token}%";
+
+            if (strlen($token) > 3) {
+                $truncado     = substr($token, 0, -1);
+                $whereParts[] = "UPPER(ig.nombre) LIKE ?";
+                $scoreParts[] = "CASE WHEN UPPER(ig.nombre) LIKE ? THEN 1 ELSE 0 END";
+                $params[]     = "%{$truncado}%";
+                $params[]     = "%{$truncado}%";
+            }
+
+            $whereParts[] = "SOUNDEX(ig.nombre) LIKE CONCAT(SOUNDEX(?), '%')";
+            $scoreParts[] = "CASE WHEN SOUNDEX(ig.nombre) LIKE CONCAT(SOUNDEX(?), '%') THEN 1 ELSE 0 END";
+            $params[]     = $token;
+            $params[]     = $token;
+        }
+
+        if (empty($whereParts)) return [];
+
+        $whereClause = '(' . implode(' OR ', $whereParts) . ')';
+        $scoreExpr   = '(' . implode(' + ', $scoreParts) . ')';
+
+        // Filtro de tipos
+        if (!empty($tipos)) {
+            $placeholders = implode(',', array_fill(0, count($tipos), '?'));
+            $whereClause .= " AND ig.tipo IN ({$placeholders})";
+            array_push($params, ...$tipos);
+        }
+
+        $sql = "
+            SELECT
+                ig.id_item_general,
+                ig.nombre,
+                ig.codigo,
+                ig.tipo,
+                ci.costo_unitario,
+                (SELECT COUNT(*) FROM item_proveedor ip
+                    WHERE ip.item_general_id = ig.id_item_general AND ip.disponible = 1) AS total_proveedores,
+                (SELECT MIN(ip2.precio_unitario) FROM item_proveedor ip2
+                    WHERE ip2.item_general_id = ig.id_item_general AND ip2.disponible = 1) AS precio_min,
+                (SELECT MAX(ip3.precio_unitario) FROM item_proveedor ip3
+                    WHERE ip3.item_general_id = ig.id_item_general AND ip3.disponible = 1) AS precio_max,
+                (SELECT GROUP_CONCAT(
+                    CONCAT(COALESCE(p.nombre_empresa, p.nombre_encargado), '|', ip4.precio_unitario)
+                    ORDER BY ip4.precio_unitario ASC SEPARATOR ';;;')
+                 FROM item_proveedor ip4
+                 JOIN proveedor p ON p.id_proveedor = ip4.proveedor_id
+                 WHERE ip4.item_general_id = ig.id_item_general AND ip4.disponible = 1) AS proveedores_lista,
+                {$scoreExpr} AS relevancia
+            FROM item_general ig
+            LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
+            WHERE {$whereClause}
+            ORDER BY relevancia DESC, ig.nombre ASC
+            LIMIT ?
+        ";
+
+        $params[] = $limit;
+
+        return $this->db->query($sql, $params)->getResultArray();
+    }
 }
 

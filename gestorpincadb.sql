@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: db
--- Tiempo de generación: 18-04-2026 a las 14:04:25
+-- Tiempo de generación: 21-04-2026 a las 11:52:17
 -- Versión del servidor: 8.0.45
 -- Versión de PHP: 8.3.26
 
@@ -263,7 +263,9 @@ INSERT INTO `costos_item` (`id_costos_item`, `item_general_id`, `costo_unitario`
 (144, 130, 11700.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 11700, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
 (145, 131, 6905.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 6905, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
 (146, 132, 23000.00, 0, 0, 0, NULL, 'MANUAL', '2026-01-12', 23000, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL),
-(147, 133, 0.00, 0, 0, 0, NULL, 'Manual', '2026-01-16', 0, 0.00, 0.00, 0, 0, 1, 0.00, 1, 0, 1, NULL);
+(147, 133, 0.00, 0, 0, 0, NULL, 'Manual', '2026-01-16', 0, 0.00, 0.00, 0, 0, 1, 0.00, 1, 0, 1, NULL),
+(164, 223, 0.00, NULL, 0, 0, NULL, NULL, NULL, NULL, 0.00, 0.00, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL),
+(165, 224, 0.00, 0, 0, 0, '2026-04', 'Manual', '2026-04-18', 0, 0.00, 0.00, 0, 0, 1, 0.00, NULL, 0, 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -868,7 +870,9 @@ INSERT INTO `inventario` (`id_inventario`, `cantidad`, `fecha_update`, `apartada
 (257, 2.00, '2026-04-17', 0, 219, 0, NULL, 1, 21),
 (258, 1.00, '2026-04-17', 0, 220, 0, NULL, 1, 21),
 (259, 1.00, '2026-04-17', 0, 221, 0, NULL, 1, 21),
-(260, 1.00, '2026-04-17', 0, 222, 0, NULL, 1, 21);
+(260, 1.00, '2026-04-17', 0, 222, 0, NULL, 1, 21),
+(261, 0.00, NULL, NULL, 223, NULL, NULL, NULL, 1),
+(262, 0.00, '2026-04-18', 0, 224, 1, NULL, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -879,7 +883,7 @@ INSERT INTO `inventario` (`id_inventario`, `cantidad`, `fecha_update`, `apartada
 CREATE TABLE `item_general` (
   `id_item_general` int NOT NULL,
   `nombre` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `codigo` varchar(6) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `codigo` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `tipo` tinyint DEFAULT NULL COMMENT '0 productos\\n1 materia prima\\n2 Insumos',
   `categoria_id` int DEFAULT NULL,
   `viscosidad` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
@@ -1103,7 +1107,11 @@ INSERT INTO `item_general` (`id_item_general`, `nombre`, `codigo`, `tipo`, `cate
 (219, 'SPLANDER', 'VAR026', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 1),
 (220, 'LACANTE', 'VAR027', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 1),
 (221, 'SOLVENTE CON BORNELO', 'SAA030', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 1),
-(222, '2N SIKA STABILIZER 100', 'SIK021', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 1);
+(222, '2N SIKA STABILIZER 100', 'SIK021', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 1),
+(223, 'BARNIZ EPOXICO ', 'EP01', 0, 4, '', '', '', '', '', '', '', '', '', 2, NULL, NULL, 0, NULL),
+(224, 'EPOXICA TRANSPARENTE', 'EPTR91', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0.00, NULL, 0, NULL),
+(225, 'XILOL', 'XIL21288', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
+(226, 'RESINA EPOXICA', 'NPSN CHINA', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -1471,7 +1479,7 @@ INSERT INTO `item_general_formulaciones` (`id_item_general_formulaciones`, `form
 CREATE TABLE `item_proveedor` (
   `id_item_proveedor` int NOT NULL,
   `nombre` varchar(55) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `codigo` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `codigo` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `tipo` varchar(13) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `unidad_empaque` varchar(13) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `precio_unitario` decimal(10,2) DEFAULT NULL,
@@ -1499,7 +1507,42 @@ INSERT INTO `item_proveedor` (`id_item_proveedor`, `nombre`, `codigo`, `tipo`, `
 (35, 'Pintura Epóxica Gris', 'AQ-EP-GR', 'Pinturas', 'Gal', 85000.00, 98000.00, 1, 'Pintura epóxica industrial', 8, NULL),
 (36, 'Thinner Acrílico', 'AQ-TH-AC', 'Solventes', 'Gal', 22000.00, 25000.00, 1, 'Thinner para pintura acrílica', 8, NULL),
 (37, 'Pintura Epóxica Gris', 'SL-EP-GR', 'Pinturas', 'Gal', 92000.00, 106000.00, 1, 'Pintura epóxica alta resistencia', 2, NULL),
-(38, 'Thinner Acrílico', 'SL-TH-AC', 'Solventes', 'Gal', 19500.00, 22000.00, 1, 'Thinner acrílico industrial', 2, NULL);
+(38, 'Thinner Acrílico', 'SL-TH-AC', 'Solventes', 'Gal', 19500.00, 22000.00, 1, 'Thinner acrílico industrial', 2, NULL),
+(40, 'TALCO TY 400 G', 'QUI-MAT-0001', 'Materia Prima', NULL, 1504.00, 1790.00, 1, NULL, 23, NULL),
+(41, 'OMIYACARB UF', 'QUI-MAT-0002', 'Materia Prima', NULL, 1828.00, 2175.00, 1, NULL, 23, NULL),
+(42, 'COLARDIT ANTIESPUMANTE', 'QUI-ADIT-0001', 'Insumo', NULL, 7143.00, 8500.00, 1, NULL, 23, NULL),
+(43, 'COLARCRYL ACRONAL 50', 'QUI-ADIT-0002', 'Insumo', NULL, 5252.00, 6250.00, 1, NULL, 23, NULL),
+(44, 'COLARCIDE BACTERICIDA', 'QUI-BIO-0001', 'Insumo', NULL, 6387.00, 7600.00, 1, NULL, 23, NULL),
+(45, 'COLARDIT REGULADOR PH', 'QUI-ADIT-0003', 'Insumo', NULL, 6555.00, 7800.00, 1, NULL, 23, NULL),
+(46, 'COLARDIT DISPERSANTE', 'QUI-ADIT-0004', 'Insumo', NULL, 5378.00, 6400.00, 1, NULL, 23, NULL),
+(47, 'COLARDIT AS ASOCIATIVO', 'QUI-ADIT-0005', 'Insumo', NULL, 9916.00, 11800.00, 1, NULL, 23, NULL),
+(48, 'COLARBAG FUNGICIDA', 'QUI-BIO-0002', 'Insumo', NULL, 20840.00, 24800.00, 1, NULL, 23, NULL),
+(49, 'BRITEX CALCINADO', 'QUI-MAT-0003', 'Materia Prima', NULL, 2605.00, 3100.00, 1, NULL, 23, NULL),
+(50, 'WEKCELO C7 CELULOSICO', 'QUI-ESP-0001', 'Insumo', NULL, 18403.00, 21900.00, 1, NULL, 23, NULL),
+(51, 'CARBONATO DE CALCIO M325', 'CARBM325', 'Materia Prima', 'Kilo', 300.00, 357.00, 1, '', 24, NULL),
+(52, 'CARBONATO DE CALCIO M600', 'CARBM600', 'Materia Prima', 'Kilo', 460.00, 547.00, 1, '', 24, NULL),
+(53, 'RESINA EPOXICA', 'NPSN CHINA', 'Materia Prima', 'Kilo', 15069.00, 17932.00, 1, '', 25, 226),
+(54, 'RESINA KR 828 100%', 'KER828', 'Materia Prima', 'Kilo', 10300.00, 12257.00, 1, '', 26, NULL),
+(55, 'ENDURECEDOR 100%', 'NT-1515X70', 'Materia Prima', 'Kilo', 20000.00, 23800.00, 1, '', 26, NULL),
+(56, 'ENDURECEDOR 100%', 'NX-5454', 'Materia Prima', 'Kilo', 19700.00, 23443.00, 1, '', 26, NULL),
+(57, 'XILOL', 'XIL21288', 'Materia Prima', 'Kilo', 6120.00, 7283.00, 1, '', 27, 225),
+(58, 'THINNER ', 'TH2092', 'Materia Prima', 'Galon', 15961.00, 18994.00, 1, '', 27, NULL),
+(59, 'VARSOL', 'VAR9218', 'Materia Prima', 'Kilo', 5961.00, 7094.00, 1, '', 27, NULL),
+(60, 'VARSOL', 'VARPD281', 'Materia Prima', 'Kilo', 15029.00, 17885.00, 1, '', 28, NULL),
+(61, 'THINER', 'TH921298', 'Materia Prima', 'Galon', 13413.00, 15961.00, 1, '', 28, NULL),
+(62, 'RESINA MEDIA EN SOYA AL 50%', 'RA-7', 'Materia Prima', 'Kilo', 6200.00, 7378.00, 1, '', 29, NULL),
+(63, 'RESINA UREA FORMALDEHIDO', 'RN-9E', 'Materia Prima', 'Kilo', 8050.00, 9580.00, 1, '', 29, NULL),
+(64, 'RESINA CORTA EN PALMISTE AL 55%', 'RA-4 ', 'Materia Prima', 'Kilo', 7350.00, 8747.00, 1, '', 29, NULL),
+(65, 'RESINA CORTA EN SOYA AL 53%', 'RA-15', 'Materia Prima', 'Kilo', 6900.00, 8211.00, 1, '', 29, NULL),
+(66, 'RESINA CORTA EN SOYA AL 55% (+ SOL)', 'RA-15M', 'Materia Prima', 'Kilo', 6900.00, 8211.00, 1, '', 29, NULL),
+(67, 'RESINA CORTA EN SOYA AL 45%', 'RA-16', 'Materia Prima', 'Kilo', 6950.00, 8271.00, 1, '', 29, NULL),
+(68, 'RESINA MALEICA SOLIDA', 'RM-1', 'Materia Prima', 'Kilo', 11300.00, 13447.00, 1, '', 29, NULL),
+(69, 'RESINA MEDIA EN TOFA AL 50%', 'RA-22', 'Materia Prima', 'Kilo', 7550.00, 8985.00, 1, '', 29, NULL),
+(70, 'RESINA MEDIA EN SOYA AL 50%', 'RA-23', 'Materia Prima', 'Kilo', 6350.00, 7557.00, 1, '', 29, NULL),
+(71, 'RESINA LARGA EN SOYA AL 70%', 'RA-25', 'Materia Prima', 'Kilo', 7300.00, 8687.00, 1, '', 29, NULL),
+(72, 'RESINA CHAIN STOPPED AL 60%', 'RA-37', 'Materia Prima', 'Kilo', 7200.00, 8568.00, 1, '', 29, NULL),
+(73, 'RESINA CORTA EN TOFA AL 55%', 'RA-44', 'Materia Prima', 'Kilo', 8200.00, 9758.00, 1, '', 29, NULL),
+(74, 'RESINA UREA FORMALDEHIDO', 'RN-9E', 'Materia Prima', 'Kilo', 8050.00, 9580.00, 1, '', 29, NULL);
 
 -- --------------------------------------------------------
 
@@ -1587,15 +1630,10 @@ CREATE TABLE `ordenes_compra` (
 --
 
 INSERT INTO `ordenes_compra` (`id_orden`, `numero`, `proveedor_id`, `bodegas_id`, `fecha`, `fecha_esperada`, `estado`, `total`, `observaciones`, `creado_en`) VALUES
-(1, 'OC-001', 2, 1, '2025-01-10', '2025-01-20', 'Recibida', 510000.00, 'Primera compra del año', '2026-03-21 14:32:38'),
 (2, 'OC-002', 8, 15, '2025-02-05', '2025-02-15', 'Recibida', 396750.00, 'Reposición insumos laboratorio', '2026-03-21 14:32:38'),
-(3, 'OC-003', 2, 1, '2025-03-12', '2025-03-25', 'Recibida', 225000.00, NULL, '2026-03-21 14:32:38'),
 (4, 'OC-004', 8, 8, '2025-05-08', '2025-05-20', 'Cancelada', 170000.00, 'Proveedor no disponible', '2026-03-21 14:32:38'),
-(5, 'OC-005', 2, 1, '2025-07-15', '2025-07-28', 'Recibida', 460000.00, 'Compra trimestral', '2026-03-21 14:32:38'),
 (6, 'OC-006', 8, 15, '2025-09-03', '2025-09-15', 'Enviada', 341250.00, 'Pendiente entrega', '2026-03-21 14:32:38'),
-(7, 'OC-007', 2, 1, '2025-11-20', '2025-12-05', 'Borrador', 140000.00, 'Por confirmar con proveedor', '2026-03-21 14:32:38'),
 (8, 'OC-008', 8, 8, '2026-01-08', '2026-01-20', 'Enviada', 255000.00, 'Urgente para laboratorio', '2026-03-21 14:32:38'),
-(9, 'OC-009', 2, 1, '2026-02-14', '2026-02-28', 'Borrador', 100000.00, NULL, '2026-03-21 14:32:38'),
 (10, 'OC-010', 8, 15, '2026-03-01', '2026-03-15', 'Recibida', 412500.00, 'Pedido regular Q1', '2026-03-21 14:32:38');
 
 -- --------------------------------------------------------
@@ -1622,29 +1660,15 @@ CREATE TABLE `ordenes_compra_detalle` (
 --
 
 INSERT INTO `ordenes_compra_detalle` (`id_detalle`, `ordenes_compra_id`, `item_proveedor_id`, `item_general_id`, `descripcion`, `cantidad`, `precio_unit`, `subtotal`, `cantidad_recibida`, `recibido_en`) VALUES
-(1, 1, 6, NULL, 'Tubería PVC 1/2\" x 6m', 20.00, 5000.00, 100000.00, 20.00, '2025-01-21 10:00:00'),
-(2, 1, 7, NULL, 'Codo PVC 1/2\" 90°', 50.00, 2000.00, 100000.00, 50.00, '2025-01-21 10:05:00'),
-(3, 1, 8, NULL, 'Brocha 3 Pulgadas Profesional', 100.00, 200.00, 20000.00, 100.00, '2025-01-21 10:10:00'),
-(4, 1, 9, NULL, 'Rodillo de Lana 9\"', 30.00, 3000.00, 90000.00, 30.00, '2025-01-21 10:15:00'),
-(5, 1, 10, NULL, 'Lija de Agua 220', 200.00, 1000.00, 200000.00, 200.00, '2025-01-21 10:20:00'),
 (6, 2, 31, NULL, 'Tubería PVC 1/2\" x 6m', 30.00, 4200.00, 126000.00, 30.00, '2025-02-16 09:00:00'),
 (7, 2, 33, NULL, 'Brocha 3 Pulgadas', 50.00, 220.00, 11000.00, 50.00, '2025-02-16 09:10:00'),
 (8, 2, 35, NULL, 'Pintura Epóxica Gris', 3.00, 85000.00, 255000.00, 3.00, '2025-02-16 09:20:00'),
-(9, 3, 37, NULL, 'Pintura Epóxica Gris', 1.00, 92000.00, 92000.00, 1.00, '2025-03-26 11:00:00'),
-(10, 3, 38, NULL, 'Thinner Acrílico', 7.00, 19500.00, 136500.00, 7.00, '2025-03-26 11:15:00'),
 (11, 4, 34, NULL, 'Lija de Agua 220', 200.00, 280.00, 56000.00, 0.00, NULL),
 (12, 4, 36, NULL, 'Thinner Acrílico', 5.00, 22000.00, 110000.00, 0.00, NULL),
-(13, 5, 6, NULL, 'Tubería PVC 1/2\" x 6m', 40.00, 5000.00, 200000.00, 40.00, '2025-07-29 08:30:00'),
-(14, 5, 8, NULL, 'Brocha 3 Pulgadas', 80.00, 200.00, 16000.00, 80.00, '2025-07-29 08:40:00'),
-(15, 5, 38, NULL, 'Thinner Acrílico', 12.00, 19500.00, 234000.00, 12.00, '2025-07-29 08:50:00'),
 (16, 6, 32, NULL, 'Codo PVC 1/2\" 90°', 50.00, 1750.00, 87500.00, 0.00, NULL),
 (17, 6, 35, NULL, 'Pintura Epóxica Gris', 3.00, 85000.00, 255000.00, 0.00, NULL),
-(18, 7, 9, NULL, 'Rodillo de Lana 9\"', 20.00, 3000.00, 60000.00, 0.00, NULL),
-(19, 7, 10, NULL, 'Lija de Agua 220', 80.00, 1000.00, 80000.00, 0.00, NULL),
 (20, 8, 33, NULL, 'Brocha 3 Pulgadas', 30.00, 220.00, 6600.00, 0.00, NULL),
 (21, 8, 36, NULL, 'Thinner Acrílico', 11.00, 22000.00, 242000.00, 0.00, NULL),
-(22, 9, 7, NULL, 'Codo PVC 1/2\" 90°', 25.00, 2000.00, 50000.00, 0.00, NULL),
-(23, 9, 6, NULL, 'Tubería PVC 1/2\"', 10.00, 5000.00, 50000.00, 0.00, NULL),
 (24, 10, 31, NULL, 'Tubería PVC 1/2\" x 6m', 25.00, 4200.00, 105000.00, 25.00, '2026-04-04 17:55:50'),
 (25, 10, 35, NULL, 'Pintura Epóxica Gris', 3.00, 85000.00, 255000.00, 0.00, NULL),
 (26, 10, 34, NULL, 'Lija de Agua 220', 187.00, 280.00, 52360.00, 0.00, NULL);
@@ -1822,7 +1846,7 @@ INSERT INTO `preparaciones_has_item_general` (`preparaciones_id_preparaciones`, 
 
 CREATE TABLE `proveedor` (
   `id_proveedor` int NOT NULL,
-  `nombre_encargado` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `nombre_encargado` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `nombre_empresa` varchar(27) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `numero_documento` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `direccion` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
@@ -1835,8 +1859,14 @@ CREATE TABLE `proveedor` (
 --
 
 INSERT INTO `proveedor` (`id_proveedor`, `nombre_encargado`, `nombre_empresa`, `numero_documento`, `direccion`, `telefono`, `email`) VALUES
-(2, 'Camila Peñaranda', 'Solventes Industriales Ltd', '800987654-2', 'Carrera 9 #12-34, Medellín', '3152345678', 'camila.penaranda@solventes.co'),
-(8, 'Carlos Pérez', 'Aquaterra S.A.S.', '178231745-2', 'Carrera 25b #56-34, Barranquilla', '01 8000 510 99', 'servilab@aquaterra.com.co');
+(8, 'Carlos Pérez', 'Aquaterra S.A.S.', '178231745-2', 'Carrera 25b #56-34, Barranquilla', '01 8000 510 99', 'servilab@aquaterra.com.co'),
+(23, 'Martha Pino Villa', 'Colarquim', '800226277-6', 'Cl. 110 #75A-620 Bodega 14, Riomar', '3135730324', 'servicioalclientebq@colarquim.com'),
+(24, 'PMA', 'PMA', '1004914866', '', '', ''),
+(25, 'LILIANA HERRERA', 'CONQUIMICA', '890919549', '', '3113676010', ''),
+(26, 'Carlos Pérez', 'RECIEND', '1', '', '', ''),
+(27, 'María Gómez', 'PROQUIMICOS', '1', '', '', ''),
+(28, 'Carlos Rodríguez', 'PROCESOS Y DISOLVENTES', '1', '', '', ''),
+(29, 'María Gómez', 'EVERY POL', '1', '', '', '');
 
 -- --------------------------------------------------------
 
@@ -2625,7 +2655,7 @@ ALTER TABLE `costos_indirectos`
 -- AUTO_INCREMENT de la tabla `costos_item`
 --
 ALTER TABLE `costos_item`
-  MODIFY `id_costos_item` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=164;
+  MODIFY `id_costos_item` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=166;
 
 --
 -- AUTO_INCREMENT de la tabla `costos_produccion`
@@ -2697,13 +2727,13 @@ ALTER TABLE `instalaciones`
 -- AUTO_INCREMENT de la tabla `inventario`
 --
 ALTER TABLE `inventario`
-  MODIFY `id_inventario` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=261;
+  MODIFY `id_inventario` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=263;
 
 --
 -- AUTO_INCREMENT de la tabla `item_general`
 --
 ALTER TABLE `item_general`
-  MODIFY `id_item_general` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=223;
+  MODIFY `id_item_general` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=227;
 
 --
 -- AUTO_INCREMENT de la tabla `item_general_formulaciones`
@@ -2715,7 +2745,7 @@ ALTER TABLE `item_general_formulaciones`
 -- AUTO_INCREMENT de la tabla `item_proveedor`
 --
 ALTER TABLE `item_proveedor`
-  MODIFY `id_item_proveedor` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
+  MODIFY `id_item_proveedor` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=75;
 
 --
 -- AUTO_INCREMENT de la tabla `movimiento_inventario`
@@ -2763,7 +2793,7 @@ ALTER TABLE `preparaciones_costos_indirectos`
 -- AUTO_INCREMENT de la tabla `proveedor`
 --
 ALTER TABLE `proveedor`
-  MODIFY `id_proveedor` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `id_proveedor` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT de la tabla `remisiones`
@@ -2921,7 +2951,7 @@ ALTER TABLE `ordenes_compra`
 -- Filtros para la tabla `ordenes_compra_detalle`
 --
 ALTER TABLE `ordenes_compra_detalle`
-  ADD CONSTRAINT `ordenes_compra_detalle_ibfk_1` FOREIGN KEY (`ordenes_compra_id`) REFERENCES `ordenes_compra` (`id_orden`),
+  ADD CONSTRAINT `ordenes_compra_detalle_ibfk_1` FOREIGN KEY (`ordenes_compra_id`) REFERENCES `ordenes_compra` (`id_orden`) ON DELETE CASCADE,
   ADD CONSTRAINT `ordenes_compra_detalle_ibfk_2` FOREIGN KEY (`item_proveedor_id`) REFERENCES `item_proveedor` (`id_item_proveedor`);
 
 --

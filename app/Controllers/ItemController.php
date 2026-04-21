@@ -71,6 +71,29 @@ class ItemController extends ResourceController
         }
     }
 
+    /**
+     * GET /api/item_general/buscar?q=texto&limit=10
+     * Búsqueda fuzzy: maneja errores tipográficos mediante LIKE por token + SOUNDEX.
+     */
+    public function buscar(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $q     = trim($this->request->getGet('q') ?? '');
+        $limit = min((int) ($this->request->getGet('limit') ?? 10), 30);
+
+        if (strlen($q) < 2) {
+            return $this->respond([]);
+        }
+
+        // ?tipos=1,2  → solo Materia Prima e Insumo
+        $tiposRaw = trim($this->request->getGet('tipos') ?? '');
+        $tipos    = $tiposRaw !== ''
+            ? array_map('intval', explode(',', $tiposRaw))
+            : [];
+
+        $resultados = $this->model->buscarFuzzy($q, $limit, $tipos);
+        return $this->respond($resultados);
+    }
+
     public function update($id = null)
     {
         // 1. Obtener datos del cuerpo de la petición (soporta JSON de React)

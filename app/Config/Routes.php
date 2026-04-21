@@ -19,8 +19,9 @@ $routes->group('api', function ($routes) {
     $routes->get('item_general', 'ItemController::item_general');
     $routes->get('items/materias_disponibles', 'ItemController::materias_disponibles');
     $routes->get('items', 'ItemController::get_items_all');
+    $routes->get('item_general/buscar',            'ItemController::buscar');
     $routes->get('item_general/(:num)/inventario', 'ItemController::inventario_por_item/$1');
-    $routes->get('item_general/(:num)', 'ItemController::show/$1');
+    $routes->get('item_general/(:num)',            'ItemController::show/$1');
     $routes->post('item_general', 'ItemController::create');
     $routes->put('item_general/(:num)', 'ItemController::update/$1');
     $routes->patch('item_general/(:num)/precio-manual', 'ItemController::updatePrecioManual/$1');
@@ -119,14 +120,22 @@ $routes->group('api', function ($routes) {
     // PREPARACIONES
     $routes->get('preparaciones', 'PreparacionesController::index');
     $routes->post('preparaciones', 'PreparacionesController::create');
-    $routes->get('preparaciones/costos_resumen',  'PreparacionesController::costosResumen');
-    $routes->get('preparaciones/item/(:num)', 'PreparacionesController::byItem/$1');
-    $routes->get('preparaciones/(:num)', 'PreparacionesController::show/$1');
-    $routes->put('preparaciones/(:num)', 'PreparacionesController::update/$1');
+    $routes->get('preparaciones/costos_resumen',          'PreparacionesController::costosResumen');
+    $routes->get('preparaciones/verificar-disponibilidad','RequisicionesCompraController::verificarDisponibilidad');
+    $routes->get('preparaciones/item/(:num)',              'PreparacionesController::byItem/$1');
+    $routes->get('preparaciones/(:num)',                   'PreparacionesController::show/$1');
+    $routes->put('preparaciones/(:num)',                   'PreparacionesController::update/$1');
     // Costos indirectos por preparación
     $routes->post('preparaciones/(:num)/costos',             'PreparacionesController::addCosto/$1');
     $routes->put('preparaciones/(:num)/costos/(:num)',        'PreparacionesController::updateCosto/$1/$2');
     $routes->delete('preparaciones/(:num)/costos/(:num)',     'PreparacionesController::deleteCosto/$1/$2');
+
+    // REQUISICIONES DE COMPRA
+    $routes->get('requisiciones',                        'RequisicionesCompraController::index');
+    $routes->post('requisiciones',                       'RequisicionesCompraController::create');
+    $routes->post('requisiciones/convertir-oc',          'RequisicionesCompraController::convertirAOC');
+    $routes->get('requisiciones/preparacion/(:num)',     'RequisicionesCompraController::porPreparacion/$1');
+    $routes->patch('requisiciones/(:num)/estado',        'RequisicionesCompraController::actualizarEstado/$1');
 
     // PAGOS CLIENTE
     $routes->get('pagos_cliente', 'PagosClienteController::index');

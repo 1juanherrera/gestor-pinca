@@ -26,83 +26,14 @@ PERSONAL PARA PAPÁ -> VENTA -> COSTO DE VENTA -> PORCENTAJE DE GANANCIAS
 
 MODULO DE RENTABILIDAD -> AGREGAR COSTOS Y GANANCIAS, TENER EN CUENTA EL IVA
 
-
-
---------------
-
-
-
-Resumen: Transformación de Módulo Costos → Rentabilidad
-📋 Contexto del Proyecto
-- Sistema: React ERP llamado PINCA
-- Stack: React 19, Vite 7, TailwindCSS 4, React Router 7, TanStack Query 5, Zustand, Axios
-- Objetivo: Transformar el módulo "Costos" existente en un módulo integral "Rentabilidad" que combine análisis de costos Y ganancias
-✅ Lo que se Completó
-1. Estructura del Módulo Rentabilidad
-src/modules/Rentabilidad/
-├── RentabilidadPage.jsx                    # Página principal mejorada
-├── api/
-│   ├── useCostosProduccion.js             # Copiados del módulo Costos
-│   ├── useCostosCompras.js
-│   ├── useCostosIndirectos.js
-│   └── useGananciasVentas.js              # NUEVO - Hook para datos de ventas
-└── components/
-    ├── RentabilidadKpis.jsx               # 7 KPIs: costos + ventas + rentabilidad
-    ├── RentabilidadFilters.jsx            # Filtros de fecha (renombrado)
-    ├── RentabilidadChart.jsx              # Gráfico compuesto: costos vs ventas + margen
-    ├── RentabilidadProdTable.jsx          # Tabla de producción (renombrada)
-    ├── RentabilidadComprasTable.jsx       # Tabla de compras (renombrada)
-    ├── RentabilidadIndirectosPanel.jsx    # Panel indirectos (renombrado)
-    ├── RentabilidadDetalleProd.jsx        # Detalle producción (renombrado)
-    ├── GananciasVentasTable.jsx           # NUEVA - Tabla ventas con márgenes
-    └── RentabilidadResumen.jsx            # NUEVA - Dashboard de análisis integral
-2. Funcionalidades Implementadas
-5 Pestañas del Módulo:
-1. "Resumen Rentabilidad" (NUEVA) - Dashboard integral con análisis de rentabilidad
-2. "Ganancias" (NUEVA) - Tabla de ventas con cálculos de utilidad y margen por factura
-3. "Costos Producción" - Mejorada con contexto de rentabilidad
-4. "Costos Compras" - Mejorada con contexto de rentabilidad  
-5. "Costos Indirectos" - Mejorada con contexto de rentabilidad
-KPIs Principales (7 métricas):
-- Producción, Compras, Costos Indirectos, Total Costos
-- Ventas, Utilidad Bruta, Margen Bruto %
-Componentes Nuevos Destacados:
-GananciasVentasTable.jsx:
-- Muestra ventas con cálculos de costos, utilidad bruta y margen por factura
-- Totaliza ventas, costos, utilidad y margen promedio
-- Código de colores: verde para ganancias, rojo para pérdidas
-RentabilidadResumen.jsx:
-- 4 KPI cards principales (Ventas, Costos, Utilidad, Margen)
-- Análisis cualitativo con indicadores de estado (excellent/good/warning/danger)
-- Distribución visual de costos por categoría
-- Evaluación automática de rentabilidad, estructura de costos, eficiencia
-RentabilidadChart.jsx:
-- Gráfico compuesto (ComposedChart) con barras para costos y ventas
-- Línea de margen porcentual en eje secundario
-- Tooltip personalizado con cálculos de utilidad
-3. API y Datos
-- useGananciasVentas.js: Hook que integra datos de ventas (/facturas) con cálculos de costos
-- Calcula utilidad bruta por venta: ventas - costos
-- Calcula margen por venta: ((ventas - costos) / ventas) * 100
-- Integración con datos reales del backend, no mock data
-4. Navegación y Rutas Actualizadas
-- sidebarMenu.js: "Costos" → "Rentabilidad" con ícono TrendingUp
-- App.jsx: Ruta /costos → /rentabilidad
-- Import: CostosPage → RentabilidadPage
-🔧 Problemas Resueltos
-- ✅ Errores de importación de componentes renombrados
-- ✅ Props incompatibles entre componentes antiguos y nuevos
-- ✅ Referencias de nombres de componentes en JSX
-🗂️ Archivos Clave Modificados
-1. src/modules/Rentabilidad/RentabilidadPage.jsx - Página principal
-2. src/config/sidebarMenu.js - Navegación
-3. src/App.jsx - Rutas
-4. Todo el directorio src/modules/Rentabilidad/ - Módulo completo
-📊 Resultado Final
-Un módulo integral "Rentabilidad" que proporciona:
-- Vista unificada de costos Y ganancias
-- Análisis automático de rentabilidad con indicadores de estado
-- Cálculos en tiempo real de utilidad bruta y márgenes
-- Visualizaciones avanzadas que muestran la relación costos-ventas-rentabilidad
-- Interfaz en español coherente con el resto del sistema
-El módulo está completamente funcional y listo para usar en /rentabilidad
+Actúa como un arquitecto de software senior especializado en sistemas ERP/MRP para empresas de manufactura.
+Necesito que me ayudes con un proyecto que estoy haciendo para una empresa fabricadora de pinturas, que 
+las hace y distribuye, lo que pasa es que yo tengo un modulo de formulaciones en mi sistema donde se 
+calcula lo que es el precio unitario de cada materia prima x la cantidad que se necesita para fabricar el 
+producto, al fin se calcula el total dependiendo del volumen que se necesite fabricar, normalmente para 
+agregar que esa formulación pueda volverla una orden de producción necesito la materia prima necesaria, 
+si no tengo en el inventario, quiero como un modal o algo así que me muestre las materias primas de los 
+proveedores que las venden, porque si tengo registrado en el sistema los proveedores y cada cuanto venden 
+su materia prima cada uno pero no sé como hacer que interactúe el sistema en ese caso, estaba pensando en 
+crear una orden de compra y agregar la materia prima para esa producción pero no es la mejor opcion, como 
+se comportan esos sistemas que tienen este tipo de funcionalidades y cual sería la mejor práctica ?
