@@ -16,6 +16,12 @@ class ItemController extends ResourceController
         return $this->respond($items);
     }
 
+    public function materias_disponibles()
+    {
+        $data = $this->model->get_materias_disponibles();
+        return $this->respond($data);
+    }
+
     public function get_items_all(){
         $items = $this->model->get_items_all();
         return $this->respond($items);
@@ -42,8 +48,8 @@ class ItemController extends ResourceController
             return $this->fail('No se recibieron datos o el JSON es inválido', 400);
         }
 
-        if (empty($data['nombre']) || empty($data['categoria_id'])) {
-            return $this->failValidationErrors('El nombre y la categoría son obligatorios.');
+        if (empty($data['nombre'])) {
+            return $this->failValidationErrors('El nombre es obligatorio.');
         }
 
         try {

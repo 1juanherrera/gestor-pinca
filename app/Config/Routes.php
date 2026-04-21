@@ -17,6 +17,7 @@ $routes->group('api', function ($routes) {
 
     // ITEMS
     $routes->get('item_general', 'ItemController::item_general');
+    $routes->get('items/materias_disponibles', 'ItemController::materias_disponibles');
     $routes->get('items', 'ItemController::get_items_all');
     $routes->get('item_general/(:num)/inventario', 'ItemController::inventario_por_item/$1');
     $routes->get('item_general/(:num)', 'ItemController::show/$1');

@@ -71,6 +71,43 @@ class ItemModel extends BaseModel
         return $items;
     }
 
+    public function get_materias_disponibles()
+    {
+        $sql = "
+            SELECT
+                ig.id_item_general  AS item_general_id,
+                NULL                AS id_item_proveedor,
+                ig.nombre,
+                ig.codigo,
+                COALESCE(ci.costo_unitario, 0) AS costo_unitario,
+                'inventario'        AS fuente,
+                NULL                AS proveedor_nombre,
+                1                   AS comprado
+            FROM item_general ig
+            LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
+            WHERE ig.tipo = 1
+
+            UNION ALL
+
+            SELECT
+                NULL                            AS item_general_id,
+                ip.id_item_proveedor,
+                ip.nombre,
+                ip.codigo,
+                COALESCE(ip.precio_unitario, 0) AS costo_unitario,
+                'proveedor'                     AS fuente,
+                p.nombre_empresa                AS proveedor_nombre,
+                0                               AS comprado
+            FROM item_proveedor ip
+            LEFT JOIN proveedor p ON p.id_proveedor = ip.proveedor_id
+            WHERE ip.item_general_id IS NULL
+
+            ORDER BY nombre ASC
+        ";
+
+        return $this->db->query($sql)->getResultArray();
+    }
+
     public function get_full_item_details($id)
     {
         // 1. Obtener datos básicos de item_general y sus costos
