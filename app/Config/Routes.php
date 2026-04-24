@@ -48,10 +48,12 @@ $routes->group('api', function ($routes) {
 
     // FORMULACIONES
     $routes->get('formulaciones', 'FormulacionesController::formulaciones');
-    $routes->get('formulaciones/(:num)', 'FormulacionesController::show/$1');
     $routes->get('formulacion_item/(:num)', 'FormulacionesController::showItem/$1');
+    $routes->get('formulaciones/costos/(:num)/proveedor/(:num)', 'FormulacionesController::calcular_costos_por_proveedor/$1/$2');
     $routes->get('formulaciones/costos/(:num)', 'FormulacionesController::calcular_costos_volumen/$1');
+    $routes->get('formulaciones/(:num)/proveedores', 'FormulacionesController::proveedores_formulacion/$1');
     $routes->get('formulaciones/recalcular_costos/(:num)/(:segment)', 'FormulacionesController::recalcular_costos_por_volumen/$1/$2');
+    $routes->get('formulaciones/(:num)', 'FormulacionesController::show/$1');
     $routes->post('formulaciones',        'FormulacionesController::create');
     $routes->put('formulaciones/(:num)',  'FormulacionesController::update/$1');
 

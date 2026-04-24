@@ -18,7 +18,7 @@ class ComparadorModel extends BaseModel
             SELECT
                 ip.nombre                               AS nombre,
                 ip.tipo                                 AS tipo,
-                ip.unidad_empaque                       AS unidad_empaque,
+                uc.nombre                               AS unidad_empaque,
                 ip.id_item_proveedor                    AS id_item_proveedor,
                 ip.codigo                               AS codigo,
                 ip.precio_unitario                      AS precio_unitario,
@@ -32,6 +32,7 @@ class ComparadorModel extends BaseModel
             FROM item_proveedor ip
             LEFT JOIN proveedor    p  ON p.id_proveedor     = ip.proveedor_id
             LEFT JOIN item_general ig ON ig.id_item_general = ip.item_general_id
+            LEFT JOIN unidad       uc ON uc.id_unidad       = ip.unidad_compra_id
             ORDER BY ip.nombre ASC, ip.precio_unitario ASC
         ';
 

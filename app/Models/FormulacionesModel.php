@@ -449,6 +449,399 @@ class FormulacionesModel extends BaseModel
         ];
     }
 
+    public function get_opciones_proveedor_formulacion(int $itemId): array
+    {
+        $formulacion = $this->db->query('
+            SELECT id_formulaciones
+            FROM formulaciones
+            WHERE item_general_id = ? AND estado = 1 LIMIT 1
+        ', [$itemId])->getRow();
+
+        if (!$formulacion) {
+            throw new Exception("El item no tiene una formulación activa.");
+        }
+
+        $item = $this->db->query('
+            SELECT
+                COALESCE(NULLIF(ci.volumen, 0), 1) AS volumen_base,
+                COALESCE(ci.envase, 0)              AS envase,
+                COALESCE(ci.etiqueta, 0)            AS etiqueta,
+                COALESCE(ci.bandeja, 0)             AS bandeja,
+                COALESCE(ci.plastico, 0)            AS plastico,
+                COALESCE(ci.costo_mod, 0)           AS costo_mod,
+                COALESCE(ci.porcentaje_utilidad, 50) AS porcentaje_utilidad
+            FROM item_general ig
+            LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
+            WHERE ig.id_item_general = ?
+        ', [$itemId])->getRow();
+
+        $materias = $this->db->query('
+            SELECT igf.item_general_id, ig.nombre,
+                   COALESCE(ci.costo_unitario, 0) AS costo_estandar
+            FROM item_general_formulaciones igf
+            INNER JOIN item_general ig ON ig.id_item_general = igf.item_general_id
+            LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
+            WHERE igf.formulaciones_id = ?
+        ', [$formulacion->id_formulaciones])->getResult();
+
+        if (empty($materias)) return ['item' => [], 'materias' => []];
+
+        $catalogo = $this->db->query('
+            SELECT ip.id_item_proveedor, ip.item_general_id, ip.nombre,
+                   ip.precio_unitario, ip.factor_conversion,
+                   ip.proveedor_id, p.nombre_empresa,
+                   uc.nombre AS unidad_compra
+            FROM item_proveedor ip
+            INNER JOIN proveedor p ON p.id_proveedor = ip.proveedor_id
+            LEFT JOIN unidad uc ON uc.id_unidad = ip.unidad_compra_id
+            WHERE ip.disponible = 1
+        ')->getResult();
+
+        $resultado = [];
+
+        foreach ($materias as $mp) {
+            $mpId     = (int) $mp->item_general_id;
+            $mpNombre = $mp->nombre;
+            $opciones = [];
+
+            foreach ($catalogo as $ip) {
+                $priority = 999;
+
+                if ($ip->item_general_id && (int) $ip->item_general_id === $mpId) {
+                    $priority = 1;
+                } else {
+                    $nameMatch = $this->matchNombre($mpNombre, $ip->nombre);
+                    if ($nameMatch === 1) $priority = 2;
+                    elseif ($nameMatch === 2) $priority = 3;
+                }
+
+                if ($priority < 999) {
+                    $factor = max((float) ($ip->factor_conversion ?: 1), 0.001);
+                    $opciones[] = [
+                        'id_item_proveedor' => (int) $ip->id_item_proveedor,
+                        'nombre_item'       => $ip->nombre,
+                        'nombre_empresa'    => $ip->nombre_empresa,
+                        'precio_unitario'   => (float) $ip->precio_unitario,
+                        'factor_conversion' => (float) $ip->factor_conversion,
+                        'precio_por_kg'     => round((float) $ip->precio_unitario / $factor, 2),
+                        'unidad_compra'     => $ip->unidad_compra,
+                        'match_tipo'        => $priority,
+                    ];
+                }
+            }
+
+            usort($opciones, fn($a, $b) => $a['precio_por_kg'] <=> $b['precio_por_kg']);
+
+            $resultado[$mpId] = [
+                'materia_prima_nombre' => $mpNombre,
+                'costo_estandar'       => (float) $mp->costo_estandar,
+                'opciones'             => $opciones,
+            ];
+        }
+
+        return [
+            'item' => [
+                'volumen_base'        => (float) $item->volumen_base,
+                'envase'              => (float) $item->envase,
+                'etiqueta'            => (float) $item->etiqueta,
+                'bandeja'             => (float) $item->bandeja,
+                'plastico'            => (float) $item->plastico,
+                'costo_mod'           => (float) $item->costo_mod,
+                'porcentaje_utilidad' => (float) $item->porcentaje_utilidad,
+            ],
+            'materias' => $resultado,
+        ];
+    }
+
+    private function limpiarNombreProveedor(string $nombre): string
+    {
+        return mb_strtoupper(trim(preg_replace('/\s*\([^)]*\)\s*$/', '', $nombre)));
+    }
+
+    private function matchNombre(string $nombreMP, string $nombreIP): int
+    {
+        $mp = mb_strtoupper(trim($nombreMP));
+        $ipLimpio = $this->limpiarNombreProveedor($nombreIP);
+
+        if ($mp === $ipLimpio) return 1;
+        if (mb_strpos($ipLimpio, $mp) !== false || mb_strpos($mp, $ipLimpio) !== false) return 2;
+        return 0;
+    }
+
+    public function get_proveedores_formulacion(int $itemId): array
+    {
+        $formulacion = $this->db->query('
+            SELECT id_formulaciones
+            FROM formulaciones
+            WHERE item_general_id = ? AND estado = 1
+            LIMIT 1
+        ', [$itemId])->getRow();
+
+        if (!$formulacion) {
+            throw new Exception("El item no tiene una formulación activa.");
+        }
+
+        $materias = $this->db->query('
+            SELECT igf.item_general_id, ig.nombre
+            FROM item_general_formulaciones igf
+            INNER JOIN item_general ig ON ig.id_item_general = igf.item_general_id
+            WHERE igf.formulaciones_id = ?
+        ', [$formulacion->id_formulaciones])->getResult();
+
+        if (empty($materias)) {
+            return [];
+        }
+
+        $totalMaterias = count($materias);
+
+        $catalogo = $this->db->query('
+            SELECT ip.id_item_proveedor, ip.item_general_id, ip.nombre,
+                   ip.proveedor_id, p.nombre_empresa, p.nombre_encargado
+            FROM item_proveedor ip
+            INNER JOIN proveedor p ON p.id_proveedor = ip.proveedor_id
+            WHERE ip.disponible = 1
+        ')->getResult();
+
+        $provCobertura = [];
+
+        foreach ($materias as $mp) {
+            foreach ($catalogo as $ip) {
+                $matched = false;
+
+                if ($ip->item_general_id && (int) $ip->item_general_id === (int) $mp->item_general_id) {
+                    $matched = true;
+                } elseif ($this->matchNombre($mp->nombre, $ip->nombre) > 0) {
+                    $matched = true;
+                }
+
+                if ($matched) {
+                    $pid = (int) $ip->proveedor_id;
+                    if (!isset($provCobertura[$pid])) {
+                        $provCobertura[$pid] = [
+                            'id_proveedor'     => $pid,
+                            'nombre_empresa'   => $ip->nombre_empresa,
+                            'nombre_encargado' => $ip->nombre_encargado,
+                            'materias_set'     => [],
+                        ];
+                    }
+                    $provCobertura[$pid]['materias_set'][(int) $mp->item_general_id] = true;
+                }
+            }
+        }
+
+        $result = [];
+        foreach ($provCobertura as $prov) {
+            $cubiertas = count($prov['materias_set']);
+            $result[] = [
+                'id_proveedor'       => $prov['id_proveedor'],
+                'nombre_empresa'     => $prov['nombre_empresa'],
+                'nombre_encargado'   => $prov['nombre_encargado'],
+                'materias_cubiertas' => $cubiertas,
+                'total_materias'     => $totalMaterias,
+                'cobertura_pct'      => $totalMaterias > 0 ? round(($cubiertas / $totalMaterias) * 100) : 0,
+            ];
+        }
+
+        usort($result, fn($a, $b) => $b['materias_cubiertas'] - $a['materias_cubiertas']);
+        return $result;
+    }
+
+    public function calculate_costs_by_proveedor(int $itemId, int $proveedorId): array
+    {
+        $proveedor = $this->db->query('
+            SELECT id_proveedor, nombre_empresa, nombre_encargado
+            FROM proveedor WHERE id_proveedor = ?
+        ', [$proveedorId])->getRow();
+
+        if (!$proveedor) {
+            throw new Exception("Proveedor con ID {$proveedorId} no encontrado.");
+        }
+
+        $formulacionRow = $this->db->query('
+            SELECT id_formulaciones
+            FROM formulaciones
+            WHERE item_general_id = ? AND estado = 1 LIMIT 1
+        ', [$itemId])->getRow();
+
+        if (!$formulacionRow) {
+            throw new Exception("El item no tiene una formulación activa.");
+        }
+
+        $item = $this->db->query('
+            SELECT
+                ig.id_item_general, ig.nombre, ig.codigo,
+                COALESCE(NULLIF(ci.volumen, 0), 1)      AS volumen_base,
+                COALESCE(ci.envase, 0)                   AS envase,
+                COALESCE(ci.etiqueta, 0)                 AS etiqueta,
+                COALESCE(ci.bandeja, 0)                  AS bandeja,
+                COALESCE(ci.plastico, 0)                 AS plastico,
+                COALESCE(ci.costo_mod, 0)                AS costo_mod,
+                COALESCE(ci.porcentaje_utilidad, 50)     AS porcentaje_utilidad
+            FROM item_general ig
+            LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
+            WHERE ig.id_item_general = ?
+        ', [$itemId])->getRow();
+
+        if (!$item) {
+            throw new Exception("Item con ID {$itemId} no encontrado.");
+        }
+
+        $formulaciones = $this->db->query('
+            SELECT
+                igf.id_item_general_formulaciones,
+                igf.item_general_id,
+                igf.formulaciones_id,
+                igf.cantidad,
+                ig.nombre             AS materia_prima_nombre,
+                ig.codigo             AS materia_prima_codigo,
+                COALESCE(ci.costo_unitario, 0) AS costo_unitario_estandar,
+                i.cantidad            AS inventario_cantidad,
+                ci.fecha_calculo
+            FROM item_general_formulaciones igf
+            INNER JOIN item_general ig ON igf.item_general_id = ig.id_item_general
+            LEFT JOIN costos_item ci   ON ig.id_item_general  = ci.item_general_id
+            LEFT JOIN inventario i     ON ig.id_item_general  = i.item_general_id
+            WHERE igf.formulaciones_id = ?
+            ORDER BY ig.nombre ASC
+        ', [$formulacionRow->id_formulaciones])->getResult();
+
+        if (empty($formulaciones)) {
+            throw new Exception("La formulación no tiene materias primas asignadas.");
+        }
+
+        $itemsProveedor = $this->db->query('
+            SELECT ip.*, uc.nombre AS unidad_compra_nombre
+            FROM item_proveedor ip
+            LEFT JOIN unidad uc ON uc.id_unidad = ip.unidad_compra_id
+            WHERE ip.proveedor_id = ? AND ip.disponible = 1
+        ', [$proveedorId])->getResult();
+
+        $totalMPProveedor = 0;
+        $totalMPEstandar  = 0;
+        $formulacionesFormatted = [];
+
+        foreach ($formulaciones as $row) {
+            $cantidad      = (float) $row->cantidad;
+            $costoEstandar = (float) $row->costo_unitario_estandar;
+            $mpNombre      = $row->materia_prima_nombre;
+            $mpId          = (int) $row->item_general_id;
+
+            $bestMatch    = null;
+            $bestPriority = 999;
+
+            foreach ($itemsProveedor as $ip) {
+                $priority = 999;
+
+                if ($ip->item_general_id && (int) $ip->item_general_id === $mpId) {
+                    $priority = 1;
+                } else {
+                    $nameMatch = $this->matchNombre($mpNombre, $ip->nombre);
+                    if ($nameMatch === 1) $priority = 2;
+                    elseif ($nameMatch === 2) $priority = 3;
+                }
+
+                if ($priority < $bestPriority) {
+                    $bestMatch    = $ip;
+                    $bestPriority = $priority;
+                } elseif ($priority === $bestPriority && $bestMatch && $priority < 999) {
+                    $bestFactor = max((float) ($bestMatch->factor_conversion ?: 1), 0.001);
+                    $ipFactor   = max((float) ($ip->factor_conversion ?: 1), 0.001);
+                    if (((float) $ip->precio_unitario / $ipFactor) < ((float) $bestMatch->precio_unitario / $bestFactor)) {
+                        $bestMatch = $ip;
+                    }
+                }
+            }
+
+            $costoProveedor    = null;
+            $precioProvRaw     = null;
+            $factorConv        = null;
+            $unidadCompraNombre = null;
+
+            if ($bestMatch) {
+                $factor             = max((float) ($bestMatch->factor_conversion ?: 1), 0.001);
+                $costoProveedor     = (float) $bestMatch->precio_unitario / $factor;
+                $precioProvRaw      = (float) $bestMatch->precio_unitario;
+                $factorConv         = (float) $bestMatch->factor_conversion;
+                $unidadCompraNombre = $bestMatch->unidad_compra_nombre ?? null;
+            }
+
+            $costoEfectivo = $costoProveedor ?? $costoEstandar;
+            $usaProveedor  = $costoProveedor !== null;
+
+            $totalEstandar  = $cantidad * $costoEstandar;
+            $totalProveedor = $cantidad * $costoEfectivo;
+
+            $totalMPProveedor += $totalProveedor;
+            $totalMPEstandar  += $totalEstandar;
+
+            $formulacionesFormatted[] = [
+                'id_item_general_formulaciones' => $row->id_item_general_formulaciones,
+                'item_general_id'               => $row->item_general_id,
+                'formulaciones_id'              => $row->formulaciones_id,
+                'cantidad'                      => $cantidad,
+                'materia_prima_nombre'          => $row->materia_prima_nombre,
+                'materia_prima_codigo'          => $row->materia_prima_codigo,
+                'inventario_cantidad'           => (float) ($row->inventario_cantidad ?? 0),
+                'fecha_calculo'                 => $row->fecha_calculo,
+                'costo_unitario_estandar'       => Formatter::toCOP($costoEstandar),
+                'costo_unitario_proveedor'      => $costoProveedor !== null ? Formatter::toCOP($costoProveedor) : null,
+                'costo_unitario_efectivo'       => Formatter::toCOP($costoEfectivo),
+                'usa_precio_proveedor'          => $usaProveedor,
+                'costo_total_estandar'          => Formatter::toCOP($totalEstandar),
+                'costo_total_proveedor'         => Formatter::toCOP($totalProveedor),
+                'precio_proveedor_raw'          => $precioProvRaw !== null ? Formatter::toCOP($precioProvRaw) : null,
+                'factor_conversion'             => $factorConv,
+                'unidad_compra_nombre'          => $unidadCompraNombre,
+            ];
+        }
+
+        $volumen = (float) $item->volumen_base;
+
+        $nuevoCostoTotal = ($totalMPProveedor / $volumen)
+            + (float) $item->envase
+            + (float) $item->etiqueta
+            + (float) $item->bandeja
+            + (float) $item->plastico
+            + (float) $item->costo_mod;
+
+        $margen      = (float) $item->porcentaje_utilidad;
+        $precioVenta = $margen > 0
+            ? $nuevoCostoTotal * (1 + $margen / 100)
+            : $nuevoCostoTotal;
+
+        $costoMPKg = $volumen > 0 ? $totalMPProveedor / $volumen : 0;
+
+        $diferenciaMPTotal = $totalMPProveedor - $totalMPEstandar;
+
+        return [
+            'proveedor' => [
+                'id_proveedor'     => (int) $proveedor->id_proveedor,
+                'nombre_empresa'   => $proveedor->nombre_empresa,
+                'nombre_encargado' => $proveedor->nombre_encargado,
+            ],
+            'costos_proveedor' => [
+                'total_costo_materia_prima' => Formatter::toCOP($totalMPProveedor),
+                'costo_mp_kg'               => Formatter::toCOP($costoMPKg),
+                'envase'                    => Formatter::toCOP($item->envase),
+                'etiqueta'                  => Formatter::toCOP($item->etiqueta),
+                'bandeja'                   => Formatter::toCOP($item->bandeja),
+                'plastico'                  => Formatter::toCOP($item->plastico),
+                'costo_mod'                 => Formatter::toCOP($item->costo_mod),
+                'porcentaje_utilidad'       => $margen,
+                'total'                     => Formatter::toCOP($nuevoCostoTotal),
+                'precio_venta'              => Formatter::toCOP($precioVenta),
+            ],
+            'diferencia' => [
+                'total_mp'    => Formatter::toCOP(abs($diferenciaMPTotal)),
+                'es_mas_caro' => $diferenciaMPTotal > 0,
+                'porcentaje'  => $totalMPEstandar > 0
+                    ? round(($diferenciaMPTotal / $totalMPEstandar) * 100, 1)
+                    : 0,
+            ],
+            'formulaciones' => $formulacionesFormatted,
+        ];
+    }
+
     // Crear formulación completa con materias primas
     public function crearFormulacion(array $data): array
     {

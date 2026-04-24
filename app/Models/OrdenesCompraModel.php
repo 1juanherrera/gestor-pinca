@@ -68,11 +68,12 @@ class OrdenesCompraModel extends BaseModel
         $lineasRaw = $this->dbc->query('
             SELECT 
                 ocd.*,
-                ip.nombre AS item_nombre, ip.codigo AS item_codigo, ip.unidad_empaque,
+                ip.nombre AS item_nombre, ip.codigo AS item_codigo, uc.nombre AS unidad_empaque,
                 ig.nombre AS item_general_nombre
             FROM ordenes_compra_detalle ocd
             LEFT JOIN item_proveedor ip ON ip.id_item_proveedor = ocd.item_proveedor_id
             LEFT JOIN item_general ig   ON ig.id_item_general   = ocd.item_general_id
+            LEFT JOIN unidad       uc   ON uc.id_unidad         = ip.unidad_compra_id
             WHERE ocd.ordenes_compra_id = ?
         ', [$id])->getResult(); // ✅ sin 'array'
 

@@ -99,6 +99,32 @@ class FormulacionesController extends ResourceController
         }
     }
 
+    public function proveedores_formulacion($itemId = null)
+    {
+        try {
+            if (empty($itemId)) {
+                return $this->fail('El parámetro itemId es requerido.', 400);
+            }
+            $data = $this->model->get_proveedores_formulacion((int) $itemId);
+            return $this->respond($data);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage(), 400);
+        }
+    }
+
+    public function calcular_costos_por_proveedor($itemId = null, $proveedorId = null)
+    {
+        try {
+            if (empty($itemId) || empty($proveedorId)) {
+                return $this->fail('Los parámetros itemId y proveedorId son requeridos.', 400);
+            }
+            $data = $this->model->calculate_costs_by_proveedor((int) $itemId, (int) $proveedorId);
+            return $this->respond($data);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage(), 400);
+        }
+    }
+
 // PUT /api/formulaciones/:id
     public function update($id = null)
     {

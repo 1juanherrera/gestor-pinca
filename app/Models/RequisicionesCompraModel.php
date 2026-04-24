@@ -115,11 +115,12 @@ class RequisicionesCompraModel extends BaseModel
     {
         $rows = $this->db->query(
             'SELECT ip.id_item_proveedor, ip.nombre AS item_proveedor_nombre,
-                    ip.unidad_empaque, ip.precio_unitario, ip.precio_con_iva,
+                    uc.nombre AS unidad_empaque, ip.precio_unitario, ip.precio_con_iva,
                     p.id_proveedor, p.nombre_empresa, p.nombre_encargado,
                     p.telefono, p.email
              FROM item_proveedor ip
              INNER JOIN proveedor p ON p.id_proveedor = ip.proveedor_id
+             LEFT  JOIN unidad   uc ON uc.id_unidad   = ip.unidad_compra_id
              WHERE ip.item_general_id = ? AND ip.disponible = 1
              ORDER BY ip.precio_unitario ASC',
             [$itemGeneralId]
@@ -203,7 +204,7 @@ class RequisicionesCompraModel extends BaseModel
         $sql = '
             SELECT rc.*,
                    ig.nombre  AS item_nombre,  ig.codigo  AS item_codigo,
-                   ip.nombre  AS item_proveedor_nombre, ip.unidad_empaque,
+                   ip.nombre  AS item_proveedor_nombre, uc.nombre AS unidad_empaque,
                    p.nombre_empresa, p.nombre_encargado,
                    prep.item_general_id AS prep_item_id,
                    prod.nombre AS prep_item_nombre
@@ -211,6 +212,7 @@ class RequisicionesCompraModel extends BaseModel
             INNER JOIN item_general ig   ON ig.id_item_general   = rc.item_general_id
             LEFT  JOIN item_proveedor ip ON ip.id_item_proveedor  = rc.item_proveedor_id
             LEFT  JOIN proveedor p       ON p.id_proveedor        = rc.proveedor_id
+            LEFT  JOIN unidad uc         ON uc.id_unidad          = ip.unidad_compra_id
             LEFT  JOIN preparaciones prep ON prep.id_preparaciones = rc.preparacion_id
             LEFT  JOIN item_general prod  ON prod.id_item_general  = prep.item_general_id
         ';
@@ -237,12 +239,13 @@ class RequisicionesCompraModel extends BaseModel
         $rows = $this->db->query(
             'SELECT rc.*,
                     ig.nombre AS item_nombre, ig.codigo AS item_codigo,
-                    ip.nombre AS item_proveedor_nombre, ip.unidad_empaque,
+                    ip.nombre AS item_proveedor_nombre, uc.nombre AS unidad_empaque,
                     p.nombre_empresa, p.nombre_encargado
              FROM requisiciones_compra rc
              INNER JOIN item_general ig   ON ig.id_item_general   = rc.item_general_id
              LEFT  JOIN item_proveedor ip ON ip.id_item_proveedor  = rc.item_proveedor_id
              LEFT  JOIN proveedor p       ON p.id_proveedor        = rc.proveedor_id
+             LEFT  JOIN unidad uc         ON uc.id_unidad          = ip.unidad_compra_id
              WHERE rc.preparacion_id = ?
              ORDER BY rc.fecha_creacion ASC',
             [$prepId]
@@ -282,12 +285,13 @@ class RequisicionesCompraModel extends BaseModel
         return $this->_formatRow(
             $this->db->query(
                 'SELECT rc.*, ig.nombre AS item_nombre, ig.codigo AS item_codigo,
-                        ip.nombre AS item_proveedor_nombre, ip.unidad_empaque,
+                        ip.nombre AS item_proveedor_nombre, uc.nombre AS unidad_empaque,
                         p.nombre_empresa, p.nombre_encargado
                  FROM requisiciones_compra rc
                  INNER JOIN item_general ig   ON ig.id_item_general  = rc.item_general_id
                  LEFT  JOIN item_proveedor ip ON ip.id_item_proveedor = rc.item_proveedor_id
                  LEFT  JOIN proveedor p       ON p.id_proveedor       = rc.proveedor_id
+                 LEFT  JOIN unidad uc         ON uc.id_unidad         = ip.unidad_compra_id
                  WHERE rc.id_requisicion = ?',
                 [$id]
             )->getRow()
@@ -394,12 +398,13 @@ class RequisicionesCompraModel extends BaseModel
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         $rows = $this->db->query(
             "SELECT rc.*, ig.nombre AS item_nombre, ig.codigo AS item_codigo,
-                    ip.nombre AS item_proveedor_nombre, ip.unidad_empaque,
+                    ip.nombre AS item_proveedor_nombre, uc.nombre AS unidad_empaque,
                     p.nombre_empresa, p.nombre_encargado
              FROM requisiciones_compra rc
              INNER JOIN item_general ig   ON ig.id_item_general   = rc.item_general_id
              LEFT  JOIN item_proveedor ip ON ip.id_item_proveedor  = rc.item_proveedor_id
              LEFT  JOIN proveedor p       ON p.id_proveedor        = rc.proveedor_id
+             LEFT  JOIN unidad uc         ON uc.id_unidad          = ip.unidad_compra_id
              WHERE rc.id_requisicion IN ({$placeholders})",
             $ids
         )->getResult();

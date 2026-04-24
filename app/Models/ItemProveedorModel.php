@@ -9,7 +9,6 @@ class ItemProveedorModel extends BaseModel
         'nombre',
         'codigo',
         'tipo',
-        'unidad_empaque',
         'precio_unitario',
         'precio_con_iva',
         'disponible',
@@ -36,11 +35,13 @@ class ItemProveedorModel extends BaseModel
                     p.email,
                     ig.nombre  AS item_general_nombre,
                     ig.codigo  AS item_general_codigo,
-                    uc.nombre  AS unidad_compra_nombre
+                    uc.nombre  AS unidad_compra_nombre,
+                    ua.nombre  AS unidad_almacenaje_nombre
                 FROM item_proveedor ip
-                LEFT JOIN proveedor    p  ON p.id_proveedor    = ip.proveedor_id
-                LEFT JOIN item_general ig ON ig.id_item_general = ip.item_general_id
-                LEFT JOIN unidad       uc ON uc.id_unidad       = ip.unidad_compra_id
+                LEFT JOIN proveedor    p  ON p.id_proveedor       = ip.proveedor_id
+                LEFT JOIN item_general ig ON ig.id_item_general   = ip.item_general_id
+                LEFT JOIN unidad       uc ON uc.id_unidad         = ip.unidad_compra_id
+                LEFT JOIN unidad       ua ON ua.id_unidad         = ig.unidad_almacenaje_id
         ';
 
         $items = $this->db->query($sql)->getResult();
@@ -54,7 +55,6 @@ class ItemProveedorModel extends BaseModel
                 'nombre'              => $item['nombre'],
                 'codigo'              => $item['codigo'],
                 'tipo'                => $item['tipo'],
-                'unidad_empaque'      => $item['unidad_empaque'],
                 'precio_unitario'     => (float) $item['precio_unitario'],
                 'precio_con_iva'      => (float) $item['precio_con_iva'],
                 'disponible'          => $item['disponible'],
@@ -67,9 +67,10 @@ class ItemProveedorModel extends BaseModel
                 'item_general_id'     => $item['item_general_id'],
                 'item_general_nombre' => $item['item_general_nombre'],
                 'item_general_codigo' => $item['item_general_codigo'],
-                'unidad_compra_id'    => $item['unidad_compra_id'],
-                'unidad_compra_nombre'=> $item['unidad_compra_nombre'],
-                'factor_conversion'   => (float) ($item['factor_conversion'] ?? 1),
+                'unidad_compra_id'         => $item['unidad_compra_id'],
+                'unidad_compra_nombre'     => $item['unidad_compra_nombre'],
+                'factor_conversion'        => (float) ($item['factor_conversion'] ?? 1),
+                'unidad_almacenaje_nombre' => $item['unidad_almacenaje_nombre'],
             ];
         }
 
