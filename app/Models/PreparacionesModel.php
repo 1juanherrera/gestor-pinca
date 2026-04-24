@@ -74,6 +74,22 @@ class PreparacionesModel extends BaseModel
             }
         }
 
+        // Selección de capas/proveedor por ingrediente
+        $capasSeleccion = [];
+        if (!empty($data['detalle']) && is_array($data['detalle'])) {
+            foreach ($data['detalle'] as $d) {
+                $dItemId = (int) ($d['item_general_id'] ?? 0);
+                if ($dItemId && (isset($d['modo_consumo']) || isset($d['capas']) || isset($d['bodega_id']) || isset($d['proveedor_id']))) {
+                    $capasSeleccion[$dItemId] = [
+                        'modo'        => $d['modo_consumo'] ?? 'FIFO',
+                        'capas'       => $d['capas'] ?? [],
+                        'bodega_id'   => isset($d['bodega_id'])   ? (int) $d['bodega_id']   : null,
+                        'proveedor_id'=> isset($d['proveedor_id']) ? (int) $d['proveedor_id'] : null,
+                    ];
+                }
+            }
+        }
+
         $factorVolumen = 1;
         if (empty($detalleMap)) {
             $itemCosto = $this->db->query(
@@ -87,82 +103,66 @@ class PreparacionesModel extends BaseModel
 
         $totalCantidadBase = array_sum(array_map(fn($i) => (float) $i->cantidad, $ingredientes));
 
-        $this->db->transStart();
+        $responsable = $data['responsable'] ?? null;
 
-        $this->db->query(
-            'INSERT INTO preparaciones
-                (fecha_creacion, fecha_inicio, fecha_fin, cantidad, observaciones, estado, item_general_id, unidad_id)
-             VALUES (NOW(), ?, ?, ?, ?, 0, ?, ?)',
-            [
-                $data['fecha_inicio']  ?? null,
-                $data['fecha_fin']     ?? null,
-                $cantidadEnvases,
-                $data['observaciones'] ?? null,
-                $itemId,
-                $unidadId,
-            ]
-        );
-
-        $preparacionId = $this->db->insertID();
-
-        foreach ($ingredientes as $ing) {
-            $ingId = (int) $ing->item_general_id;
-            $cantidadEscalada = isset($detalleMap[$ingId])
-                ? round($detalleMap[$ingId], 4)
-                : round((float) $ing->cantidad * $factorVolumen, 4);
-
-            $porcentaje = $totalCantidadBase > 0
-                ? round(((float) $ing->cantidad / $totalCantidadBase) * 100, 4)
-                : 0;
-
+        $this->db->transBegin();
+        try {
             $this->db->query(
-                'INSERT INTO preparaciones_has_item_general
-                    (preparaciones_id_preparaciones, item_general_id, cantidad, porcentajes)
-                 VALUES (?, ?, ?, ?)',
-                [$preparacionId, $ingId, $cantidadEscalada, $porcentaje]
+                'INSERT INTO preparaciones
+                    (fecha_creacion, fecha_inicio, fecha_fin, cantidad, observaciones, estado, item_general_id, unidad_id)
+                 VALUES (NOW(), ?, ?, ?, ?, 0, ?, ?)',
+                [
+                    $data['fecha_inicio']  ?? null,
+                    $data['fecha_fin']     ?? null,
+                    $cantidadEnvases,
+                    $data['observaciones'] ?? null,
+                    $itemId,
+                    $unidadId,
+                ]
             );
-        }
 
-        // Costos indirectos para esta preparación
-        if (!empty($data['costos_indirectos']) && is_array($data['costos_indirectos'])) {
-            foreach ($data['costos_indirectos'] as $ci) {
-                $nombre        = trim($ci['nombre']        ?? '');
-                $categoria     = trim($ci['categoria']     ?? 'otros');
-                $valorAplicado = (float) ($ci['valor_aplicado'] ?? 0);
-                if ($nombre && $valorAplicado > 0) {
-                    $this->db->query(
-                        'INSERT INTO preparaciones_costos_indirectos
-                            (preparaciones_id, costos_indirectos_id, valor_aplicado, nombre, categoria)
-                         VALUES (?, NULL, ?, ?, ?)',
-                        [$preparacionId, $valorAplicado, $nombre, $categoria]
-                    );
+            $preparacionId = $this->db->insertID();
+
+            foreach ($ingredientes as $ing) {
+                $ingId = (int) $ing->item_general_id;
+                $cantidadEscalada = isset($detalleMap[$ingId])
+                    ? round($detalleMap[$ingId], 4)
+                    : round((float) $ing->cantidad * $factorVolumen, 4);
+
+                $porcentaje = $totalCantidadBase > 0
+                    ? round(((float) $ing->cantidad / $totalCantidadBase) * 100, 4)
+                    : 0;
+
+                $this->db->query(
+                    'INSERT INTO preparaciones_has_item_general
+                        (preparaciones_id_preparaciones, item_general_id, cantidad, porcentajes)
+                     VALUES (?, ?, ?, ?)',
+                    [$preparacionId, $ingId, $cantidadEscalada, $porcentaje]
+                );
+            }
+
+            if (!empty($data['costos_indirectos']) && is_array($data['costos_indirectos'])) {
+                foreach ($data['costos_indirectos'] as $ci) {
+                    $nombre        = trim($ci['nombre']        ?? '');
+                    $categoria     = trim($ci['categoria']     ?? 'otros');
+                    $valorAplicado = (float) ($ci['valor_aplicado'] ?? 0);
+                    if ($nombre && $valorAplicado > 0) {
+                        $this->db->query(
+                            'INSERT INTO preparaciones_costos_indirectos
+                                (preparaciones_id, costos_indirectos_id, valor_aplicado, nombre, categoria)
+                             VALUES (?, NULL, ?, ?, ?)',
+                            [$preparacionId, $valorAplicado, $nombre, $categoria]
+                        );
+                    }
                 }
             }
-        }
 
-        // Descontar las cantidades del inventario (con soporte de capas)
-        $responsable      = $data['responsable'] ?? null;
-        $capasSeleccion   = [];
-        if (!empty($data['detalle']) && is_array($data['detalle'])) {
-            foreach ($data['detalle'] as $d) {
-                $itemId = (int) ($d['item_general_id'] ?? 0);
-                if ($itemId && (isset($d['modo_consumo']) || isset($d['capas']) || isset($d['bodega_id']))) {
-                    $capasSeleccion[$itemId] = [
-                        'modo'      => $d['modo_consumo'] ?? 'FIFO',
-                        'capas'     => $d['capas'] ?? [],
-                        'bodega_id' => isset($d['bodega_id']) ? (int) $d['bodega_id'] : null,
-                    ];
-                }
-            }
-        }
-        $this->_ajustarInventarioPorPreparacion($preparacionId, -1, $responsable, $capasSeleccion);
+            $this->_ajustarInventarioPorPreparacion($preparacionId, -1, $responsable, $capasSeleccion);
 
-        $this->db->transComplete();
-
-        if (!$this->db->transStatus()) {
-            $error = $this->db->error();
-            log_message('error', 'Preparacion transaction failed: ' . json_encode($error));
-            throw new Exception("Error al guardar la preparación: " . ($error['message'] ?? 'error desconocido'));
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            throw new Exception("Error al guardar la preparación: " . $e->getMessage());
         }
 
         return $this->get_preparacion_by_id($preparacionId);
@@ -187,9 +187,12 @@ class PreparacionesModel extends BaseModel
         $movimientoModel = new MovimientoInventarioModel();
         $capasModel      = new InventarioCapasModel();
 
-        // Para cancelaciones, restaurar capas
         if ($multiplicador > 0) {
+            // Cancelación: restaurar capas y borrar histórico de costos
             $capasModel->restaurarCapas($prepId);
+            $this->db->table('produccion_insumos_detalle')
+                ->where('preparacion_id', $prepId)
+                ->delete();
         }
 
         foreach ($ingredientes as $ing) {
@@ -200,16 +203,31 @@ class PreparacionesModel extends BaseModel
 
             if ($diff == 0) continue;
 
-            // ── Consumo por capas (solo al descontar, no al cancelar) ──
+            $seleccion           = $capasSeleccion[$itemId] ?? null;
+            $seleccionProveedorId = isset($seleccion['proveedor_id']) ? (int) $seleccion['proveedor_id'] : null;
+
+            // ── Consumo por capas (solo al descontar) ──────────────────────────
             $consumosCapas = [];
             if ($multiplicador < 0 && $capasModel->tieneCapas($itemId)) {
-                $seleccion = $capasSeleccion[$itemId] ?? null;
-
                 if ($seleccion && $seleccion['modo'] === 'MANUAL' && !empty($seleccion['capas'])) {
                     $consumosCapas = $capasModel->consumirCapasManual($seleccion['capas']);
+
+                } elseif ($seleccionProveedorId) {
+                    $consumosCapas = $capasModel->consumirCapasPorProveedor(
+                        $itemId, $cantidadAbs, $seleccionProveedorId, $seleccion['bodega_id'] ?? null
+                    );
+                    $consumido = array_sum(array_column($consumosCapas, 'cantidad_consumida'));
+                    if ($consumido < $cantidadAbs - 0.001) {
+                        throw new Exception(
+                            "Stock insuficiente del proveedor #{$seleccionProveedorId} para el ingrediente #{$itemId}. "
+                            . "Disponible: {$consumido} kg, Requerido: {$cantidadAbs} kg"
+                        );
+                    }
+
                 } else {
-                    $bodegaFiltro = $seleccion['bodega_id'] ?? null;
-                    $consumosCapas = $capasModel->consumirCapasFIFO($itemId, $cantidadAbs, $bodegaFiltro);
+                    $consumosCapas = $capasModel->consumirCapasFIFO(
+                        $itemId, $cantidadAbs, $seleccion['bodega_id'] ?? null
+                    );
                 }
 
                 if (!empty($consumosCapas)) {
@@ -220,7 +238,7 @@ class PreparacionesModel extends BaseModel
                 }
             }
 
-            // ── Actualizar inventario agregado (compatibilidad) ──
+            // ── Inventario agregado (compatibilidad) ───────────────────────────
             $stock = $this->db->query(
                 'SELECT id_inventario, cantidad, bodegas_id FROM inventario WHERE item_general_id = ? ORDER BY cantidad DESC LIMIT 1',
                 [$itemId]
@@ -242,7 +260,21 @@ class PreparacionesModel extends BaseModel
                 );
             }
 
-            // ── Kardex ──
+            // ── Histórico de costos congelados ─────────────────────────────────
+            if ($multiplicador < 0) {
+                $this->db->table('produccion_insumos_detalle')->insert([
+                    'preparacion_id'  => $prepId,
+                    'item_general_id' => $itemId,
+                    'proveedor_id'    => $seleccionProveedorId,
+                    'bodega_id'       => $bodegaId,
+                    'cantidad'        => $cantidadAbs,
+                    'costo_unitario'  => $costoUnitario,
+                    'subtotal'        => round($cantidadAbs * $costoUnitario, 4),
+                    'created_at'      => date('Y-m-d H:i:s'),
+                ]);
+            }
+
+            // ── Kardex ────────────────────────────────────────────────────────
             $tipoMovimiento = $multiplicador < 0 ? 'SALIDA' : 'ENTRADA';
             $descripcion    = $multiplicador < 0
                 ? "Consumo por orden de producción #{$prepId}"
@@ -460,23 +492,23 @@ class PreparacionesModel extends BaseModel
         $values   = array_values($fields);
         $values[] = $id;
 
-        $this->db->transStart();
+        $this->db->transBegin();
+        try {
+            $this->db->query("UPDATE preparaciones SET {$set} WHERE id_preparaciones = ?", $values);
 
-        $this->db->query("UPDATE preparaciones SET {$set} WHERE id_preparaciones = ?", $values);
-
-        if (isset($fields['estado'])) {
-            $newEstado = (int) $fields['estado'];
-            if ($oldEstado !== 3 && $newEstado === 3) {
-                $this->_ajustarInventarioPorPreparacion($id, 1, $responsable);
-            } elseif ($oldEstado === 3 && $newEstado !== 3) {
-                $this->_ajustarInventarioPorPreparacion($id, -1, $responsable);
+            if (isset($fields['estado'])) {
+                $newEstado = (int) $fields['estado'];
+                if ($oldEstado !== 3 && $newEstado === 3) {
+                    $this->_ajustarInventarioPorPreparacion($id, 1, $responsable);
+                } elseif ($oldEstado === 3 && $newEstado !== 3) {
+                    $this->_ajustarInventarioPorPreparacion($id, -1, $responsable);
+                }
             }
-        }
 
-        $this->db->transComplete();
-
-        if (!$this->db->transStatus()) {
-            throw new Exception('Error al actualizar la preparación y el inventario.');
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            throw new Exception('Error al actualizar la preparación: ' . $e->getMessage());
         }
 
         return $this->get_preparacion_by_id($id);

@@ -21,23 +21,23 @@ class MergeUnidadEmpaqueIntoUnidadCompra extends Migration
             }
         }
 
-        // 2. Migrar unidad_empaque → unidad_compra_id donde unidad_compra_id aún es NULL
-        //    UPPER() cubre: 'Unidad'→'UNIDAD', 'Caja'→'CAJA', 'Galon'→'GALON', 'Kilo'→'KILO', etc.
-        $this->db->query("
-            UPDATE item_proveedor ip
-            JOIN unidad u ON UPPER(TRIM(ip.unidad_empaque)) = UPPER(TRIM(u.nombre))
-            SET ip.unidad_compra_id = u.id_unidad
-            WHERE ip.unidad_compra_id IS NULL
-              AND ip.unidad_empaque IS NOT NULL
-              AND ip.unidad_empaque != ''
-        ");
-
-        // 3. Eliminar columna unidad_empaque
-        $existing = array_column(
+        // 2. Migrar unidad_empaque → unidad_compra_id (solo si la columna aún existe)
+        $columns = array_column(
             $this->db->query("SHOW COLUMNS FROM item_proveedor")->getResultArray(),
             'Field'
         );
-        if (in_array('unidad_empaque', $existing)) {
+
+        if (in_array('unidad_empaque', $columns)) {
+            $this->db->query("
+                UPDATE item_proveedor ip
+                JOIN unidad u ON UPPER(TRIM(ip.unidad_empaque)) = UPPER(TRIM(u.nombre))
+                SET ip.unidad_compra_id = u.id_unidad
+                WHERE ip.unidad_compra_id IS NULL
+                  AND ip.unidad_empaque IS NOT NULL
+                  AND ip.unidad_empaque != ''
+            ");
+
+            // 3. Eliminar columna unidad_empaque
             $this->forge->dropColumn('item_proveedor', 'unidad_empaque');
         }
     }

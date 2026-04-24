@@ -147,32 +147,39 @@ Manages cost layers for inventory tracking by provider/lot/date. Each inventory 
 
 **Key methods:**
 - `crearCapa(array $data)` — creates a new cost layer on OC receipt (provider, cost, qty, lot, bodega, OC reference)
-- `obtenerCapas(int $itemId, ?int $bodegaId)` — returns active layers with provider name, bodega name, unit conversion info, days in stock. Ordered by `fecha_ingreso ASC` (FIFO-ready)
-- `resumenStock(int $itemId, ?int $bodegaId)` — returns `stock_total` and `costo_promedio_ponderado`
-- `consumirCapasFIFO(int $itemId, float $cantidad, int $prepId, ?int $bodegaId)` — consumes from oldest layers first. Optional bodega filter
-- `consumirCapasManual(array $seleccion, int $prepId)` — consumes specific amounts from specific layers: `[{capa_id, cantidad}]`
+- `obtenerCapas(int $itemId, ?int $bodegaId, string $orden, ?int $proveedorId)` — returns active layers with provider/bodega details. Supports `proveedor_id` filter for directed stock queries
+- `resumenStock(int $itemId)` — returns `stock_total` and `costo_promedio_ponderado`
+- `consumirCapasFIFO(int $itemId, float $cantidad, ?int $bodegaId)` — FIFO from oldest layers first
+- `consumirCapasPorProveedor(int $itemId, float $cantidad, int $proveedorId, ?int $bodegaId)` — **NEW**: FIFO restricted to a specific proveedor's layers only. Throws if stock is insufficient.
+- `consumirCapasManual(array $seleccion)` — consumes specific amounts from specific layers: `[{capa_id, cantidad}]`
 - `restaurarCapas(int $prepId)` — reverses consumption when production order is cancelled
 - `registrarConsumos(int $prepId, array $consumos)` — writes to `preparacion_consumo_capas` table
 - `recalcularPromedioPonderado(int $itemId)` — updates `costos_item.costo_unitario` with weighted average from active layers
+- All consumo arrays include `proveedor_id` for traceability in `produccion_insumos_detalle`
 
 **Tables:**
 - `inventario_capas` — one row per cost layer: `id_capa`, `item_general_id`, `bodega_id`, `cantidad_original`, `cantidad_disponible`, `costo_unitario`, `proveedor_id`, `lote_proveedor`, `orden_compra_id`, `fecha_ingreso`, `estado` (activa/agotada)
-- `preparacion_consumo_capas` — consumption records: `capa_id`, `preparacion_id`, `cantidad_consumida`, `costo_unitario_consumo`
+- `preparacion_consumo_capas` — per-layer consumption detail: `capa_id`, `preparacion_id`, `cantidad_consumida`, `costo_unitario`, `costo_total`
+- `produccion_insumos_detalle` — **NEW**: frozen cost snapshot per ingredient per production order: `preparacion_id`, `item_general_id`, `proveedor_id`, `bodega_id`, `cantidad`, `costo_unitario` (frozen), `subtotal`, `created_at`. Cost here NEVER changes even if supplier raises prices later.
 
 ### CapasInventarioController (`app/Controllers/CapasInventarioController.php`)
 
 **Routes:**
-- `GET /api/inventario/{id}/capas?bodega_id=X` — all active layers for an item, with provider/bodega details
+- `GET /api/inventario/{id}/capas?bodega_id=X` — all active layers for an item, with provider/bodega details (includes `proveedor_id` per capa)
 - `GET /api/inventario/capas/bodegas` — distinct bodegas with active layers
 - `GET /api/inventario/capas/preparacion/{id}` — consumption history for a production order
 
-### PreparacionesModel — Layer Integration
+### PreparacionesModel — Provider-Directed Stock Selection
 
-`_ajustarInventarioPorPreparacion` was rewritten to support cost layers:
-- For consumption: checks if item has layers via `tieneCapas()`. If MANUAL mode with capas specified → `consumirCapasManual()`. Otherwise → `consumirCapasFIFO()` with optional bodega filter
-- For cancellation: calls `restaurarCapas($prepId)` to reverse consumption
-- Calculates real weighted cost from consumed layers
-- Still updates aggregate `inventario` table for backward compatibility
+`_ajustarInventarioPorPreparacion` supports three consumption modes per ingredient:
+1. **MANUAL** (capas specified): `consumirCapasManual()` — exact capa_ids with quantities
+2. **By proveedor** (`proveedor_id` in detalle): `consumirCapasPorProveedor()` — FIFO restricted to that supplier. Throws if stock insufficient (transaction rolls back all prior consumptions)
+3. **FIFO global** (default): `consumirCapasFIFO()` with optional bodega filter
+
+- All creates use `transBegin()`/`transCommit()`/`transRollback()` for proper atomic rollback on PHP exceptions (not just SQL errors)
+- On consumption: writes frozen cost record to `produccion_insumos_detalle`
+- On cancellation: calls `restaurarCapas()` + deletes `produccion_insumos_detalle` records for the prep
+- Factor de conversión is applied at OC receipt time, NOT at production time — formulation quantities are always in base unit (kg)
 
 ### OrdenesCompraController — Layer Creation on Receipt
 
@@ -197,6 +204,62 @@ Manages cost layers for inventory tracking by provider/lot/date. Each inventory 
 - **Rule**: inventory always stored in the base unit. Conversion happens at OC receipt time.
 - **Costing strategy**: Promedio Ponderado Móvil (moving weighted average) — implemented via `InventarioCapasModel::recalcularPromedioPonderado()` on OC receipt. Updates `costos_item.costo_unitario` from active cost layers.
 
+## Protocolo de Gestión de Capas de Costo
+
+Este protocolo describe el ciclo de vida completo de una unidad de materia prima desde su ingreso por OC hasta su consumo en producción, garantizando trazabilidad y costo histórico inmutable.
+
+### 1. Ingreso — Conversión de UOM al recibir OC
+
+Cuando `OrdenesCompraController::recibirLinea` procesa una línea de OC:
+
+1. Recupera `factor_conversion` del registro `item_proveedor` correspondiente.
+2. Calcula la **cantidad en unidad base**: `cantidadBase = cantidadRecibida × factorConversion` (e.g., 2 BULTOS × 25 = 50 kg).
+3. Calcula el **costo unitario en unidad base**: `costoUnitarioBase = precioUnitario / factorConversion` (e.g., $50.000/BULTO ÷ 25 = $2.000/kg).
+4. Llama a `InventarioCapasModel::crearCapa()` con `cantidad_original = cantidadBase` y `costo_unitario = costoUnitarioBase`.
+5. Llama a `recalcularPromedioPonderado(itemId)` para actualizar `costos_item.costo_unitario` con el nuevo promedio ponderado móvil.
+
+**Invariante**: `inventario_capas` siempre almacena cantidades y costos en unidad base (kg). La conversión ocurre una sola vez, en la recepción.
+
+### 2. Consumo en Producción — Cascada por Proveedor
+
+`PreparacionesModel::_ajustarInventarioPorPreparacion` enruta el consumo en tres modos según el payload recibido:
+
+| Modo | Condición en `capasConfig[itemId]` | Método llamado |
+|------|------------------------------------|----------------|
+| **MANUAL** | `modo = 'MANUAL'` y `capas: [{capa_id, cantidad}]` | `consumirCapasManual(capas)` |
+| **Por proveedor** | `proveedor_id` presente (y modo ≠ MANUAL) | `consumirCapasPorProveedor(itemId, cantidad, proveedorId, bodegaId)` |
+| **FIFO global** | Sin proveedor ni capas manuales | `consumirCapasFIFO(itemId, cantidad, bodegaId)` |
+
+**Cascada por proveedor** (`consumirCapasPorProveedor`):
+- Filtra `inventario_capas` por `item_general_id` + `proveedor_id` + `estado = 'activa'`.
+- Ordena por `fecha_ingreso ASC` (FIFO estricto dentro del proveedor).
+- Descuenta de la capa más antigua hasta cubrir la cantidad requerida; si la capa se agota, continúa con la siguiente del mismo proveedor.
+- Si la suma de todas las capas del proveedor es insuficiente, lanza `Exception` con detalle de déficit → el `catch` en `create_preparacion` llama a `transRollback()` y nada se persiste.
+
+**Garantía de atomicidad**: toda la secuencia (INSERT en `preparaciones`, consumo de capas, INSERT en `produccion_insumos_detalle`) ocurre dentro de un bloque `transBegin()` / `transCommit()`. Cualquier `Exception` PHP o error SQL dispara `transRollback()` completo.
+
+### 3. Costo Congelado — `produccion_insumos_detalle`
+
+Inmediatamente después de consumir las capas, `_ajustarInventarioPorPreparacion` escribe una fila por ingrediente en `produccion_insumos_detalle`:
+
+```
+preparacion_id  → FK a preparaciones (CASCADE DELETE)
+item_general_id → ingrediente consumido
+proveedor_id    → proveedor de las capas consumidas (nullable si FIFO global)
+bodega_id       → bodega de origen (nullable)
+cantidad        → kg consumidos (unidad base)
+costo_unitario  → promedio ponderado de las capas efectivamente consumidas (snapshot)
+subtotal        → cantidad × costo_unitario
+created_at      → timestamp de la operación
+```
+
+`costo_unitario` es un **snapshot inmutable**: aunque `costos_item.costo_unitario` cambie por recepciones futuras, el registro histórico de esta producción refleja el costo real de las capas que se descontaron. Esto permite:
+- Comparar costo teórico (promedio vigente en `costos_item`) vs. costo real (capas realmente usadas).
+- Auditorías de rentabilidad por lote de producción.
+- El widget de **Variación de Costo** en el frontend (`ConfirmSubForm`) usa `onCostoChange(itemId, {real, teorico})` para mostrar Δ% en tiempo real antes de confirmar la producción.
+
+**Cancelación**: si una preparación pasa a estado cancelado, `restaurarCapas(prepId)` revierte los descuentos en `inventario_capas` y se eliminan las filas correspondientes en `produccion_insumos_detalle`.
+
 ## Key Configuration Files
 
 | File | Purpose |
@@ -218,3 +281,7 @@ Manages cost layers for inventory tracking by provider/lot/date. Each inventory 
 
 - **Requisiciones management page**: frontend page in Compras module to list, approve, and convert requisitions to OC.
 - **"Sin vincular" badge**: visual indicator on item_proveedor table rows with no `item_general_id`.
+
+---
+
+> **Estado del sistema (2026-04-24):** El módulo de Producción cumple el estándar **MRP II — Costeo por Lotes**: selección de proveedor dirigida, consumo FIFO por capa, costo unitario congelado en `produccion_insumos_detalle` al momento de la producción, y atomicidad transaccional completa. El histórico de costos es inmutable e independiente de variaciones futuras de precios de proveedores.

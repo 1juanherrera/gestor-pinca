@@ -20,7 +20,7 @@ class InventarioCapasModel extends BaseModel
         return $this->db->insertID();
     }
 
-    public function obtenerCapas(int $itemGeneralId, ?int $bodegaId = null, string $orden = 'ic.fecha_ingreso ASC'): array
+    public function obtenerCapas(int $itemGeneralId, ?int $bodegaId = null, string $orden = 'ic.fecha_ingreso ASC', ?int $proveedorId = null): array
     {
         $builder = $this->db->table('inventario_capas ic')
             ->select('ic.*, p.nombre_empresa AS proveedor_nombre, b.nombre AS bodega_nombre, u.nombre AS unidad_compra_nombre')
@@ -31,11 +31,16 @@ class InventarioCapasModel extends BaseModel
             ->where('ic.estado', 1)
             ->where('ic.cantidad_disponible >', 0);
 
-        if ($bodegaId) {
-            $builder->where('ic.bodegas_id', $bodegaId);
-        }
+        if ($bodegaId)    { $builder->where('ic.bodegas_id',   $bodegaId); }
+        if ($proveedorId) { $builder->where('ic.proveedor_id', $proveedorId); }
 
         return $builder->orderBy($orden)->get()->getResult();
+    }
+
+    public function consumirCapasPorProveedor(int $itemGeneralId, float $cantidadRequerida, int $proveedorId, ?int $bodegaId = null): array
+    {
+        $capas = $this->obtenerCapas($itemGeneralId, $bodegaId, 'ic.fecha_ingreso ASC', $proveedorId);
+        return $this->_consumirDeCapas($capas, $cantidadRequerida);
     }
 
     public function resumenStock(int $itemGeneralId): array
@@ -95,6 +100,7 @@ class InventarioCapasModel extends BaseModel
             $consumos[] = [
                 'capa_id'            => $capaId,
                 'item_general_id'    => (int) $capa->item_general_id,
+                'proveedor_id'       => $capa->proveedor_id ? (int) $capa->proveedor_id : null,
                 'cantidad_consumida' => round($consumir, 4),
                 'costo_unitario'     => (float) $capa->costo_unitario,
                 'costo_total'        => round($consumir * (float) $capa->costo_unitario, 4),
@@ -199,6 +205,7 @@ class InventarioCapasModel extends BaseModel
             $consumos[] = [
                 'capa_id'            => (int) $capa->id_capa,
                 'item_general_id'    => (int) $capa->item_general_id,
+                'proveedor_id'       => $capa->proveedor_id ? (int) $capa->proveedor_id : null,
                 'cantidad_consumida' => round($consumir, 4),
                 'costo_unitario'     => (float) $capa->costo_unitario,
                 'costo_total'        => round($consumir * (float) $capa->costo_unitario, 4),
