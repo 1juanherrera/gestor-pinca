@@ -52,6 +52,7 @@ $routes->group('api', function ($routes) {
     $routes->get('formulaciones/costos/(:num)/proveedor/(:num)', 'FormulacionesController::calcular_costos_por_proveedor/$1/$2');
     $routes->get('formulaciones/costos/(:num)', 'FormulacionesController::calcular_costos_volumen/$1');
     $routes->get('formulaciones/(:num)/proveedores', 'FormulacionesController::proveedores_formulacion/$1');
+    $routes->get('formulaciones/(:num)/opciones-ingredientes', 'FormulacionesController::opciones_proveedor_ingrediente/$1');
     $routes->get('formulaciones/recalcular_costos/(:num)/(:segment)', 'FormulacionesController::recalcular_costos_por_volumen/$1/$2');
     $routes->get('formulaciones/(:num)', 'FormulacionesController::show/$1');
     $routes->post('formulaciones',        'FormulacionesController::create');
@@ -95,6 +96,11 @@ $routes->group('api', function ($routes) {
     $routes->post('inventario/traspaso', 'InventarioController::traspaso');
     $routes->post('inventario/ingresar', 'InventarioController::ingresarABodega');
     $routes->delete('inventario/(:num)/bodega/(:num)', 'InventarioController::removeFromBodega/$1/$2');
+
+    // CAPAS DE INVENTARIO
+    $routes->get('inventario/capas/bodegas',              'CapasInventarioController::bodegasConCapas');
+    $routes->get('inventario/(:num)/capas',               'CapasInventarioController::capas/$1');
+    $routes->get('inventario/capas/preparacion/(:num)',    'CapasInventarioController::consumosPorPreparacion/$1');
 
     // COSTOS ITEM
     $routes->put('costos_item/(:num)', 'CostosItemController::update/$1');

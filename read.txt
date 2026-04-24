@@ -49,3 +49,26 @@ primas y se necesita restar esas cantidades que se usan en una produccion indepe
 está implementando, que esta bien hecho funcionalmente, que errores tengo y que le falta en base al contexto que te di, dame un plan de ejecución para implementar en el sistema y dime
 como manejan estos los grandes sistemas MRP que tienen empresas como pintuco y etc ¿Cual sería la mejor practica? y como se debe hacer. Hagamosle focus a lo que es formulaciones para
 produccion, contemplando diferentes casos, ya sea un solo proveedor, dos proveedores o etc y que otros CASOS pueden surgir que no este contemplando yo.
+
+
+
+ Build exitoso sin errores. Verifico que el PHP del backend no tenga errores de sintaxis.
+
+  Searched for 2 patterns (ctrl+o to expand)
+
+● Todo correcto. Resumen de los cambios completados:
+
+  1. Fix ProveedorCostSelect dropdown — Reescrito usando createPortal para renderizar el dropdown en document.body. Ya no se corta por el overflow-hidden del contenedor padre. Se calcula
+  la posición dinámicamente con getBoundingClientRect() y se actualiza en scroll/resize.
+
+  2. Selector de proveedor por ingrediente en FormulacionesTable — Cada fila de materia prima ahora tiene un mini-dropdown (IngredienteProveedorSelect) que muestra los proveedores
+  vinculados con su precio_por_kg. Al seleccionar uno:
+  - El costo unitario y total de esa fila se recalculan dinámicamente con el precio del proveedor elegido
+  - La fila se resalta en amber
+  - El footer muestra un total "Selección" con la suma recalculada
+  - Backend: nuevo endpoint GET /api/formulaciones/{id}/opciones-ingredientes que expone get_opciones_proveedor_formulacion()
+
+  3. Documentación CLAUDE.md actualizada en ambos proyectos:
+  - Backend: documentado InventarioCapasModel, CapasInventarioController, integración de capas en PreparacionesModel y OrdenesCompraController, nuevo endpoint de opciones por ingrediente,
+  migración de capas, estrategia de costeo actualizada
+  - Frontend: documentado useCapasStock, CapasStockPanel, modificaciones a FormulacionesTable, ProveedorCostSelect, preparationModal, patrón de portal dropdown, nuevas rutas API

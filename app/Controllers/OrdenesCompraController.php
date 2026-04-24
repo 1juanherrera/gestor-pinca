@@ -5,6 +5,7 @@ namespace App\Controllers;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\OrdenesCompraModel;
 use App\Models\InventarioModel;
+use App\Models\InventarioCapasModel;
 
 class OrdenesCompraController extends ResourceController
 {
@@ -212,18 +213,47 @@ class OrdenesCompraController extends ResourceController
 
             // Ingresar al inventario
             if ($linea['item_general_id']) {
+                $itemGeneralId = (int) $linea['item_general_id'];
+
+                // Obtener datos del item_proveedor para conversión de unidades
+                $itemProv = $linea['item_proveedor_id']
+                    ? $db->table('item_proveedor')
+                        ->where('id_item_proveedor', $linea['item_proveedor_id'])
+                        ->get()->getRow()
+                    : null;
+
+                $factorConversion = $itemProv ? max((float) ($itemProv->factor_conversion ?: 1), 0.001) : 1;
+                $cantidadBase     = $cantidadRecibida * $factorConversion;
+                $costoUnitarioKg  = (float) $linea['precio_unit'] / $factorConversion;
+
+                // Crear capa de inventario
+                $capasModel = new InventarioCapasModel();
+                $capasModel->crearCapa([
+                    'item_general_id'     => $itemGeneralId,
+                    'bodegas_id'          => $bodegaId,
+                    'proveedor_id'        => $orden['proveedor_id'] ? (int) $orden['proveedor_id'] : null,
+                    'item_proveedor_id'   => $linea['item_proveedor_id'] ? (int) $linea['item_proveedor_id'] : null,
+                    'orden_compra_id'     => (int) $idOrden,
+                    'cantidad_original'   => $cantidadBase,
+                    'cantidad_disponible' => $cantidadBase,
+                    'costo_unitario'      => $costoUnitarioKg,
+                    'unidad_compra_id'    => $itemProv->unidad_compra_id ?? null,
+                    'factor_conversion'   => $factorConversion,
+                    'precio_compra'       => (float) $linea['precio_unit'],
+                    'lote_proveedor'      => $data['lote_proveedor'] ?? null,
+                ]);
+
+                // Inventario agregado (compatibilidad)
                 $inventarioModel = new InventarioModel();
-                $ok = $inventarioModel->ingresarABodega(
-                    (int) $linea['item_general_id'],
-                    $bodegaId,
-                    $cantidadRecibida
-                );
+                $ok = $inventarioModel->ingresarABodega($itemGeneralId, $bodegaId, $cantidadBase);
                 if (!$ok) throw new \Exception('Error al ingresar al inventario.');
 
-                // Actualizar costo de producción en item_general
+                // Recalcular promedio ponderado
+                $capasModel->recalcularPromedioPonderado($itemGeneralId);
+
                 $db->table('item_general')
-                    ->where('id_item_general', $linea['item_general_id'])
-                    ->update(['costo_produccion' => $linea['precio_unit']]);
+                    ->where('id_item_general', $itemGeneralId)
+                    ->update(['costo_produccion' => $costoUnitarioKg]);
             }
 
             $db->transComplete();

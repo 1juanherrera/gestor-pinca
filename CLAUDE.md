@@ -45,7 +45,7 @@ HTTP Request → CorsFilter (all routes) → [JwtFilter (protected routes)] → 
 - **JWT Auth**: Applied selectively per route. `JwtFilter` expects `Authorization: Bearer <token>`. Tokens expire in 8 hours. Secret key comes from `TOKEN_SECRET` env var (falls back to a hardcoded default).
 - All routes are prefixed with `/api` (see `app/Config/Routes.php`).
 
-### Controllers (28 total)
+### Controllers (29 total)
 
 All controllers live in `app/Controllers/`. They either extend `BaseController` or CodeIgniter's `ResourceController`. Controllers never return HTML — they use `$this->response->setJSON(...)` or `$this->respond(...)`.
 
@@ -78,8 +78,9 @@ All controllers live in `app/Controllers/`. They either extend `BaseController` 
 | `UnidadController` | Units of measure |
 | `EmpresaController` | Company profile |
 | `InstalacionesController` | Installations / locations |
+| `CapasInventarioController` | Cost layers (capas): stock by item, bodegas with layers, consumption history |
 
-### Models (28 total)
+### Models (29 total)
 
 All models extend `BaseModel` (`app/Models/BaseModel.php`) which extends CI4's `Model`. `BaseModel` provides generic helpers:
 - `get_all()` — fetch all records
@@ -103,6 +104,7 @@ Models use `allowedFields` for mass assignment protection. Complex queries (JOIN
 1. `2026-04-17-000001_CreateTamboresTable` — tambores table
 2. `2026-04-21-000001_CreateRequisicionesCompraTable` — requisiciones_compra table
 3. `2026-04-21-000002_AddUnidadBaseAndItemProveedorCompra` — adds KILO to unidad table; adds `unidad_compra_id` (FK→unidad) and `factor_conversion DECIMAL(15,6)` to `item_proveedor`
+4. `2026-04-23-000001_CreateInventarioCapasSystem` — creates `inventario_capas` and `preparacion_consumo_capas` tables; migrates existing inventory saldos into legacy layers
 
 SQL dumps in `/initdb/` are auto-loaded by Docker on first run.
 
@@ -112,7 +114,7 @@ Routes follow this pattern per domain:
 1. Specific sub-resource routes come **before** generic `/:id` routes
 2. RESTful verbs: GET (list/detail), POST (create), PUT (update), DELETE, PATCH (state changes)
 
-Domain groups in `app/Config/Routes.php`: empresa, usuarios, items, instalaciones, bodegas, formulaciones, proveedores, item_proveedores, clientes, facturas, inventario, costos_item, costos_indirectos, unidades, categorias, preparaciones, requisiciones, pagos_cliente, cartera, gestiones_cobro, notas_credito, cotizaciones, remisiones, comparador, movimientos_inventario, tambores, ordenes_compra.
+Domain groups in `app/Config/Routes.php`: empresa, usuarios, items, instalaciones, bodegas, formulaciones, proveedores, item_proveedores, clientes, facturas, inventario, capas_inventario, costos_item, costos_indirectos, unidades, categorias, preparaciones, requisiciones, pagos_cliente, cartera, gestiones_cobro, notas_credito, cotizaciones, remisiones, comparador, movimientos_inventario, tambores, ordenes_compra.
 
 ### JWT Authentication
 
@@ -139,6 +141,53 @@ Domain groups in `app/Config/Routes.php`: empresa, usuarios, items, instalacione
 - `crearRequisiciones()` — batch insert.
 - `convertirAOC()` — groups by proveedor, creates one OC per supplier.
 
+### InventarioCapasModel (`app/Models/InventarioCapasModel.php`)
+
+Manages cost layers for inventory tracking by provider/lot/date. Each inventory entry (OC receipt) creates a separate layer preserving its origin cost.
+
+**Key methods:**
+- `crearCapa(array $data)` — creates a new cost layer on OC receipt (provider, cost, qty, lot, bodega, OC reference)
+- `obtenerCapas(int $itemId, ?int $bodegaId)` — returns active layers with provider name, bodega name, unit conversion info, days in stock. Ordered by `fecha_ingreso ASC` (FIFO-ready)
+- `resumenStock(int $itemId, ?int $bodegaId)` — returns `stock_total` and `costo_promedio_ponderado`
+- `consumirCapasFIFO(int $itemId, float $cantidad, int $prepId, ?int $bodegaId)` — consumes from oldest layers first. Optional bodega filter
+- `consumirCapasManual(array $seleccion, int $prepId)` — consumes specific amounts from specific layers: `[{capa_id, cantidad}]`
+- `restaurarCapas(int $prepId)` — reverses consumption when production order is cancelled
+- `registrarConsumos(int $prepId, array $consumos)` — writes to `preparacion_consumo_capas` table
+- `recalcularPromedioPonderado(int $itemId)` — updates `costos_item.costo_unitario` with weighted average from active layers
+
+**Tables:**
+- `inventario_capas` — one row per cost layer: `id_capa`, `item_general_id`, `bodega_id`, `cantidad_original`, `cantidad_disponible`, `costo_unitario`, `proveedor_id`, `lote_proveedor`, `orden_compra_id`, `fecha_ingreso`, `estado` (activa/agotada)
+- `preparacion_consumo_capas` — consumption records: `capa_id`, `preparacion_id`, `cantidad_consumida`, `costo_unitario_consumo`
+
+### CapasInventarioController (`app/Controllers/CapasInventarioController.php`)
+
+**Routes:**
+- `GET /api/inventario/{id}/capas?bodega_id=X` — all active layers for an item, with provider/bodega details
+- `GET /api/inventario/capas/bodegas` — distinct bodegas with active layers
+- `GET /api/inventario/capas/preparacion/{id}` — consumption history for a production order
+
+### PreparacionesModel — Layer Integration
+
+`_ajustarInventarioPorPreparacion` was rewritten to support cost layers:
+- For consumption: checks if item has layers via `tieneCapas()`. If MANUAL mode with capas specified → `consumirCapasManual()`. Otherwise → `consumirCapasFIFO()` with optional bodega filter
+- For cancellation: calls `restaurarCapas($prepId)` to reverse consumption
+- Calculates real weighted cost from consumed layers
+- Still updates aggregate `inventario` table for backward compatibility
+
+### OrdenesCompraController — Layer Creation on Receipt
+
+`recibirLinea` was modified to:
+- Fetch `item_proveedor` data for `factor_conversion`
+- Calculate `cantidadBase = cantidadRecibida × factorConversion` and `costoUnitarioKg = precio_unit / factorConversion`
+- Create a cost layer via `crearCapa()` with provider, OC, unit conversion, lot info
+- Call `recalcularPromedioPonderado()` to update `costos_item`
+
+### FormulacionesController — Per-ingredient Provider Options
+
+- `GET /api/formulaciones/{id}/opciones-ingredientes` → `opciones_proveedor_ingrediente()` — returns per-ingredient supplier options with `precio_por_kg`, sorted by cheapest. Uses `FormulacionesModel::get_opciones_proveedor_formulacion()`
+- `GET /api/formulaciones/{id}/proveedores` → `proveedores_formulacion()` — returns providers that cover the formulation's raw materials (used by global provider simulation)
+- `GET /api/formulaciones/costos/{id}/proveedor/{provId}` → `calcular_costos_por_proveedor()` — simulates cost using one specific provider for ALL ingredients
+
 ## Unit of Measure Design
 
 - `item_general.unidad_id` = sales/presentation unit (GALON, TAMBOR, CUÑETE — all in `unidad` table with `escala` = gallons factor)
@@ -146,7 +195,7 @@ Domain groups in `app/Config/Routes.php`: empresa, usuarios, items, instalacione
 - `item_proveedor.unidad_compra_id` = unit the supplier sells in
 - `item_proveedor.factor_conversion` = multiplier to convert purchase unit → base unit (e.g., 1 BULTO = 25 KG → factor=25)
 - **Rule**: inventory always stored in the base unit. Conversion happens at OC receipt time.
-- **Costing strategy**: Promedio Ponderado Móvil (moving weighted average) — recommended but not yet implemented on OC receipt. Currently uses manual standard cost in `costos_item.costo_unitario`.
+- **Costing strategy**: Promedio Ponderado Móvil (moving weighted average) — implemented via `InventarioCapasModel::recalcularPromedioPonderado()` on OC receipt. Updates `costos_item.costo_unitario` from active cost layers.
 
 ## Key Configuration Files
 
@@ -167,5 +216,5 @@ Domain groups in `app/Config/Routes.php`: empresa, usuarios, items, instalacione
 
 ## Pending / Next Steps
 
-- **Promedio Ponderado en recepción de OC**: when `OrdenesCompraController::recibirLinea` runs, update `inventario.costo_promedio` using: `(qty_actual × costo_actual + qty_nueva × precio_compra) / (qty_actual + qty_nueva)`. Requires `ALTER TABLE inventario ADD COLUMN costo_promedio DECIMAL(15,4) DEFAULT 0`.
 - **Requisiciones management page**: frontend page in Compras module to list, approve, and convert requisitions to OC.
+- **"Sin vincular" badge**: visual indicator on item_proveedor table rows with no `item_general_id`.

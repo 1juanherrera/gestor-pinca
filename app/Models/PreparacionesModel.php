@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Exception;
 use App\Models\MovimientoInventarioModel;
+use App\Models\InventarioCapasModel;
 
 class PreparacionesModel extends BaseModel
 {
@@ -139,9 +140,22 @@ class PreparacionesModel extends BaseModel
             }
         }
 
-        // Descontar las cantidades del inventario
-        $responsable = $data['responsable'] ?? null;
-        $this->_ajustarInventarioPorPreparacion($preparacionId, -1, $responsable);
+        // Descontar las cantidades del inventario (con soporte de capas)
+        $responsable      = $data['responsable'] ?? null;
+        $capasSeleccion   = [];
+        if (!empty($data['detalle']) && is_array($data['detalle'])) {
+            foreach ($data['detalle'] as $d) {
+                $itemId = (int) ($d['item_general_id'] ?? 0);
+                if ($itemId && (isset($d['modo_consumo']) || isset($d['capas']) || isset($d['bodega_id']))) {
+                    $capasSeleccion[$itemId] = [
+                        'modo'      => $d['modo_consumo'] ?? 'FIFO',
+                        'capas'     => $d['capas'] ?? [],
+                        'bodega_id' => isset($d['bodega_id']) ? (int) $d['bodega_id'] : null,
+                    ];
+                }
+            }
+        }
+        $this->_ajustarInventarioPorPreparacion($preparacionId, -1, $responsable, $capasSeleccion);
 
         $this->db->transComplete();
 
@@ -158,11 +172,12 @@ class PreparacionesModel extends BaseModel
      * Ajusta el inventario de las materias primas para una preparación.
      * $multiplicador = -1 para descontar (al crear o reactivar)
      * $multiplicador =  1 para sumar (al cancelar)
+     * $capasSeleccion = mapa por item_general_id con modo (MANUAL/FIFO), capas seleccionadas y bodega
      */
-    private function _ajustarInventarioPorPreparacion(int $prepId, int $multiplicador, string $responsable = null): void
+    private function _ajustarInventarioPorPreparacion(int $prepId, int $multiplicador, string $responsable = null, array $capasSeleccion = []): void
     {
         $ingredientes = $this->db->query(
-            'SELECT phig.item_general_id, phig.cantidad, COALESCE(ci.costo_unitario, 0) as costo_unitario 
+            'SELECT phig.item_general_id, phig.cantidad, COALESCE(ci.costo_unitario, 0) as costo_unitario
              FROM preparaciones_has_item_general phig
              LEFT JOIN costos_item ci ON ci.item_general_id = phig.item_general_id
              WHERE phig.preparaciones_id_preparaciones = ?',
@@ -170,25 +185,52 @@ class PreparacionesModel extends BaseModel
         )->getResult();
 
         $movimientoModel = new MovimientoInventarioModel();
+        $capasModel      = new InventarioCapasModel();
+
+        // Para cancelaciones, restaurar capas
+        if ($multiplicador > 0) {
+            $capasModel->restaurarCapas($prepId);
+        }
 
         foreach ($ingredientes as $ing) {
-            $itemId = (int) $ing->item_general_id;
-            $diff = (float) $ing->cantidad * $multiplicador;
+            $itemId        = (int) $ing->item_general_id;
+            $cantidadAbs   = (float) $ing->cantidad;
+            $diff          = $cantidadAbs * $multiplicador;
             $costoUnitario = (float) $ing->costo_unitario;
 
             if ($diff == 0) continue;
 
+            // ── Consumo por capas (solo al descontar, no al cancelar) ──
+            $consumosCapas = [];
+            if ($multiplicador < 0 && $capasModel->tieneCapas($itemId)) {
+                $seleccion = $capasSeleccion[$itemId] ?? null;
+
+                if ($seleccion && $seleccion['modo'] === 'MANUAL' && !empty($seleccion['capas'])) {
+                    $consumosCapas = $capasModel->consumirCapasManual($seleccion['capas']);
+                } else {
+                    $bodegaFiltro = $seleccion['bodega_id'] ?? null;
+                    $consumosCapas = $capasModel->consumirCapasFIFO($itemId, $cantidadAbs, $bodegaFiltro);
+                }
+
+                if (!empty($consumosCapas)) {
+                    $capasModel->registrarConsumos($prepId, $consumosCapas);
+                    $costoReal = array_sum(array_column($consumosCapas, 'costo_total'));
+                    $qtyReal   = array_sum(array_column($consumosCapas, 'cantidad_consumida'));
+                    $costoUnitario = $qtyReal > 0 ? $costoReal / $qtyReal : $costoUnitario;
+                }
+            }
+
+            // ── Actualizar inventario agregado (compatibilidad) ──
             $stock = $this->db->query(
                 'SELECT id_inventario, cantidad, bodegas_id FROM inventario WHERE item_general_id = ? ORDER BY cantidad DESC LIMIT 1',
                 [$itemId]
             )->getRow();
 
-            $bodegaId = $stock ? (int) $stock->bodegas_id : 1;
+            $bodegaId      = $stock ? (int) $stock->bodegas_id : 1;
             $saldoAnterior = $stock ? (float) $stock->cantidad : 0.0;
-            $saldoNuevo = $saldoAnterior + $diff;
+            $saldoNuevo    = $saldoAnterior + $diff;
 
             if (!$stock) {
-                // Si no existe stock para el ítem, lo creamos en la bodega por defecto (1)
                 $this->db->query(
                     'INSERT INTO inventario (item_general_id, bodegas_id, cantidad, estado, tipo, fecha_update) VALUES (?, ?, ?, 1, 1, NOW())',
                     [$itemId, $bodegaId, $diff]
@@ -200,15 +242,15 @@ class PreparacionesModel extends BaseModel
                 );
             }
 
-            // Registrar movimiento en el kardex
+            // ── Kardex ──
             $tipoMovimiento = $multiplicador < 0 ? 'SALIDA' : 'ENTRADA';
-            $descripcion = $multiplicador < 0 
+            $descripcion    = $multiplicador < 0
                 ? "Consumo por orden de producción #{$prepId}"
                 : "Reintegro por cancelación de orden #{$prepId}";
 
             $movimientoModel->registrarMovimiento([
                 'tipo_movimiento'  => $tipoMovimiento,
-                'cantidad'         => abs($diff), // Se guarda la cantidad absoluta del movimiento
+                'cantidad'         => abs($diff),
                 'fecha_movimiento' => date('Y-m-d H:i:s'),
                 'descripcion'      => $descripcion,
                 'referencia_tipo'  => 'ORDEN_PRODUCCION',
@@ -218,7 +260,7 @@ class PreparacionesModel extends BaseModel
                 'costo_unitario'   => $costoUnitario,
                 'saldo_anterior'   => $saldoAnterior,
                 'saldo_nuevo'      => $saldoNuevo,
-                'responsable'      => $responsable
+                'responsable'      => $responsable,
             ]);
         }
     }
@@ -288,6 +330,18 @@ class PreparacionesModel extends BaseModel
             [$id]
         )->getResult();
 
+        $consumoCapas = $this->db->query(
+            'SELECT pcc.*, ic.proveedor_id, ic.lote_proveedor, ic.fecha_ingreso,
+                    p.nombre_empresa AS proveedor_nombre, b.nombre AS bodega_nombre
+             FROM preparacion_consumo_capas pcc
+             INNER JOIN inventario_capas ic ON ic.id_capa = pcc.capa_id
+             LEFT JOIN proveedor p ON p.id_proveedor = ic.proveedor_id
+             LEFT JOIN bodegas b ON b.id_bodegas = ic.bodegas_id
+             WHERE pcc.preparacion_id = ?
+             ORDER BY pcc.item_general_id, ic.fecha_ingreso',
+            [$id]
+        )->getResult();
+
         $estados = [0 => 'PENDIENTE', 1 => 'EN_PROCESO', 2 => 'COMPLETADA', 3 => 'CANCELADA'];
         $escala  = (float) $prep->escala;
 
@@ -321,6 +375,18 @@ class PreparacionesModel extends BaseModel
                 'categoria'      => $ci->categoria,
                 'valor_aplicado' => (float) $ci->valor_aplicado,
             ], $costosIndirectos),
+            'consumo_capas' => array_map(fn($cc) => [
+                'id'                 => (int) $cc->id,
+                'capa_id'            => (int) $cc->capa_id,
+                'item_general_id'    => (int) $cc->item_general_id,
+                'cantidad_consumida' => (float) $cc->cantidad_consumida,
+                'costo_unitario'     => (float) $cc->costo_unitario,
+                'costo_total'        => (float) $cc->costo_total,
+                'proveedor_nombre'   => $cc->proveedor_nombre,
+                'lote_proveedor'     => $cc->lote_proveedor,
+                'bodega_nombre'      => $cc->bodega_nombre,
+                'fecha_ingreso'      => $cc->fecha_ingreso,
+            ], $consumoCapas),
         ];
     }
 
@@ -400,12 +466,9 @@ class PreparacionesModel extends BaseModel
 
         if (isset($fields['estado'])) {
             $newEstado = (int) $fields['estado'];
-            // 3 = CANCELADA
             if ($oldEstado !== 3 && $newEstado === 3) {
-                // Cancelada -> Restaurar inventario (sumar)
                 $this->_ajustarInventarioPorPreparacion($id, 1, $responsable);
             } elseif ($oldEstado === 3 && $newEstado !== 3) {
-                // Reactivada -> Descontar inventario (restar)
                 $this->_ajustarInventarioPorPreparacion($id, -1, $responsable);
             }
         }

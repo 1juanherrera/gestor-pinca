@@ -112,6 +112,19 @@ class FormulacionesController extends ResourceController
         }
     }
 
+    public function opciones_proveedor_ingrediente($itemId = null)
+    {
+        try {
+            if (empty($itemId)) {
+                return $this->fail('El parámetro itemId es requerido.', 400);
+            }
+            $data = $this->model->get_opciones_proveedor_formulacion((int) $itemId);
+            return $this->respond($data);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage(), 400);
+        }
+    }
+
     public function calcular_costos_por_proveedor($itemId = null, $proveedorId = null)
     {
         try {
