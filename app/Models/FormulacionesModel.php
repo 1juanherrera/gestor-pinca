@@ -135,7 +135,7 @@ class FormulacionesModel extends BaseModel
 
         // 2. Formulación activa
         $formulacion = $this->db->query('
-            SELECT id_formulaciones
+            SELECT id_formulaciones, nombre, descripcion
             FROM formulaciones
             WHERE item_general_id = ? AND estado = 1
             LIMIT 1
@@ -206,6 +206,8 @@ class FormulacionesModel extends BaseModel
                 'porcentaje_utilidad' => (float) $item->porcentaje_utilidad,
             ],
             'formulacion_id'  => (int) $formulacion->id_formulaciones,
+            'nombre'          => $formulacion->nombre,
+            'descripcion'     => $formulacion->descripcion,
             'materias_primas' => $materiasFormateadas,
         ];
     }
