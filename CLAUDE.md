@@ -45,14 +45,15 @@ HTTP Request → CorsFilter (all routes) → [JwtFilter (protected routes)] → 
 - **JWT Auth**: Applied selectively per route. `JwtFilter` expects `Authorization: Bearer <token>`. Tokens expire in 8 hours. Secret key comes from `TOKEN_SECRET` env var (falls back to a hardcoded default).
 - All routes are prefixed with `/api` (see `app/Config/Routes.php`).
 
-### Controllers (29 total)
+### Controllers (30 total)
 
 All controllers live in `app/Controllers/`. They either extend `BaseController` or CodeIgniter's `ResourceController`. Controllers never return HTML — they use `$this->response->setJSON(...)` or `$this->respond(...)`.
 
 | Controller | Domain |
 |---|---|
 | `UsuarioController` | Login endpoint, JWT generation |
-| `ItemController` | Products/materials with cost data via JOINs |
+| `CatalogoController` | **Maestro de ítems (Catálogo)**: list/detail/CRUD of item_general with stock totals + proveedores |
+| `ItemController` | Products/materials with cost data via JOINs (legacy — use CatalogoController for new features) |
 | `FacturasController` | Sales invoices with state management |
 | `CotizacionesController` | Sales quotations with state management |
 | `RemisionesController` | Delivery notes / dispatch orders |
@@ -277,6 +278,55 @@ created_at      → timestamp de la operación
 - **Runtime**: `codeigniter4/framework ^4.0`, `firebase/php-jwt ^6.11`
 - **Dev**: `phpunit/phpunit ^10.5`, `fakerphp/faker ^1.9`, `mikey179/vfsstream ^1.6`
 
+## Catálogo (Maestro de Ítems) — Added 2026-04-24
+
+### CatalogoController (`app/Controllers/CatalogoController.php`)
+
+Separates the technical definition of products from their physical inventory. Items are created ONLY through the Catálogo — the Inventario module is now read-only for stock visualization.
+
+**Routes:**
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `index()` | GET `/api/catalogo?tipo=0&categoria_id=1&q=texto` | List all items with stock totals (from inventario_capas) and proveedores count |
+| `show($id)` | GET `/api/catalogo/{id}` | Full detail: item + proveedores array + stock per bodega |
+| `create()` | POST `/api/catalogo` | Create item_general + costos_item (cost=0, no inventory entry) |
+| `update($id)` | PUT `/api/catalogo/{id}` | Update item attributes only (no inventory/cost changes) |
+| `delete($id)` | DELETE `/api/catalogo/{id}` | Delete item |
+| `proveedores($id)` | GET `/api/catalogo/{id}/proveedores` | List item_proveedor linked to this item |
+
+### CatalogoModel (`app/Models/CatalogoModel.php`)
+
+- `listar(?tipo, ?categoriaId, ?busqueda)` — single query with LEFT JOINs to categoria, unidad, costos_item + subqueries for stock_total (SUM inventario_capas) and total_proveedores (COUNT item_proveedor)
+- `detalle(id)` — full item with proveedores array and stock_por_bodega breakdown
+- `crearItem(data)` — transactional: INSERT item_general + INSERT costos_item (costo=0). NO inventory entry — stock enters only via OC receipt
+- `actualizarItem(id, data)` — updates item_general attributes only
+- `proveedoresDeItem(id)` — item_proveedor with proveedor + unidad JOINs
+
+### Design Decision: Catálogo vs ItemController
+
+`CatalogoController` replaces `ItemController` as the primary interface for item management. Key difference: `CatalogoController::create()` does NOT create inventory records (no bodega, no cantidad). Stock enters the system exclusively through OC receipt → `InventarioCapasModel::crearCapa()`. The old `ItemController` remains for backward compatibility with existing endpoints but should not be used for new item creation.
+
+## Inventory Write Restriction (2026-04-24)
+
+Inventory records can ONLY be created/incremented through two transactional sources:
+
+1. **OC Receipt** (`OrdenesCompraController::recibirLinea`) — creates cost layers + updates `inventario` table for raw materials
+2. **Production Order closure** (`PreparacionesModel`) — creates finished product inventory
+
+**Disabled routes:**
+- `POST /api/bodegas/item` — manual item creation in bodega (removed from Routes.php)
+- `POST /api/inventario/ingresar` — direct inventory insertion (removed from Routes.php)
+- `PATCH /api/inventario/{id}/cantidad` — manual quantity update (removed from Routes.php)
+
+**Still allowed:**
+- `POST /api/inventario/traspaso` — transfers between bodegas (no net stock increase)
+- `DELETE /api/inventario/{id}/bodega/{id}` — remove item from bodega
+
+**Model method `InventarioModel::ingresarABodega()`** is kept as an internal method called by `OrdenesCompraController` during OC receipt — it is NOT exposed via HTTP.
+
+**`ItemProveedorController::vincular()`** no longer creates inventory entries when linking a provider to an item — stock only enters via OC receipt.
+
 ## Pending / Next Steps
 
 - **Requisiciones management page**: frontend page in Compras module to list, approve, and convert requisitions to OC.
@@ -284,4 +334,4 @@ created_at      → timestamp de la operación
 
 ---
 
-> **Estado del sistema (2026-04-24):** El módulo de Producción cumple el estándar **MRP II — Costeo por Lotes**: selección de proveedor dirigida, consumo FIFO por capa, costo unitario congelado en `produccion_insumos_detalle` al momento de la producción, y atomicidad transaccional completa. El histórico de costos es inmutable e independiente de variaciones futuras de precios de proveedores.
+> **Estado del sistema (2026-04-24):** El módulo de Producción cumple el estándar **MRP II — Costeo por Lotes**: selección de proveedor dirigida, consumo FIFO por capa, costo unitario congelado en `produccion_insumos_detalle` al momento de la producción, y atomicidad transaccional completa. El **Catálogo** es la fuente única de creación de ítems. El **Inventario** es estrictamente de solo lectura — todo stock ingresa exclusivamente por Recepción de OC (materias primas) o Cierre de Producción (productos terminados). No existen rutas HTTP para creación manual de inventario.

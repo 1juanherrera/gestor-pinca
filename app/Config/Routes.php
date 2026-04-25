@@ -15,6 +15,14 @@ $routes->group('api', function ($routes) {
     $routes->post('login', 'UsuarioController::login');
     $routes->post('crear', 'UsuarioController::crear');
 
+    // CATÁLOGO (Maestro de Ítems)
+    $routes->get('catalogo',                         'CatalogoController::index');
+    $routes->get('catalogo/(:num)/proveedores',      'CatalogoController::proveedores/$1');
+    $routes->get('catalogo/(:num)',                   'CatalogoController::show/$1');
+    $routes->post('catalogo',                         'CatalogoController::create');
+    $routes->put('catalogo/(:num)',                   'CatalogoController::update/$1');
+    $routes->delete('catalogo/(:num)',                'CatalogoController::delete/$1');
+
     // ITEMS
     $routes->get('item_general', 'ItemController::item_general');
     $routes->get('items/materias_disponibles', 'ItemController::materias_disponibles');
@@ -37,10 +45,10 @@ $routes->group('api', function ($routes) {
 
     // BODEGAS
     $routes->get('bodegas', 'BodegasController::bodegas');
-    $routes->post('bodegas/item', 'BodegasController::create_item_bodega');
+    // POST bodegas/item DESHABILITADO — stock solo ingresa por OC o Producción
     $routes->put('bodegas/item/(:num)', 'BodegasController::update_item_bodega/$1');
     $routes->get('bodegas/inventario/(:num)', 'BodegasController::bodega_inventario/$1');
-    $routes->patch('inventario/(:num)/cantidad', 'BodegasController::patch_cantidad/$1');
+    // PATCH inventario/cantidad DESHABILITADO — stock solo ingresa por OC o Producción
     $routes->get('bodegas/(:num)', 'BodegasController::show/$1');
     $routes->post('bodegas', 'BodegasController::create');
     $routes->put('bodegas/(:num)', 'BodegasController::update/$1');
@@ -94,7 +102,7 @@ $routes->group('api', function ($routes) {
 
     // INVENTARIO
     $routes->post('inventario/traspaso', 'InventarioController::traspaso');
-    $routes->post('inventario/ingresar', 'InventarioController::ingresarABodega');
+    // POST inventario/ingresar DESHABILITADO — stock solo ingresa por OC o Producción
     $routes->delete('inventario/(:num)/bodega/(:num)', 'InventarioController::removeFromBodega/$1/$2');
 
     // CAPAS DE INVENTARIO

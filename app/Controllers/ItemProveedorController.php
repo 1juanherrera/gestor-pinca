@@ -5,7 +5,6 @@ namespace App\Controllers;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\ItemProveedorModel;
 use App\Models\BaseModel;
-use App\Models\InventarioModel;
 
 class ItemProveedorController extends ResourceController 
 {
@@ -156,18 +155,7 @@ class ItemProveedorController extends ResourceController
             $factorConversion = isset($data['factor_conversion'])  ? (float) $data['factor_conversion']  : 1.0;
             $this->model->vincular((int) $id, $itemGeneralId, $unidadCompraId, $factorConversion);
 
-            // Caso C: ingresar al inventario si se pasan bodega + cantidad
-            if ($itemGeneralId && !empty($data['bodegas_id']) && !empty($data['cantidad'])) {
-                $inventarioModel = new InventarioModel();
-                $ok = $inventarioModel->ingresarABodega(
-                    (int)   $itemGeneralId,
-                    (int)   $data['bodegas_id'],
-                    (float) $data['cantidad']
-                );
-                if (!$ok) {
-                    throw new \Exception('No se pudo ingresar el ítem al inventario.');
-                }
-            }
+            // Inventario NO se crea al vincular — stock solo ingresa por OC o Producción
 
             $db->transComplete();
 
