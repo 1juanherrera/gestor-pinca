@@ -37,3 +37,25 @@ proveedores que las venden, porque si tengo registrado en el sistema los proveed
 su materia prima cada uno pero no sé como hacer que interactúe el sistema en ese caso, estaba pensando en 
 crear una orden de compra y agregar la materia prima para esa producción pero no es la mejor opcion, como 
 se comportan esos sistemas que tienen este tipo de funcionalidades y cual sería la mejor práctica ?
+
+  Cambios aplicando .agents/skills/
+
+  Principios de interface-design aplicados:
+
+  - Subtle layering: Bordes con opacidad (border-zinc-200/60) en vez de sólidos — definen estructura sin gritar
+  - Surface elevation: Toolbar con bg-zinc-50/30 (whisper-quiet), no un bg-zinc-50/50 genérico
+  - Typography hierarchy: Columna "Proveedor" rica con avatar + nombre en bold + encargado en muted — 3 niveles en una celda
+  - Avatar initials: Círculos de color consistentes entre tabla y cards (mismo PALETTES[id % 6]), rompiendo el look de template
+  - Interactive states: Todos los botones y rows con transition-all duration-150, hover refinados, active:scale-95
+  - Staggered skeleton: animationDelay escalonado por fila (i * 80ms) con primera celda que imita la forma del avatar — más orgánico
+  - Comparison mode: Left border accent (border-l-2 border-l-emerald-500) para el mejor precio, más sutil que un background completo
+
+  Principios de vercel-react-best-practices aplicados:
+
+  - js-set-map-lookups: provMap = new Map() para lookup O(1) de proveedores en la comparación, en vez de .find() O(n) por cada item
+
+  Toggle Lista / Cards
+
+  - ViewToggle: Segment control compacto con LayoutList / LayoutGrid — estado activo con bg-white shadow-sm, inactivo con text-zinc-400
+  - Vista cards: Restaurada con búsqueda propia, SkeletonCard durante carga, y empty state con opción de limpiar búsqueda
+  - Vista tabla: Tabla mejorada con comparador, paginación, portafolio drawer
