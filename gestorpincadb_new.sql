@@ -3,8 +3,8 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: db
--- Tiempo de generación: 24-04-2026 a las 11:51:00
--- Versión del servidor: 8.0.45
+-- Tiempo de generación: 25-04-2026 a las 17:22:44
+-- Versión del servidor: 8.0.46
 -- Versión de PHP: 8.3.26
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -1759,7 +1759,10 @@ CREATE TABLE `migrations` (
 INSERT INTO `migrations` (`id`, `version`, `class`, `group`, `namespace`, `time`, `batch`) VALUES
 (1, '2026-04-17-000001', 'App\\Database\\Migrations\\CreateTamboresTable', 'default', 'App', 1776779676, 1),
 (2, '2026-04-21-000001', 'App\\Database\\Migrations\\CreateRequisicionesCompraTable', 'default', 'App', 1776779681, 2),
-(3, '2026-04-21-000002', 'App\\Database\\Migrations\\AddUnidadBaseAndItemProveedorCompra', 'default', 'App', 1776799102, 3);
+(3, '2026-04-21-000002', 'App\\Database\\Migrations\\AddUnidadBaseAndItemProveedorCompra', 'default', 'App', 1776799102, 3),
+(4, '2026-04-22-000001', 'App\\Database\\Migrations\\MergeUnidadEmpaqueIntoUnidadCompra', 'default', 'App', 1777059242, 4),
+(5, '2026-04-23-000001', 'App\\Database\\Migrations\\CreateInventarioCapasSystem', 'default', 'App', 1777059242, 4),
+(6, '2026-04-24-000001', 'App\\Database\\Migrations\\CreateProduccionInsumosDetalle', 'default', 'App', 1777059242, 4);
 
 -- --------------------------------------------------------
 
@@ -1912,12 +1915,6 @@ CREATE TABLE `preparaciones` (
 --
 
 INSERT INTO `preparaciones` (`id_preparaciones`, `fecha_creacion`, `fecha_inicio`, `fecha_fin`, `cantidad`, `observaciones`, `estado`, `item_general_id`, `unidad_id`) VALUES
-(7, '2026-03-07 08:10:42', NULL, NULL, 20.00, NULL, 2, 1, 2),
-(8, '2026-03-21 15:14:49', NULL, NULL, 1.00, NULL, 1, 1, 1),
-(9, '2026-03-21 15:14:50', NULL, NULL, 9.00, NULL, 3, 1, 2),
-(10, '2026-03-21 15:49:17', NULL, NULL, 1.00, NULL, 0, 1, 1),
-(11, '2026-03-21 15:49:17', NULL, NULL, 45.00, NULL, 0, 1, 3),
-(12, '2026-03-28 18:02:09', NULL, NULL, 2.00, NULL, 0, 1, 1),
 (13, '2026-03-28 18:02:10', NULL, NULL, 10.00, NULL, 2, 1, 3),
 (14, '2026-04-04 04:05:10', NULL, NULL, 2.00, NULL, 0, 1, 1),
 (15, '2026-04-04 04:12:23', NULL, NULL, 200.00, NULL, 0, 1, 4),
@@ -2041,6 +2038,24 @@ CREATE TABLE `preparacion_consumo_capas` (
   `costo_unitario` decimal(15,4) NOT NULL,
   `costo_total` decimal(15,4) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `produccion_insumos_detalle`
+--
+
+CREATE TABLE `produccion_insumos_detalle` (
+  `id` int NOT NULL,
+  `preparacion_id` int NOT NULL,
+  `item_general_id` int NOT NULL,
+  `proveedor_id` int DEFAULT NULL,
+  `bodega_id` int DEFAULT NULL,
+  `cantidad` decimal(15,4) NOT NULL,
+  `costo_unitario` decimal(15,4) NOT NULL,
+  `subtotal` decimal(15,4) NOT NULL,
+  `created_at` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -2554,7 +2569,11 @@ INSERT INTO `unidad` (`id_unidad`, `nombre`, `descripcion`, `estados`, `escala`)
 (9, 'KILO', '', 1, 1.00000),
 (10, 'GRAMO', '', 1, 0.00100),
 (11, 'LIBRA', '', 1, 0.45300),
-(12, 'LITRO', '', 1, 0.26417);
+(12, 'LITRO', '', 1, 0.26417),
+(13, 'UNIDAD', NULL, NULL, 1.00000),
+(14, 'CAJA', NULL, NULL, 1.00000),
+(15, 'BULTO', NULL, NULL, 1.00000),
+(16, 'CANECA', NULL, NULL, 1.00000);
 
 -- --------------------------------------------------------
 
@@ -2826,6 +2845,15 @@ ALTER TABLE `preparacion_consumo_capas`
   ADD KEY `idx_capa` (`capa_id`);
 
 --
+-- Indices de la tabla `produccion_insumos_detalle`
+--
+ALTER TABLE `produccion_insumos_detalle`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_pid_insumos` (`preparacion_id`),
+  ADD KEY `idx_item_insumos` (`item_general_id`),
+  ADD KEY `idx_prov_insumos` (`proveedor_id`);
+
+--
 -- Indices de la tabla `proveedor`
 --
 ALTER TABLE `proveedor`
@@ -2995,7 +3023,7 @@ ALTER TABLE `inventario`
 -- AUTO_INCREMENT de la tabla `inventario_capas`
 --
 ALTER TABLE `inventario_capas`
-  MODIFY `id_capa` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=97;
+  MODIFY `id_capa` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=99;
 
 --
 -- AUTO_INCREMENT de la tabla `item_general`
@@ -3019,7 +3047,7 @@ ALTER TABLE `item_proveedor`
 -- AUTO_INCREMENT de la tabla `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `movimiento_inventario`
@@ -3055,7 +3083,7 @@ ALTER TABLE `pagos_cliente`
 -- AUTO_INCREMENT de la tabla `preparaciones`
 --
 ALTER TABLE `preparaciones`
-  MODIFY `id_preparaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id_preparaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT de la tabla `preparaciones_costos_indirectos`
@@ -3067,6 +3095,12 @@ ALTER TABLE `preparaciones_costos_indirectos`
 -- AUTO_INCREMENT de la tabla `preparacion_consumo_capas`
 --
 ALTER TABLE `preparacion_consumo_capas`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `produccion_insumos_detalle`
+--
+ALTER TABLE `produccion_insumos_detalle`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
@@ -3109,7 +3143,7 @@ ALTER TABLE `tambor_movimientos`
 -- AUTO_INCREMENT de la tabla `unidad`
 --
 ALTER TABLE `unidad`
-  MODIFY `id_unidad` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id_unidad` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`
@@ -3267,6 +3301,13 @@ ALTER TABLE `preparaciones_costos_indirectos`
 ALTER TABLE `preparacion_consumo_capas`
   ADD CONSTRAINT `preparacion_consumo_capas_ibfk_1` FOREIGN KEY (`preparacion_id`) REFERENCES `preparaciones` (`id_preparaciones`),
   ADD CONSTRAINT `preparacion_consumo_capas_ibfk_2` FOREIGN KEY (`capa_id`) REFERENCES `inventario_capas` (`id_capa`);
+
+--
+-- Filtros para la tabla `produccion_insumos_detalle`
+--
+ALTER TABLE `produccion_insumos_detalle`
+  ADD CONSTRAINT `produccion_insumos_detalle_item_general_id_foreign` FOREIGN KEY (`item_general_id`) REFERENCES `item_general` (`id_item_general`),
+  ADD CONSTRAINT `produccion_insumos_detalle_preparacion_id_foreign` FOREIGN KEY (`preparacion_id`) REFERENCES `preparaciones` (`id_preparaciones`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `remisiones`
