@@ -12,8 +12,8 @@ class UsuarioController extends BaseController
     public function login()
     {
         $usuarioModel = new UsuarioModel();
-        $username = $this->request->getPost('username');
-        $password = $this->request->getPost('password');
+        $username = $this->request->getVar('username');
+        $password = $this->request->getVar('password');
 
         $usuario = $usuarioModel->where('username', $username)->first();
 

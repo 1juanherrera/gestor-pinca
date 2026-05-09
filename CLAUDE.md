@@ -335,3 +335,154 @@ Inventory records can ONLY be created/incremented through two transactional sour
 ---
 
 > **Estado del sistema (2026-04-24):** El módulo de Producción cumple el estándar **MRP II — Costeo por Lotes**: selección de proveedor dirigida, consumo FIFO por capa, costo unitario congelado en `produccion_insumos_detalle` al momento de la producción, y atomicidad transaccional completa. El **Catálogo** es la fuente única de creación de ítems. El **Inventario** es estrictamente de solo lectura — todo stock ingresa exclusivamente por Recepción de OC (materias primas) o Cierre de Producción (productos terminados). No existen rutas HTTP para creación manual de inventario.
+
+---
+
+## PRODUCCIÓN — Auditoría de Gaps (2026-05-09)
+
+> Resultado de auditoría pre-producción completa. Resolver los CRÍTICOS antes de cualquier despliegue.
+
+### 🔴 CRÍTICOS — Bloquean producción
+
+#### 1. JWT no aplicado a ninguna ruta protegida
+- **Problema**: `JwtFilter` está registrado en aliases pero **no está asignado a ningún grupo de rutas** en `Routes.php` ni en `Filters.php`. Todos los endpoints son públicos.
+- **Impacto**: Cualquier persona sin autenticación puede crear, modificar o eliminar cualquier recurso.
+- **Fix**: En `Routes.php`, envolver todas las rutas protegidas en un grupo con filtro:
+  ```php
+  $routes->group('api', ['filter' => 'jwt'], function($routes) {
+      // rutas protegidas aquí
+  });
+  // Fuera del grupo: solo POST /api/login y POST /api/usuarios/crear
+  ```
+
+#### 2. Secret JWT hardcodeado con valor débil
+- **Archivos**: `app/Controllers/UsuarioController.php` línea 28, `app/Filters/JwtFilter.php` línea 26
+- **Problema**: Fallback `'miClaveSuperSecreta'` si `TOKEN_SECRET` no está en `.env`.
+- **Fix**: Lanzar excepción si la variable no existe en producción. Generar secret fuerte (≥32 chars).
+
+#### 3. `display_errors = 1` en producción
+- **Archivo**: `app/Config/Boot/production.php` línea 15
+- **Problema**: Muestra stack traces completos al cliente, exponiendo rutas de archivos, estructura de DB y lógica interna.
+- **Fix**: Cambiar a `ini_set('display_errors', '0');`
+
+#### 4. Credenciales de DB hardcodeadas en código fuente
+- **Archivo**: `app/Config/Database.php`
+- **Problema**: `hostname`, `username` y `password` están hardcodeados (`user`/`password`). También en `docker-compose.yml` con `MYSQL_ROOT_PASSWORD: password`.
+- **Fix**: Usar exclusivamente variables de entorno. Crear `.env.production` con credenciales fuertes y únicas. Nunca commitear credenciales reales.
+
+#### 5. Sin validación de input en endpoints críticos
+- **Afecta**: `UsuarioController`, `ClientesController`, `CatalogoController` y otros
+- **Problema**: Solo se verifica si el campo está vacío. No hay validación de tipo, longitud, formato ni complejidad de contraseñas.
+- **Fix**: Usar el sistema de validación de CodeIgniter 4 (`$this->validate([...])`) en todos los endpoints que reciben datos del cliente.
+
+#### 6. Sin rate limiting en `/api/login`
+- **Problema**: El endpoint de login no tiene límite de intentos — permite fuerza bruta.
+- **Fix**: Implementar throttle (e.g., máximo 5 intentos por IP en 15 minutos) mediante un filtro o middleware.
+
+---
+
+### 🟠 ALTOS — Resolver antes de abrir a usuarios reales
+
+#### 7. CORS abierto a cualquier origen (`*`)
+- **Archivo**: `app/Config/Cors.php`
+- **Problema**: `'allowedOrigins' => ['*']` permite que cualquier dominio llame a la API.
+- **Fix**: Restringir al dominio real del frontend en producción:
+  ```php
+  'allowedOrigins' => ['https://app.tudominio.com']
+  ```
+
+#### 8. Sin verificación de autorización (roles/permisos)
+- **Problema**: Una vez que JWT esté activo, cualquier usuario autenticado podrá eliminar clientes, crear órdenes de compra, modificar facturas, etc. No existe RBAC.
+- **Fix**: Agregar campo `rol` a la tabla `usuarios`. Verificar rol en endpoints sensibles (DELETE, creación de facturas, aprobación de OC).
+
+#### 9. Sin logging de eventos de seguridad
+- **Problema**: No hay registro de intentos de login fallidos, eliminaciones de datos ni modificaciones críticas. Imposible auditar incidentes.
+- **Fix**: Usar `log_message()` de CI4 en `UsuarioController::login` (éxito y fallo) y en todos los DELETE de recursos críticos.
+
+#### 10. Contraseña no re-hasheada en actualización
+- **Archivo**: `app/Models/UsuarioModel.php`
+- **Problema**: `$beforeInsert = ['hashPassword']` solo aplica en INSERT. Si se llama `update()` con nueva contraseña, se guarda en texto plano.
+- **Fix**: Agregar también `$beforeUpdate = ['hashPassword']` con verificación de que el campo existe en `$data`.
+
+#### 11. `BaseModel` auto-genera `allowedFields` desde el schema
+- **Archivo**: `app/Models/BaseModel.php`
+- **Problema**: `allowedFields` se construye dinámicamente con todos los campos de la tabla — vulnerabilidad de mass assignment. Un payload malicioso puede alterar campos como `id`, `created_at` o campos de estado.
+- **Fix**: Definir `allowedFields` explícito en cada modelo de entidad crítica.
+
+#### 12. HTTPS no forzado
+- **Archivo**: `app/Config/Boot/production.php`
+- **Problema**: `forcehttps` está comentado. Tokens JWT pueden viajar por HTTP plano.
+- **Fix**: Habilitar `force_https()` en producción o configurar redirección en el servidor web (nginx/Apache).
+
+#### 13. `DBDebug: true` en configuración de DB
+- **Archivo**: `app/Config/Database.php` línea 36
+- **Problema**: Puede loggear queries SQL completas con datos sensibles.
+- **Fix**: `'DBDebug' => (ENVIRONMENT !== 'production')`
+
+#### 14. Límite de paginación sin tope máximo
+- **Archivo**: `app/Controllers/PreparacionesController.php`
+- **Problema**: `?limit=1000000` en la querystring puede causar consultas masivas (DoS).
+- **Fix**: `$limit = min((int)($this->request->getGet('limit') ?? 20), 200);`
+
+---
+
+### 🟡 MEDIOS — Mejoras importantes post-MVP
+
+#### 15. Mensajes de error exponen detalles internos
+- **Problema**: Algunos controllers retornan `implode(', ', $this->model->errors())` directamente al cliente, exponiendo nombres de campos y restricciones de DB.
+- **Fix**: Loggear el error completo internamente; retornar mensaje genérico al cliente.
+
+#### 16. Sin soft-deletes
+- **Problema**: Los DELETE son permanentes. No existe historial de clientes, proveedores o ítems eliminados. Viola auditorías y puede romper referencias históricas.
+- **Fix**: Agregar columna `deleted_at TIMESTAMP NULL` y filtrar con `WHERE deleted_at IS NULL` en todos los modelos críticos.
+
+#### 17. Sin endpoint de health check
+- **Problema**: No existe `GET /api/health` para que balanceadores de carga o monitoreo verifiquen disponibilidad.
+- **Fix**: Agregar ruta pública que retorne `{"status": "ok", "timestamp": "..."}`.
+
+#### 18. Formatos de error inconsistentes entre controllers
+- **Problema**: Algunos usan `{ok: false, msg}`, otros `{success: false, message}`, otros `{status: 400}`.
+- **Fix**: Centralizar en un método helper en `BaseController`:
+  ```php
+  protected function error(string $msg, int $code = 400): ResponseInterface { ... }
+  protected function success($data, int $code = 200): ResponseInterface { ... }
+  ```
+
+#### 19. Sin validación de existencia de FKs antes de INSERT
+- **Afecta**: `OrdenesCompraController`, `FacturasController`, `PreparacionesController`
+- **Problema**: No se verifica que `proveedor_id`, `cliente_id`, `formulacion_id`, etc. existan antes de crear el documento.
+- **Fix**: Verificar existencia de entidades relacionadas antes de INSERT.
+
+#### 20. Sin tests automatizados
+- **Problema**: El directorio `tests/` existe pero está vacío. Sin tests, cualquier refactor puede romper flujos críticos de costo/producción sin detección.
+- **Fix prioritario**: Escribir tests de integración para:
+  1. Login JWT (éxito y fallo)
+  2. Flujo completo OC: crear → recibir → verificar capas de costo
+  3. Flujo producción: crear preparación → consumir capas → verificar `produccion_insumos_detalle`
+
+---
+
+### 🔵 BAJOS — Deuda técnica
+
+- **Sin `.env.example`**: Nuevo desarrollador no sabe qué variables configurar. Crear con todas las variables requeridas.
+- **Sin versionado de API**: Rutas usan `/api/` sin `/api/v1/`. Cualquier cambio breaking afecta a todos los clientes.
+- **Sin OpenAPI/Swagger**: No existe documentación del API. Toda la referencia está en CLAUDE.md.
+- **Sin security headers**: El filtro `secureheaders` está definido pero no aplicado (`X-Frame-Options`, `X-Content-Type-Options`, `Strict-Transport-Security`).
+
+---
+
+### Checklist Pre-Deploy
+
+```
+□ JWT aplicado a todas las rutas protegidas
+□ TOKEN_SECRET fuerte y en .env (no en código)
+□ display_errors = 0 en production.php
+□ Credenciales DB en .env con valores fuertes
+□ CORS restringido al dominio del frontend
+□ HTTPS forzado (nginx o production.php)
+□ Rate limiting en /api/login
+□ DBDebug = false en producción
+□ Security headers activados
+□ Health check endpoint disponible
+□ Logs de intentos de login habilitados
+```

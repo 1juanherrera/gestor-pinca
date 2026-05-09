@@ -101,6 +101,7 @@ $routes->group('api', function ($routes) {
     $routes->delete('facturas/(:num)', 'FacturasController::delete/$1');
 
     // INVENTARIO
+    $routes->get('inventario/global',    'InventarioController::global');
     $routes->post('inventario/traspaso', 'InventarioController::traspaso');
     // POST inventario/ingresar DESHABILITADO — stock solo ingresa por OC o Producción
     $routes->delete('inventario/(:num)/bodega/(:num)', 'InventarioController::removeFromBodega/$1/$2');
