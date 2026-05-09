@@ -20,7 +20,7 @@ class InventarioModel extends Model
         $destino  = (int)$data['bodega_destino_id'];
         $cantidad = (float)$data['cantidad'];
 
-        $this->db->transStart();
+        $this->db->transBegin();
 
         $stockOrigen = $this->db->table('inventario')
             ->where(['item_general_id' => $itemId, 'bodegas_id' => $origen])
@@ -28,7 +28,7 @@ class InventarioModel extends Model
 
         if (!$stockOrigen || $stockOrigen->cantidad < $cantidad) {
             $this->db->transRollback();
-            return false; 
+            return false;
         }
 
         $this->db->table('inventario')
@@ -60,7 +60,7 @@ class InventarioModel extends Model
             ]);
         }
 
-        $this->db->transComplete();
+        $this->db->transCommit();
         return $this->db->transStatus();
     }
 

@@ -147,6 +147,8 @@ class InventarioCapasModel extends BaseModel
     {
         return $this->db->table('inventario_capas')
             ->where('item_general_id', $itemGeneralId)
+            ->where('estado', 1)
+            ->where('cantidad_disponible >', 0)
             ->countAllResults() > 0;
     }
 

@@ -91,7 +91,7 @@ class PreparacionesController extends BaseController
      */
     public function update(int $id): ResponseInterface
     {
-        $body = $this->request->getJSON(true) ?? $this->request->getRawInput();
+        $body = $this->request->getJSON(true) ?? json_decode($this->request->getRawInput(), true) ?? [];
 
         try {
             $result = $this->model->update_preparacion($id, $body);
@@ -153,7 +153,7 @@ class PreparacionesController extends BaseController
     {
         try {
             $this->model->delete_costo_indirecto($costoId);
-            return $this->respond(['success' => true]);
+            return $this->response->setJSON(['success' => true]);
         } catch (Exception $e) {
             return $this->response->setStatusCode(500)
                 ->setJSON(['success' => false, 'message' => $e->getMessage()]);

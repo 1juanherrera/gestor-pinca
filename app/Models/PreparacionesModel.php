@@ -348,7 +348,16 @@ class PreparacionesModel extends BaseModel
                     (phig.cantidad * COALESCE(ci.costo_unitario, 0)) as costo_total_materia
              FROM preparaciones_has_item_general phig
              INNER JOIN item_general ig ON ig.id_item_general = phig.item_general_id
-             LEFT JOIN costos_item ci ON ig.id_item_general = ci.item_general_id
+             LEFT JOIN (
+                 SELECT ci1.item_general_id, ci1.costo_unitario
+                 FROM costos_item ci1
+                 INNER JOIN (
+                     SELECT item_general_id, MAX(id_costos_item) AS max_id
+                     FROM costos_item
+                     GROUP BY item_general_id
+                 ) ci_max ON ci_max.item_general_id = ci1.item_general_id
+                          AND ci_max.max_id = ci1.id_costos_item
+             ) ci ON ci.item_general_id = ig.id_item_general
              WHERE phig.preparaciones_id_preparaciones = ?
              ORDER BY phig.item_general_id ASC',
             [$id]

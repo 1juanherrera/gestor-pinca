@@ -351,7 +351,7 @@ class RequisicionesCompraModel extends BaseModel
 
             $this->db->query(
                 'INSERT INTO ordenes_compra (numero, proveedor_id, bodegas_id, fecha, estado, total, observaciones)
-                 VALUES (?, ?, ?, NOW(), \'PENDIENTE\', 0, ?)',
+                 VALUES (?, ?, ?, NOW(), \'Borrador\', 0, ?)',
                 [$numOC, $proveedorId, $bodegaId, $observaciones]
             );
             $ocId = $this->db->insertID();

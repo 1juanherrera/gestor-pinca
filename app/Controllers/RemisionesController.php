@@ -265,8 +265,7 @@ class RemisionesController extends ResourceController
             ->get()
             ->getRowArray();
 
-        $parts = explode('-', $last['numero']);
-        $seq   = $last ? ((int) end($parts) + 1) : 1;
+        $seq = $last ? ((int) end(explode('-', $last['numero'])) + 1) : 1;
 
         return "{$prefijo}-{$year}-" . str_pad($seq, 4, '0', STR_PAD_LEFT);
     }
