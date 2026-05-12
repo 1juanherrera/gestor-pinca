@@ -102,6 +102,13 @@ class FacturasController extends ResourceController
 
         if (!$data) return $this->fail('No se recibieron datos o el JSON es inválido', 400);
 
+        if (empty($data['cliente_id'])) {
+            return $this->failValidationErrors('El campo cliente_id es requerido.');
+        }
+        if (empty($data['items'])) {
+            return $this->failValidationErrors('La factura debe tener al menos un ítem.');
+        }
+
         $db = \Config\Database::connect();
         $db->transStart();
 

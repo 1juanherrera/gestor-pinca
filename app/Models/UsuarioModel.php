@@ -9,9 +9,11 @@ class UsuarioModel extends BaseModel
     protected $allowedFields = [
         'username',
         'password',
+        'rol',
     ];
 
     protected $beforeInsert = ['hashPassword'];
+    protected $beforeUpdate = ['hashPassword'];
 
     public function __construct(){
         parent::__construct();
@@ -25,4 +27,3 @@ class UsuarioModel extends BaseModel
         return $data;
     }
 }
-

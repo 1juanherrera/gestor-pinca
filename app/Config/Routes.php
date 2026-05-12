@@ -12,8 +12,18 @@ $routes->group('api', function ($routes) {
     $routes->get('empresa', 'EmpresaController::empresa');
 
     // USUARIOS
-    $routes->post('login', 'UsuarioController::login');
-    $routes->post('crear', 'UsuarioController::crear');
+    $routes->post('login',                  'UsuarioController::login');
+    $routes->post('crear',                  'UsuarioController::crear');
+    $routes->patch('usuarios/mi-password',   'UsuarioController::cambiarPassword');
+    $routes->get('usuarios/mi-actividad',    'UsuarioController::miActividad');
+    $routes->put('empresa',                  'EmpresaController::update');
+
+    // ROLES Y PERMISOS
+    $routes->get('roles/permisos',                       'PermisosController::index');
+    $routes->get('roles/permisos/(:alpha)',               'PermisosController::show/$1');
+    $routes->put('roles/(:alpha)/permisos',               'PermisosController::update/$1');
+    $routes->get('roles/usuarios',                        'PermisosController::listarUsuarios');
+    $routes->patch('roles/usuarios/(:num)/rol',           'PermisosController::cambiarRol/$1');
 
     // CATÁLOGO (Maestro de Ítems)
     $routes->get('catalogo',                         'CatalogoController::index');

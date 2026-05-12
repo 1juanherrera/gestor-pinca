@@ -12,7 +12,7 @@ class MovimientoInventarioController extends ResourceController
     public function index()
     {
         $page = (int) $this->request->getGet('page') ?: 1;
-        $limit = (int) $this->request->getGet('limit') ?: 50;
+        $limit = min((int) $this->request->getGet('limit') ?: 50, 200);
 
         $filtros = [
             'item_general_id' => $this->request->getGet('item_general_id'),

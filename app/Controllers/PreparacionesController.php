@@ -23,13 +23,11 @@ class PreparacionesController extends BaseController
     {
         try {
             $page  = (int) ($this->request->getGet('page')  ?? 1);
-            $limit = (int) ($this->request->getGet('limit') ?? 20);
+            $limit = min((int) ($this->request->getGet('limit') ?? 20), 200);
             $result = $this->model->get_all_preparaciones($page, $limit);
             return $this->response->setJSON(['success' => true, 'data' => $result]);
         } catch (Exception $e) {
-            return $this->response
-                ->setStatusCode(500)
-                ->setJSON(['success' => false, 'message' => $e->getMessage()]);
+            return $this->serverError($e);
         }
     }
 

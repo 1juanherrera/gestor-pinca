@@ -31,6 +31,13 @@ class OrdenesCompraController extends ResourceController
         $data = json_decode($this->request->getBody(), true);
         if (!$data) return $this->failValidationErrors('No se recibieron datos válidos.');
 
+        if (empty($data['proveedor_id'])) {
+            return $this->failValidationErrors('El campo proveedor_id es requerido.');
+        }
+        if (empty($data['lineas'])) {
+            return $this->failValidationErrors('La orden debe tener al menos una línea.');
+        }
+
         $db = \Config\Database::connect();
         $db->transStart();
 
@@ -42,8 +49,9 @@ class OrdenesCompraController extends ResourceController
             $data['numero'] = $this->model->generarNumero();
             $data['estado'] = 'Borrador';
 
-            $idOrden = $this->model->create_table($data, 'ordenes_compra');
-            if (!$idOrden) throw new \Exception('Error al crear la orden.');
+            $db->table('ordenes_compra')->insert($data);
+            if (!$db->affectedRows()) throw new \Exception('Error al crear la orden.');
+            $idOrden = $db->insertID();
 
             // Insertar líneas
             $total = 0;
@@ -51,7 +59,7 @@ class OrdenesCompraController extends ResourceController
                 $subtotal = (float)$linea['cantidad'] * (float)$linea['precio_unit'];
                 $total   += $subtotal;
 
-                $this->model->create_table([
+                $db->table('ordenes_compra_detalle')->insert([
                     'ordenes_compra_id'  => $idOrden,
                     'item_proveedor_id'  => $linea['item_proveedor_id'],
                     'item_general_id'    => $linea['item_general_id'] ?? null,
@@ -59,7 +67,7 @@ class OrdenesCompraController extends ResourceController
                     'cantidad'           => $linea['cantidad'],
                     'precio_unit'        => $linea['precio_unit'],
                     'subtotal'           => $subtotal,
-                ], 'ordenes_compra_detalle');
+                ]);
             }
 
             // Actualizar total
@@ -117,7 +125,7 @@ class OrdenesCompraController extends ResourceController
                     $subtotal = (float)$linea['cantidad'] * (float)$linea['precio_unit'];
                     $total   += $subtotal;
 
-                    $this->model->create_table([
+                    $db->table('ordenes_compra_detalle')->insert([
                         'ordenes_compra_id'  => $id,
                         'item_proveedor_id'  => $linea['item_proveedor_id'],
                         'item_general_id'    => $linea['item_general_id'] ?? null,
@@ -125,7 +133,7 @@ class OrdenesCompraController extends ResourceController
                         'cantidad'           => $linea['cantidad'],
                         'precio_unit'        => $linea['precio_unit'],
                         'subtotal'           => $subtotal,
-                    ], 'ordenes_compra_detalle');
+                    ]);
                 }
 
                 $db->table('ordenes_compra')

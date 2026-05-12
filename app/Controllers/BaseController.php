@@ -50,9 +50,21 @@ abstract class BaseController extends Controller
     {
         // Do Not Edit This Line
         parent::initController($request, $response, $logger);
+    }
 
-        // Preload any models, libraries, etc, here.
+    protected function success($data, int $code = 200): ResponseInterface
+    {
+        return $this->response->setStatusCode($code)->setJSON(['success' => true, 'data' => $data]);
+    }
 
-        // E.g.: $this->session = service('session');
+    protected function error(string $msg, int $code = 400): ResponseInterface
+    {
+        return $this->response->setStatusCode($code)->setJSON(['success' => false, 'message' => $msg]);
+    }
+
+    protected function serverError(\Throwable $e, string $genericMsg = 'Error interno del servidor'): ResponseInterface
+    {
+        log_message('error', '[' . get_class($this) . '] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+        return $this->response->setStatusCode(500)->setJSON(['success' => false, 'message' => $genericMsg]);
     }
 }
