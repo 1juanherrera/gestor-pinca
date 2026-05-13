@@ -2,12 +2,32 @@
 
 namespace App\Controllers;
 
+use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\ClientesModel;
 
-class ClientesController extends ResourceController 
+class ClientesController extends ResourceController
 {
+    use \App\Traits\ValidatesJson;
+
     protected $modelName = ClientesModel::class;
+
+    /**
+     * Reglas reutilizables. En `update` se hacen permit_empty para soportar
+     * actualizaciones parciales sin obligar a re-enviar todos los campos.
+     */
+    private const RULES_BASE = [
+        'nombre_empresa'   => 'permit_empty|max_length[50]',
+        'nombre_encargado' => 'permit_empty|max_length[50]',
+        'numero_documento' => 'permit_empty|max_length[20]',
+        'direccion'        => 'permit_empty|max_length[50]',
+        'ciudad'           => 'permit_empty|max_length[100]',
+        'telefono'         => 'permit_empty|max_length[20]',
+        'email'            => 'permit_empty|valid_email|max_length[50]',
+        'plazo_pago'       => 'permit_empty|integer|greater_than_equal_to[0]|less_than_equal_to[365]',
+        'tipo'             => 'permit_empty|integer|in_list[1,2,3]',
+        'limite_credito'   => 'permit_empty|decimal|greater_than_equal_to[0]',
+    ];
 
     public function clientes()
     {
@@ -37,62 +57,81 @@ class ClientesController extends ResourceController
 
     public function create()
     {
-        $json = $this->request->getBody();
-        $data = json_decode($json, true);
-        // Validar que haya data
-        if (!$data) {
-            return $this->failValidationErrors('No se recibieron datos válidos.');
-        }
+        // En create exigimos al menos uno de los nombres + documento
+        $rules = array_merge(self::RULES_BASE, [
+            'nombre_empresa'   => 'required_without[nombre_encargado]|max_length[50]',
+            'nombre_encargado' => 'required_without[nombre_empresa]|max_length[50]',
+            'numero_documento' => 'required|max_length[20]',
+        ]);
+
+        $data = $this->validateJson($rules);
+        if ($data instanceof ResponseInterface) return $data;
+
         $insert_id = $this->model->create_table($data, 'clientes');
         if ($insert_id) {
             return $this->respondCreated([
-                'mensaje' => 'cliente creada correctamente',
+                'mensaje' => 'Cliente creado correctamente',
                 'id'      => $insert_id,
             ]);
         }
-        return $this->fail('Error al crear la cliente');
+        return $this->fail('Error al crear el cliente');
     }
 
     public function update($id = null)
     {
-        $json = $this->request->getBody();
-        $data = json_decode($json, true);
-        // Validar que haya data
-        if (!$data) {
-            return $this->failValidationErrors('No se recibieron datos válidos.');
-        }
-        // Verificar que el registro exista antes de actualizar
         if (!$this->model->get($id, 'clientes')) {
-            return $this->failNotFound("cliente con ID $id no encontrada.");
+            return $this->failNotFound("Cliente con ID $id no encontrado.");
         }
-        // Intentar actualizar
+
+        $data = $this->validateJson(self::RULES_BASE);
+        if ($data instanceof ResponseInterface) return $data;
+
         $updated = $this->model->update_table($id, $data, 'clientes');
         if ($updated === false || (is_array($updated) && isset($updated['error']))) {
-            return $this->fail('No se pudo actualizar la cliente.');
+            return $this->fail('No se pudo actualizar el cliente.');
         }
         return $this->respond([
-            'mensaje' => "cliente con ID $id actualizada correctamente",
+            'mensaje' => "Cliente con ID $id actualizado correctamente",
             'data'    => $data
         ]);
     }
 
     public function delete($id = null)
     {
-        // Validar que se envió un ID
         if ($id === null) {
             return $this->failValidationErrors('No se proporcionó un ID válido.');
         }
-        // Verificar que la cliente exista
         if (!$this->model->get($id, 'clientes')) {
-            return $this->failNotFound("cliente con ID $id no encontrada.");
+            return $this->failNotFound("Cliente con ID $id no encontrado.");
         }
-        // Intentar eliminar usando BaseModel
         $deleted = $this->model->delete_table($id, 'clientes');
         if ($deleted === false || (is_array($deleted) && isset($deleted['error']))) {
-            return $this->fail("No se pudo eliminar la cliente con ID $id.");
+            return $this->fail("No se pudo eliminar el cliente con ID $id.");
         }
         return $this->respondDeleted([
-            'mensaje' => "cliente con ID $id eliminada correctamente"
+            'mensaje' => "Cliente con ID $id archivado correctamente",
+        ]);
+    }
+
+    /**
+     * POST /api/clientes/:id/restore — restaura un cliente soft-deleted.
+     */
+    public function restore($id = null)
+    {
+        if ($id === null) {
+            return $this->failValidationErrors('No se proporcionó un ID válido.');
+        }
+        $db  = \Config\Database::connect();
+        $row = $db->table('clientes')->where('id_clientes', $id)->get()->getRowArray();
+        if (!$row) {
+            return $this->failNotFound("Cliente con ID $id no encontrado.");
+        }
+        if ($row['deleted_at'] === null) {
+            return $this->fail("El cliente no está archivado.");
+        }
+        $this->model->restore_table($id, 'clientes');
+        return $this->respond([
+            'mensaje' => "Cliente con ID $id restaurado correctamente",
         ]);
     }
 }

@@ -143,6 +143,53 @@ class InventarioCapasModel extends BaseModel
         }
     }
 
+    /**
+     * Registra el consumo de capas de una línea de remisión (audit detallado).
+     */
+    public function registrarConsumosRemision(int $remisionId, int $remisionDetalleId, array $consumos): void
+    {
+        $now = date('Y-m-d H:i:s');
+        foreach ($consumos as $c) {
+            $this->db->table('remision_consumo_capas')->insert([
+                'remision_id'         => $remisionId,
+                'remision_detalle_id' => $remisionDetalleId,
+                'capa_id'             => $c['capa_id'],
+                'item_general_id'     => $c['item_general_id'],
+                'cantidad_consumida'  => $c['cantidad_consumida'],
+                'costo_unitario'      => $c['costo_unitario'],
+                'costo_total'         => $c['costo_total'],
+                'created_at'          => $now,
+            ]);
+        }
+    }
+
+    /**
+     * Restaura las capas consumidas por una remisión (en caso de anulación).
+     * Suma de vuelta las cantidades a las capas originales y reactiva si estaban agotadas.
+     */
+    public function restaurarCapasRemision(int $remisionId): int
+    {
+        $consumos = $this->db->table('remision_consumo_capas')
+            ->where('remision_id', $remisionId)
+            ->get()->getResult();
+
+        foreach ($consumos as $c) {
+            $this->db->table('inventario_capas')
+                ->where('id_capa', $c->capa_id)
+                ->set('cantidad_disponible', "cantidad_disponible + {$c->cantidad_consumida}", false)
+                ->set('estado', 1)
+                ->update();
+        }
+
+        $count = count($consumos);
+
+        $this->db->table('remision_consumo_capas')
+            ->where('remision_id', $remisionId)
+            ->delete();
+
+        return $count;
+    }
+
     public function tieneCapas(int $itemGeneralId): bool
     {
         return $this->db->table('inventario_capas')

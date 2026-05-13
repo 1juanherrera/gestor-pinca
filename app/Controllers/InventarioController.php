@@ -7,6 +7,8 @@ use App\Models\InventarioModel;
 
 class InventarioController extends ResourceController
 {
+    use \App\Traits\JwtUserAware;
+
     protected $modelName = InventarioModel::class;
 
     // GET /api/inventario/global?tipo=1
@@ -136,6 +138,11 @@ class InventarioController extends ResourceController
             return $this->failValidationErrors('No se recibieron datos válidos.');
         }
 
+        // Adjuntar responsable del JWT (preferido) o body si vino explícito
+        if (empty($data['responsable'])) {
+            $data['responsable'] = $this->getUsername();
+        }
+
         $result = $this->model->traspaso($data);
         if ($result) {
             return $this->respond([
@@ -148,7 +155,10 @@ class InventarioController extends ResourceController
     // DELETE api/inventario/{item_id}/bodega/{bodega_id}
     public function removeFromBodega(int $itemId, int $bodegaId)
     {
-        $result = $this->model->removeFromBodega($itemId, $bodegaId);
+        $responsable = $this->getUsername();
+        $motivo      = $this->request->getGet('motivo'); // opcional
+
+        $result = $this->model->removeFromBodega($itemId, $bodegaId, $responsable, $motivo);
 
         if ($result) {
             return $this->respond([

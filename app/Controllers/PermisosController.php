@@ -113,7 +113,7 @@ class PermisosController extends BaseController
 
         $db = \Config\Database::connect();
         $usuarios = $db->table('usuarios')
-            ->select('id_usuarios, username, rol')
+            ->select('id_usuarios, username, nombre, rol')
             ->get()->getResultArray();
 
         return $this->success($usuarios);

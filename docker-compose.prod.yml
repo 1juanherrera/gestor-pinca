@@ -1,0 +1,23 @@
+# Override para PRODUCCIÓN.
+#
+# Usar:
+#   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# La diferencia con dev: NO se monta el código como bind mount. El container usa
+# la copia hecha en el Dockerfile. Esto evita el roundtrip NTFS/WSL en cada lectura
+# de archivo PHP — clave para que opcache realmente acelere.
+#
+# Para hacer cambios de código en prod: rebuild explícito con `docker-compose build app`.
+
+services:
+  app:
+    volumes: []                       # quita el bind mount de dev
+    environment:
+      - CI_ENVIRONMENT=production     # CodeIgniter modo producción
+    restart: unless-stopped
+
+  db:
+    restart: unless-stopped
+
+  phpmyadmin:
+    restart: unless-stopped

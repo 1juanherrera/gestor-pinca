@@ -74,12 +74,15 @@ class UsuarioController extends BaseController
 
         $secretKey = $_ENV['TOKEN_SECRET'] ?? 'miClaveSuperSecreta';
 
+        $nombre = $usuario['nombre'] ?? null;
+
         $payload = [
             'iat' => time(),
             'exp' => time() + 8 * 3600,
             'data' => [
                 'id'       => $usuario['id_usuarios'],
                 'username' => $usuario['username'],
+                'nombre'   => $nombre,
                 'rol'      => $rol,
                 'modulos'  => $modulos,
             ],
@@ -96,6 +99,7 @@ class UsuarioController extends BaseController
             'usuario' => [
                 'id'       => $usuario['id_usuarios'],
                 'username' => $usuario['username'],
+                'nombre'   => $nombre,
                 'rol'      => $rol,
                 'modulos'  => $modulos,
             ],
@@ -118,6 +122,70 @@ class UsuarioController extends BaseController
             ->get()->getResultArray();
 
         return $this->response->setJSON(['ok' => true, 'data' => $intentos]);
+    }
+
+    /**
+     * PATCH /api/usuarios/mi-perfil
+     * Permite al usuario actualizar campos editables de su propio perfil (por ahora: nombre).
+     * Body: { nombre: string }
+     */
+    public function actualizarPerfil()
+    {
+        if (!isset($this->request->usuario)) {
+            return $this->response->setStatusCode(401)
+                ->setJSON(['ok' => false, 'msg' => 'No autenticado.']);
+        }
+
+        $body   = $this->request->getJSON(true) ?? [];
+        $nombre = isset($body['nombre']) ? trim((string) $body['nombre']) : null;
+
+        if ($nombre !== null && strlen($nombre) > 100) {
+            return $this->response->setStatusCode(400)
+                ->setJSON(['ok' => false, 'msg' => 'El nombre no puede superar 100 caracteres.']);
+        }
+
+        $usuarioModel = new UsuarioModel();
+        $userId       = $this->request->usuario->id;
+
+        $usuarioModel->update($userId, ['nombre' => $nombre ?: null]);
+
+        log_message('info', "[PERFIL] Usuario {$this->request->usuario->username} actualizó su nombre a: " . ($nombre ?: '(vacío)'));
+
+        // Re-emitir token con el nombre nuevo así no hace falta re-login
+        $secretKey = $_ENV['TOKEN_SECRET'] ?? 'miClaveSuperSecreta';
+        $db        = \Config\Database::connect();
+        $modulosRows = $db->table('permisos_rol_modulo')
+            ->select('modulo')
+            ->where('rol', $this->request->usuario->rol)
+            ->where('activo', 1)
+            ->get()->getResultArray();
+        $modulos = array_column($modulosRows, 'modulo');
+
+        $payload = [
+            'iat'  => time(),
+            'exp'  => time() + 8 * 3600,
+            'data' => [
+                'id'       => $userId,
+                'username' => $this->request->usuario->username,
+                'nombre'   => $nombre ?: null,
+                'rol'      => $this->request->usuario->rol,
+                'modulos'  => $modulos,
+            ],
+        ];
+        $token = JWT::encode($payload, (string) $secretKey, 'HS256');
+
+        return $this->response->setJSON([
+            'ok'      => true,
+            'msg'     => 'Perfil actualizado.',
+            'token'   => $token,
+            'usuario' => [
+                'id'       => $userId,
+                'username' => $this->request->usuario->username,
+                'nombre'   => $nombre ?: null,
+                'rol'      => $this->request->usuario->rol,
+                'modulos'  => $modulos,
+            ],
+        ]);
     }
 
     public function cambiarPassword()
@@ -163,6 +231,7 @@ class UsuarioController extends BaseController
         $username = trim($this->request->getPost('username') ?? '');
         $password = $this->request->getPost('password') ?? '';
         $rol      = trim($this->request->getPost('rol') ?? 'operador');
+        $nombre   = trim($this->request->getPost('nombre') ?? '') ?: null;
 
         // Validación
         if (strlen($username) < 3 || strlen($username) > 50) {
@@ -188,6 +257,7 @@ class UsuarioController extends BaseController
 
         $usuarioModel->save([
             'username' => $username,
+            'nombre'   => $nombre,
             'password' => $password,
             'rol'      => $rol,
         ]);

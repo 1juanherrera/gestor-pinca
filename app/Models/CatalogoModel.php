@@ -14,6 +14,11 @@ class CatalogoModel extends BaseModel
         'precio_venta_manual', 'precio_manual_activo',
     ];
 
+    // Soft deletes: find/findAll/delete respetan deleted_at automáticamente
+    protected $useSoftDeletes = true;
+    protected $deletedField   = 'deleted_at';
+    protected $useTimestamps  = false;
+
     public function __construct()
     {
         parent::__construct();

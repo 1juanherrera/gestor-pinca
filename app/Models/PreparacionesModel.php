@@ -46,13 +46,24 @@ class PreparacionesModel extends BaseModel
         $cantidadEnvases = $escala > 0 ? $volumenGalones / $escala : 0;
 
         $formulacion = $this->db->query(
-            'SELECT id_formulaciones FROM formulaciones
+            'SELECT id_formulaciones, version_actual FROM formulaciones
              WHERE item_general_id = ? AND estado = 1 LIMIT 1',
             [$itemId]
         )->getRow();
 
         if (!$formulacion) {
             throw new Exception("El item no tiene una formulación activa.");
+        }
+
+        // Capturar la versión exacta de fórmula que se va a usar (snapshot inmutable)
+        $formulacionVersionId = null;
+        if (!empty($formulacion->version_actual)) {
+            $verRow = $this->db->table('formulaciones_versiones')
+                ->select('id')
+                ->where('formulacion_id', $formulacion->id_formulaciones)
+                ->where('version_num', $formulacion->version_actual)
+                ->get()->getRowArray();
+            $formulacionVersionId = $verRow ? (int) $verRow['id'] : null;
         }
 
         $ingredientes = $this->db->query(
@@ -109,14 +120,15 @@ class PreparacionesModel extends BaseModel
         try {
             $this->db->query(
                 'INSERT INTO preparaciones
-                    (fecha_creacion, fecha_inicio, fecha_fin, cantidad, observaciones, estado, item_general_id, unidad_id)
-                 VALUES (NOW(), ?, ?, ?, ?, 0, ?, ?)',
+                    (fecha_creacion, fecha_inicio, fecha_fin, cantidad, observaciones, estado, item_general_id, formulacion_version_id, unidad_id)
+                 VALUES (NOW(), ?, ?, ?, ?, 0, ?, ?, ?)',
                 [
                     $data['fecha_inicio']  ?? null,
                     $data['fecha_fin']     ?? null,
                     $cantidadEnvases,
                     $data['observaciones'] ?? null,
                     $itemId,
+                    $formulacionVersionId,
                     $unidadId,
                 ]
             );
@@ -262,10 +274,31 @@ class PreparacionesModel extends BaseModel
 
             // ── Histórico de costos congelados ─────────────────────────────────
             if ($multiplicador < 0) {
+                // Derivar lote_proveedor del snapshot. Si todas las capas consumidas
+                // comparten un único lote, lo guardamos directo (caso típico). Si hay
+                // varios, queda NULL y la trazabilidad granular se obtiene via JOIN
+                // a preparacion_consumo_capas → inventario_capas.
+                $loteSnapshot = null;
+                if (!empty($consumosCapas)) {
+                    $capaIds = array_filter(array_column($consumosCapas, 'capa_id'));
+                    if (!empty($capaIds)) {
+                        $lotes = $this->db->table('inventario_capas')
+                            ->select('lote_proveedor')
+                            ->distinct()
+                            ->whereIn('id_capa', $capaIds)
+                            ->where('lote_proveedor IS NOT NULL')
+                            ->get()->getResultArray();
+                        if (count($lotes) === 1) {
+                            $loteSnapshot = $lotes[0]['lote_proveedor'];
+                        }
+                    }
+                }
+
                 $this->db->table('produccion_insumos_detalle')->insert([
                     'preparacion_id'  => $prepId,
                     'item_general_id' => $itemId,
                     'proveedor_id'    => $seleccionProveedorId,
+                    'lote_proveedor'  => $loteSnapshot,
                     'bodega_id'       => $bodegaId,
                     'cantidad'        => $cantidadAbs,
                     'costo_unitario'  => $costoUnitario,
@@ -280,19 +313,23 @@ class PreparacionesModel extends BaseModel
                 ? "Consumo por orden de producción #{$prepId}"
                 : "Reintegro por cancelación de orden #{$prepId}";
 
-            $movimientoModel->registrarMovimiento([
-                'tipo_movimiento'  => $tipoMovimiento,
-                'cantidad'         => abs($diff),
-                'fecha_movimiento' => date('Y-m-d H:i:s'),
-                'descripcion'      => $descripcion,
-                'referencia_tipo'  => 'ORDEN_PRODUCCION',
+            $movimientoModel->registrar([
+                'tipo'             => $tipoMovimiento,
                 'item_general_id'  => $itemId,
                 'bodega_id'        => $bodegaId,
+                'cantidad'         => abs($diff),
+                'referencia_tipo'  => MovimientoInventarioModel::REF_PRODUCCION,
                 'referencia_id'    => $prepId,
+                'descripcion'      => $descripcion,
                 'costo_unitario'   => $costoUnitario,
                 'saldo_anterior'   => $saldoAnterior,
                 'saldo_nuevo'      => $saldoNuevo,
                 'responsable'      => $responsable,
+                'metadata'         => [
+                    'preparacion_id' => $prepId,
+                    'multiplicador'  => $multiplicador,
+                    'subtotal'       => round(abs($diff) * $costoUnitario, 4),
+                ],
             ]);
         }
     }
@@ -329,10 +366,16 @@ class PreparacionesModel extends BaseModel
     {
         $prep = $this->db->query(
             'SELECT p.*, ig.nombre AS item_nombre, ig.codigo AS item_codigo,
-                    u.nombre AS unidad_nombre, u.escala
+                    u.nombre AS unidad_nombre, u.escala,
+                    fv.version_num   AS formulacion_version_num,
+                    fv.notas         AS formulacion_version_notas,
+                    fv.created_at    AS formulacion_version_fecha,
+                    fv.created_by    AS formulacion_version_autor,
+                    fv.formulacion_id AS formulacion_id
              FROM preparaciones p
              INNER JOIN item_general ig ON ig.id_item_general = p.item_general_id
              INNER JOIN unidad u ON u.id_unidad = p.unidad_id
+             LEFT  JOIN formulaciones_versiones fv ON fv.id = p.formulacion_version_id
              WHERE p.id_preparaciones = ?',
             [$id]
         )->getRow();

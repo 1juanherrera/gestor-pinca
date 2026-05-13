@@ -6,8 +6,10 @@ use CodeIgniter\RESTful\ResourceController;
 use App\Models\FormulacionesModel;
 use Exception;
 
-class FormulacionesController extends ResourceController 
+class FormulacionesController extends ResourceController
 {
+    use \App\Traits\JwtUserAware;
+
     protected $modelName = FormulacionesModel::class;
 
     protected $request;
@@ -87,12 +89,19 @@ class FormulacionesController extends ResourceController
                 return $this->failValidationErrors('No se recibieron datos válidos.');
             }
 
+            // Inyectar responsable real para el snapshot de versión inicial
+            if (empty($data['responsable'])) {
+                $data['responsable'] = $this->getUsername();
+            }
+
             $result = $this->model->crearFormulacion($data);
 
             return $this->respondCreated([
-                'status'  => 'success',
-                'message' => $result['message'],
-                'id'      => $result['formulacion_id'],
+                'status'      => 'success',
+                'message'     => $result['message'],
+                'id'          => $result['formulacion_id'],
+                'version_id'  => $result['version_id']  ?? null,
+                'version_num' => $result['version_num'] ?? null,
             ]);
         } catch (Exception $e) {
             return $this->fail($e->getMessage(), 500);
@@ -152,12 +161,49 @@ class FormulacionesController extends ResourceController
                 return $this->failValidationErrors('No se recibieron datos válidos.');
             }
 
+            // Inyectar responsable real para el snapshot de versión
+            if (empty($data['responsable'])) {
+                $data['responsable'] = $this->getUsername();
+            }
+
             $result = $this->model->actualizarFormulacion((int) $id, $data);
 
             return $this->respond([
-                'status'  => 'success',
-                'message' => $result['message'],
+                'status'      => 'success',
+                'message'     => $result['message'],
+                'version_id'  => $result['version_id']  ?? null,
+                'version_num' => $result['version_num'] ?? null,
             ]);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * GET /api/formulaciones/:id/versiones
+     * Lista las versiones (sin snapshot completo, para timeline).
+     */
+    public function versiones(int $id = 0)
+    {
+        if ($id <= 0) return $this->fail('ID de formulación requerido', 400);
+        try {
+            return $this->respond($this->model->listarVersiones($id));
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * GET /api/formulaciones/versiones/:versionId
+     * Detalle de una versión con su snapshot completo + diff vs anterior.
+     */
+    public function versionDetalle(int $versionId = 0)
+    {
+        if ($versionId <= 0) return $this->fail('ID de versión requerido', 400);
+        try {
+            $detalle = $this->model->detalleVersion($versionId);
+            if (!$detalle) return $this->failNotFound("Versión #{$versionId} no encontrada");
+            return $this->respond($detalle);
         } catch (Exception $e) {
             return $this->fail($e->getMessage(), 500);
         }

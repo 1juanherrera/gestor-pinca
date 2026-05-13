@@ -7,6 +7,8 @@ use App\Models\FacturasModel;
 
 class FacturasController extends ResourceController
 {
+    use \App\Traits\ValidatesJson;
+
     protected $modelName = FacturasModel::class;
     protected $request;
 
@@ -98,14 +100,23 @@ class FacturasController extends ResourceController
     // hace rollback del encabezado también
     public function create()
     {
-        $data = $this->request->getJSON(true);
+        $data = $this->validateJson([
+            'cliente_id'             => 'required|integer|greater_than[0]',
+            'fecha_emision'          => 'permit_empty|valid_date',
+            'fecha_vencimiento'      => 'permit_empty|valid_date',
+            'subtotal'               => 'permit_empty|decimal',
+            'descuento'              => 'permit_empty|decimal|greater_than_equal_to[0]',
+            'impuestos'              => 'permit_empty|decimal|greater_than_equal_to[0]',
+            'retencion'              => 'permit_empty|decimal|greater_than_equal_to[0]',
+            'total'                  => 'required|decimal|greater_than_equal_to[0]',
+            'items'                  => 'required',
+            'items.*.descripcion'    => 'required|max_length[255]',
+            'items.*.cantidad'       => 'required|decimal|greater_than[0]',
+            'items.*.precio_unit'    => 'required|decimal|greater_than_equal_to[0]',
+        ]);
+        if ($data instanceof \CodeIgniter\HTTP\ResponseInterface) return $data;
 
-        if (!$data) return $this->fail('No se recibieron datos o el JSON es inválido', 400);
-
-        if (empty($data['cliente_id'])) {
-            return $this->failValidationErrors('El campo cliente_id es requerido.');
-        }
-        if (empty($data['items'])) {
+        if (!is_array($data['items']) || empty($data['items'])) {
             return $this->failValidationErrors('La factura debe tener al menos un ítem.');
         }
 

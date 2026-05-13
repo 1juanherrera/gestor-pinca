@@ -9,6 +9,9 @@ use App\Models\InventarioCapasModel;
 
 class OrdenesCompraController extends ResourceController
 {
+    use \App\Traits\JwtUserAware;
+    use \App\Traits\ValidatesJson;
+
     protected $modelName = OrdenesCompraModel::class;
 
     // GET api/ordenes_compra
@@ -28,13 +31,20 @@ class OrdenesCompraController extends ResourceController
     // POST api/ordenes_compra
     public function create()
     {
-        $data = json_decode($this->request->getBody(), true);
-        if (!$data) return $this->failValidationErrors('No se recibieron datos válidos.');
+        $data = $this->validateJson([
+            'proveedor_id'              => 'required|integer|greater_than[0]',
+            'bodegas_id'                => 'permit_empty|integer|greater_than[0]',
+            'fecha'                     => 'permit_empty|valid_date',
+            'fecha_esperada'            => 'permit_empty|valid_date',
+            'observaciones'             => 'permit_empty|max_length[500]',
+            'lineas'                    => 'required',
+            'lineas.*.item_proveedor_id'=> 'required|integer|greater_than[0]',
+            'lineas.*.cantidad'         => 'required|decimal|greater_than[0]',
+            'lineas.*.precio_unit'      => 'required|decimal|greater_than_equal_to[0]',
+        ]);
+        if ($data instanceof \CodeIgniter\HTTP\ResponseInterface) return $data;
 
-        if (empty($data['proveedor_id'])) {
-            return $this->failValidationErrors('El campo proveedor_id es requerido.');
-        }
-        if (empty($data['lineas'])) {
+        if (!is_array($data['lineas']) || empty($data['lineas'])) {
             return $this->failValidationErrors('La orden debe tener al menos una línea.');
         }
 
@@ -159,7 +169,7 @@ class OrdenesCompraController extends ResourceController
         $orden = $this->model->detalle((int) $id);
         if (!$orden) return $this->failNotFound("Orden con ID $id no encontrada.");
 
-        $data        = json_decode($this->request->getBody(), true);
+        $data        = $this->request->getJSON(true) ?? $this->request->getPost();
         $nuevoEstado = $data['estado'] ?? null;
 
         $transiciones = [
@@ -262,6 +272,31 @@ class OrdenesCompraController extends ResourceController
                 $db->table('item_general')
                     ->where('id_item_general', $itemGeneralId)
                     ->update(['costo_produccion' => $costoUnitarioKg]);
+
+                // ── Audit log: ENTRADA por recepción de OC ─────────────
+                $movModel = new \App\Models\MovimientoInventarioModel();
+                $movModel->registrar([
+                    'tipo'             => \App\Models\MovimientoInventarioModel::TIPO_ENTRADA,
+                    'item_general_id'  => $itemGeneralId,
+                    'bodega_id'        => $bodegaId,
+                    'cantidad'         => $cantidadBase,
+                    'referencia_tipo'  => \App\Models\MovimientoInventarioModel::REF_OC,
+                    'referencia_id'    => (int) $idOrden,
+                    'descripcion'      => "Recepción OC #{$orden['numero']} línea {$idDetalle}",
+                    'costo_unitario'   => $costoUnitarioKg,
+                    'responsable'      => $this->getUsername(),
+                    'metadata'         => [
+                        'numero_oc'           => $orden['numero'] ?? null,
+                        'proveedor_id'        => $orden['proveedor_id'] ?? null,
+                        'item_proveedor_id'   => $linea['item_proveedor_id'] ?? null,
+                        'item_proveedor_nombre' => $itemProv->nombre ?? null,
+                        'cantidad_recibida_unidad_compra' => $cantidadRecibida,
+                        'unidad_compra'       => $itemProv->unidad_compra_id ?? null,
+                        'factor_conversion'   => $factorConversion,
+                        'precio_unit_compra'  => (float) $linea['precio_unit'],
+                        'lote_proveedor'      => $data['lote_proveedor'] ?? null,
+                    ],
+                ]);
             }
 
             $db->transComplete();

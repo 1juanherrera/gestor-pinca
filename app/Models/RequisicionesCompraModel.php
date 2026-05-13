@@ -146,10 +146,15 @@ class RequisicionesCompraModel extends BaseModel
      * item_proveedor_id, proveedor_id, cantidad_necesaria, cantidad_disponible,
      * cantidad_solicitada, precio_unitario (opcional), observaciones (opcional).
      */
-    public function crearRequisiciones(array $items): array
+    public function crearRequisiciones(array $items, string $estadoInicial = 'PENDIENTE'): array
     {
         if (empty($items)) {
             throw new Exception('Debe enviar al menos una requisición.');
+        }
+
+        $estadosValidos = ['SUGERIDA', 'PENDIENTE', 'APROBADA'];
+        if (!in_array($estadoInicial, $estadosValidos, true)) {
+            $estadoInicial = 'PENDIENTE';
         }
 
         $created = [];
@@ -169,7 +174,7 @@ class RequisicionesCompraModel extends BaseModel
                     (preparacion_id, item_general_id, item_proveedor_id, proveedor_id,
                      cantidad_necesaria, cantidad_disponible, cantidad_solicitada,
                      precio_unitario, estado, observaciones, fecha_creacion)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, \'PENDIENTE\', ?, ?)',
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [
                     (int)   $item['preparacion_id'],
                     (int)   $item['item_general_id'],
@@ -179,6 +184,7 @@ class RequisicionesCompraModel extends BaseModel
                     (float) ($item['cantidad_disponible'] ?? 0),
                     (float) $item['cantidad_solicitada'],
                     isset($item['precio_unitario']) ? (float) $item['precio_unitario'] : null,
+                    $estadoInicial,
                     $item['observaciones'] ?? null,
                     $now,
                 ]
@@ -194,6 +200,113 @@ class RequisicionesCompraModel extends BaseModel
         }
 
         return $this->listarPorIds($created);
+    }
+
+    /**
+     * MRP automático: simula la producción de un item para detectar déficit
+     * de materias primas y genera requisiciones SUGERIDA con el mejor proveedor
+     * por cada MP faltante.
+     *
+     * @param int   $itemId          Item a producir
+     * @param float $volumenGalones  Volumen objetivo
+     * @param int   $unidadId        Unidad del volumen
+     * @param int|null $preparacionId Si se vincula a una prep ya creada (opcional)
+     *
+     * @return array {
+     *   creadas: array — requisiciones generadas
+     *   sin_proveedor: array — MPs en déficit que NO tienen proveedor activo (manual)
+     *   sin_deficit: bool — true si todo estaba disponible (no se creó nada)
+     * }
+     */
+    public function sugerirRequisicionesMRP(int $itemId, float $volumenGalones, int $unidadId, ?int $preparacionId = null): array
+    {
+        $disponibilidad = $this->verificarDisponibilidad($itemId, $volumenGalones, $unidadId);
+
+        if (!empty($disponibilidad['todos_disponibles'])) {
+            return ['creadas' => [], 'sin_proveedor' => [], 'sin_deficit' => true];
+        }
+
+        $items         = [];
+        $sinProveedor  = [];
+
+        foreach ($disponibilidad['materiales'] as $mat) {
+            if (!$mat['tiene_deficit']) continue;
+
+            // Elegir el proveedor con mejor precio por kg.
+            // verificarDisponibilidad ya retorna proveedores ordenados por precio_unitario ASC,
+            // pero la métrica correcta es precio/kg → factor_conversion. Lo recalculamos.
+            $mejor = $this->_pickMejorProveedor($mat['item_general_id']);
+
+            if (!$mejor) {
+                $sinProveedor[] = [
+                    'item_general_id' => $mat['item_general_id'],
+                    'nombre'          => $mat['nombre'],
+                    'codigo'          => $mat['codigo'],
+                    'deficit'         => $mat['deficit'],
+                ];
+                continue;
+            }
+
+            $items[] = [
+                'preparacion_id'      => $preparacionId ?? 0,
+                'item_general_id'     => $mat['item_general_id'],
+                'item_proveedor_id'   => $mejor['id_item_proveedor'],
+                'proveedor_id'        => $mejor['id_proveedor'],
+                'cantidad_necesaria'  => $mat['cantidad_necesaria'],
+                'cantidad_disponible' => $mat['cantidad_disponible'],
+                'cantidad_solicitada' => $mat['deficit'],
+                'precio_unitario'     => $mejor['precio_unitario'],
+                'observaciones'       => "Sugerida automáticamente por MRP. Mejor precio/kg: $" . number_format($mejor['precio_kg'], 2),
+            ];
+        }
+
+        $creadas = [];
+        if (!empty($items)) {
+            // Si no hay preparación previa, usamos preparacion_id=0 — el campo es NOT NULL
+            // pero la columna soporta el valor 0 (sin lock referencial). Si en el futuro
+            // se pone FK strict, habría que crear placeholder.
+            $creadas = $this->crearRequisiciones($items, 'SUGERIDA');
+        }
+
+        return [
+            'creadas'       => $creadas,
+            'sin_proveedor' => $sinProveedor,
+            'sin_deficit'   => false,
+        ];
+    }
+
+    /**
+     * Devuelve el proveedor con mejor precio_unitario / factor_conversion
+     * (precio por kg en unidad base) para un item. NULL si no hay activos.
+     */
+    private function _pickMejorProveedor(int $itemGeneralId): ?array
+    {
+        $row = $this->db->query(
+            'SELECT ip.id_item_proveedor,
+                    ip.precio_unitario,
+                    ip.factor_conversion,
+                    p.id_proveedor,
+                    p.nombre_empresa,
+                    CASE WHEN ip.factor_conversion > 0
+                         THEN ip.precio_unitario / ip.factor_conversion
+                         ELSE ip.precio_unitario END AS precio_kg
+             FROM item_proveedor ip
+             JOIN proveedor p ON p.id_proveedor = ip.proveedor_id
+             WHERE ip.item_general_id = ? AND ip.disponible = 1
+             ORDER BY precio_kg ASC
+             LIMIT 1',
+            [$itemGeneralId]
+        )->getRow();
+
+        if (!$row) return null;
+        return [
+            'id_item_proveedor' => (int) $row->id_item_proveedor,
+            'id_proveedor'      => (int) $row->id_proveedor,
+            'nombre_empresa'    => $row->nombre_empresa,
+            'precio_unitario'   => (float) $row->precio_unitario,
+            'factor_conversion' => (float) $row->factor_conversion,
+            'precio_kg'         => (float) $row->precio_kg,
+        ];
     }
 
     /**
@@ -260,7 +373,7 @@ class RequisicionesCompraModel extends BaseModel
      */
     public function actualizarEstado(int $id, string $estado): array
     {
-        $validos = ['PENDIENTE', 'APROBADA', 'CANCELADA'];
+        $validos = ['SUGERIDA', 'PENDIENTE', 'APROBADA', 'CANCELADA'];
         if (!in_array($estado, $validos)) {
             throw new Exception("Estado inválido. Valores permitidos: " . implode(', ', $validos));
         }

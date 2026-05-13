@@ -15,6 +15,7 @@ $routes->group('api', function ($routes) {
     $routes->post('login',                  'UsuarioController::login');
     $routes->post('crear',                  'UsuarioController::crear');
     $routes->patch('usuarios/mi-password',   'UsuarioController::cambiarPassword');
+    $routes->patch('usuarios/mi-perfil',     'UsuarioController::actualizarPerfil');
     $routes->get('usuarios/mi-actividad',    'UsuarioController::miActividad');
     $routes->put('empresa',                  'EmpresaController::update');
 
@@ -32,6 +33,7 @@ $routes->group('api', function ($routes) {
     $routes->post('catalogo',                         'CatalogoController::create');
     $routes->put('catalogo/(:num)',                   'CatalogoController::update/$1');
     $routes->delete('catalogo/(:num)',                'CatalogoController::delete/$1');
+    $routes->post('catalogo/(:num)/restore',          'CatalogoController::restore/$1');
 
     // ITEMS
     $routes->get('item_general', 'ItemController::item_general');
@@ -71,6 +73,9 @@ $routes->group('api', function ($routes) {
     $routes->get('formulaciones/costos/(:num)', 'FormulacionesController::calcular_costos_volumen/$1');
     $routes->get('formulaciones/(:num)/proveedores', 'FormulacionesController::proveedores_formulacion/$1');
     $routes->get('formulaciones/(:num)/opciones-ingredientes', 'FormulacionesController::opciones_proveedor_ingrediente/$1');
+    // Versionado de fórmula
+    $routes->get('formulaciones/(:num)/versiones',         'FormulacionesController::versiones/$1');
+    $routes->get('formulaciones/versiones/(:num)',         'FormulacionesController::versionDetalle/$1');
     $routes->get('formulaciones/recalcular_costos/(:num)/(:segment)', 'FormulacionesController::recalcular_costos_por_volumen/$1/$2');
     $routes->get('formulaciones/(:num)', 'FormulacionesController::show/$1');
     $routes->post('formulaciones',        'FormulacionesController::create');
@@ -83,6 +88,7 @@ $routes->group('api', function ($routes) {
     $routes->post('proveedores', 'ProveedorController::create');
     $routes->put('proveedores/(:num)', 'ProveedorController::update/$1');
     $routes->delete('proveedores/(:num)', 'ProveedorController::delete/$1');
+    $routes->post('proveedores/(:num)/restore', 'ProveedorController::restore/$1');
 
     // ITEM PROVEEDORES
     $routes->get('item_proveedores', 'ItemProveedorController::get_item_proveedores');
@@ -98,6 +104,7 @@ $routes->group('api', function ($routes) {
     $routes->post('clientes', 'ClientesController::create');
     $routes->put('clientes/(:num)', 'ClientesController::update/$1');
     $routes->delete('clientes/(:num)', 'ClientesController::delete/$1');
+    $routes->post('clientes/(:num)/restore', 'ClientesController::restore/$1');
 
     // FACTURAS
     $routes->get('facturas', 'FacturasController::index');
@@ -160,6 +167,7 @@ $routes->group('api', function ($routes) {
     // REQUISICIONES DE COMPRA
     $routes->get('requisiciones',                        'RequisicionesCompraController::index');
     $routes->post('requisiciones',                       'RequisicionesCompraController::create');
+    $routes->post('requisiciones/sugerir-mrp',           'RequisicionesCompraController::sugerirMRP');
     $routes->post('requisiciones/convertir-oc',          'RequisicionesCompraController::convertirAOC');
     $routes->get('requisiciones/preparacion/(:num)',     'RequisicionesCompraController::porPreparacion/$1');
     $routes->patch('requisiciones/(:num)/estado',        'RequisicionesCompraController::actualizarEstado/$1');
@@ -224,6 +232,28 @@ $routes->group('api', function ($routes) {
     $routes->post('tambores',                    'TamborController::create');
     $routes->put('tambores/(:num)',              'TamborController::update/$1');
     $routes->post('tambores/(:num)/consumir',   'TamborController::consumir/$1');
+
+    // PANEL PRINCIPAL — KPIs consolidados
+    $routes->get('dashboard', 'DashboardController::index');
+
+    // NOTIFICACIONES
+    $routes->get('notificaciones',                  'NotificacionesController::index');
+    $routes->get('notificaciones/no-leidas',        'NotificacionesController::noLeidas');
+    $routes->patch('notificaciones/(:num)/leer',    'NotificacionesController::marcarLeida/$1');
+    $routes->post('notificaciones/leer-todas',      'NotificacionesController::marcarTodasLeidas');
+
+    // TRAZABILIDAD DE LOTE
+    $routes->get('trazabilidad/lotes',                'TrazabilidadController::lotes');
+    $routes->get('trazabilidad/preparacion/(:num)',   'TrazabilidadController::porPreparacion/$1');
+    $routes->get('trazabilidad/lote/(:any)',          'TrazabilidadController::porLote/$1');
+
+    // SINCRONIZACIÓN (auditoría catálogo ↔ proveedores)
+    $routes->get('sincronizacion/stats',       'SincronizacionController::stats');
+    $routes->get('sincronizacion/maestro',     'SincronizacionController::maestro');
+    $routes->get('sincronizacion/pendientes',  'SincronizacionController::pendientes');
+    $routes->get('sincronizacion/duplicados',  'SincronizacionController::duplicados');
+    $routes->get('sincronizacion/huerfanos',   'SincronizacionController::huerfanos');
+    $routes->post('sincronizacion/merge',      'SincronizacionController::merge');
 
     // ÓRDENES DE COMPRA
     $routes->get('ordenes_compra',                        'OrdenesCompraController::index');

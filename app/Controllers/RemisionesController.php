@@ -2,12 +2,19 @@
 
 namespace App\Controllers;
 
+use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\RemisionesModel;
 use App\Models\FacturasModel;
+use App\Models\InventarioCapasModel;
+use App\Models\InventarioModel;
+use App\Models\MovimientoInventarioModel;
 
 class RemisionesController extends ResourceController
 {
+    use \App\Traits\JwtUserAware;
+    use \App\Traits\ValidatesJson;
+
     protected $modelName = RemisionesModel::class;
     protected $request;
 
@@ -48,11 +55,28 @@ class RemisionesController extends ResourceController
     // ── POST /remisiones ──────────────────────────────────────────────────
     public function create()
     {
-        $data = $this->request->getJSON(true);
-        if (!$data) return $this->fail('No se recibieron datos o el JSON es inválido', 400);
+        $data = $this->validateJson([
+            'cliente_id'                 => 'required|integer|greater_than[0]',
+            'fecha_remision'             => 'permit_empty|valid_date',
+            'direccion_entrega'          => 'permit_empty|max_length[255]',
+            'observaciones'              => 'permit_empty',
+            'items'                      => 'required',
+            'items.*.descripcion'        => 'required|max_length[255]',
+            'items.*.cantidad'           => 'required|decimal|greater_than[0]',
+            'items.*.precio_unit'        => 'required|decimal|greater_than_equal_to[0]',
+            // item_general_id es opcional para soportar texto libre legacy.
+            // Si está presente, debe ser entero válido — y al pasar a Despachada se exige.
+            'items.*.item_general_id'    => 'permit_empty|integer|greater_than[0]',
+            'items.*.bodega_id'          => 'permit_empty|integer|greater_than[0]',
+        ]);
+        if ($data instanceof ResponseInterface) return $data;
+
+        if (!is_array($data['items']) || empty($data['items'])) {
+            return $this->failValidationErrors('La remisión debe tener al menos un ítem.');
+        }
 
         try {
-            $items = $data['items'] ?? [];
+            $items = $data['items'];
             unset($data['items']);
 
             if (empty($data['numero'])) $data['numero'] = $this->generarNumero();
@@ -61,21 +85,22 @@ class RemisionesController extends ResourceController
             $id = $this->model->create_table($data, 'remisiones');
             if (!$id) throw new \Exception(implode(', ', $this->model->errors()));
 
-            if (!empty($items)) {
-                $db = \Config\Database::connect();
-                foreach ($items as $item) {
-                    $db->query(
-                        "INSERT INTO remisiones_detalle (remisiones_id, descripcion, cantidad, precio_unit, subtotal)
-                         VALUES (?, ?, ?, ?, ?)",
-                        [
-                            $id,
-                            $item['descripcion'] ?? '',
-                            (float) ($item['cantidad']   ?? 0),
-                            (float) ($item['precio_unit'] ?? 0),
-                            (float) ($item['subtotal']    ?? 0),
-                        ]
-                    );
-                }
+            $db = \Config\Database::connect();
+            foreach ($items as $item) {
+                $db->query(
+                    "INSERT INTO remisiones_detalle
+                        (remisiones_id, item_general_id, bodega_id, descripcion, cantidad, precio_unit, subtotal)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    [
+                        $id,
+                        isset($item['item_general_id']) ? (int) $item['item_general_id'] : null,
+                        isset($item['bodega_id'])       ? (int) $item['bodega_id']       : null,
+                        $item['descripcion'] ?? '',
+                        (float) ($item['cantidad']    ?? 0),
+                        (float) ($item['precio_unit'] ?? 0),
+                        (float) ($item['subtotal']    ?? 0),
+                    ]
+                );
             }
 
             return $this->respondCreated([
@@ -123,9 +148,9 @@ class RemisionesController extends ResourceController
     {
         if (!$id) return $this->fail('ID no proporcionado', 400);
 
-        $data       = $this->request->getJSON(true);
+        $data       = $this->request->getJSON(true) ?? $this->request->getPost();
         $estado     = $data['estado'] ?? null;
-        $permitidos = ['Pendiente', 'Entregada', 'Facturada', 'Anulada'];
+        $permitidos = ['Pendiente', 'Despachada', 'Facturada', 'Anulada'];
 
         if (!$estado || !in_array($estado, $permitidos)) {
             return $this->fail('Estado no válido. Permitidos: ' . implode(', ', $permitidos), 400);
@@ -134,9 +159,20 @@ class RemisionesController extends ResourceController
         $existing = $this->model->find($id);
         if (!$existing) return $this->failNotFound("Remisión con ID $id no encontrada.");
 
+        // Anuladas no pueden cambiar (terminal)
+        if ($existing['estado'] === 'Anulada') {
+            return $this->fail('No se puede cambiar el estado de una remisión anulada', 400);
+        }
+
         try {
-            if ($existing['estado'] === 'Anulada') {
-                throw new \Exception('No se puede cambiar el estado de una remisión anulada');
+            // ── Pendiente → Despachada: descontar stock por cada línea ──────
+            if ($estado === 'Despachada' && $existing['estado'] !== 'Despachada') {
+                $this->descontarStockDespacho((int) $id);
+            }
+
+            // ── Despachada → Anulada: restaurar capas ───────────────────────
+            if ($estado === 'Anulada' && in_array($existing['estado'], ['Despachada', 'Facturada'])) {
+                $this->restaurarStockAnulacion((int) $id);
             }
 
             $this->model->update_table($id, ['estado' => $estado], 'remisiones');
@@ -149,6 +185,162 @@ class RemisionesController extends ResourceController
 
         } catch (\Exception $e) {
             return $this->fail($e->getMessage(), 400);
+        }
+    }
+
+    /**
+     * Descuenta stock por cada línea de la remisión que tiene `item_general_id`.
+     * Líneas con texto libre (sin item) se ignoran (legacy compat).
+     * Usa FIFO sobre `inventario_capas`. Genera audit log SALIDA por cada movimiento.
+     * Atómico: si una línea no tiene stock suficiente, rollback total.
+     */
+    private function descontarStockDespacho(int $remisionId): void
+    {
+        $db        = \Config\Database::connect();
+        $capasMod  = new InventarioCapasModel();
+        $movMod    = new MovimientoInventarioModel();
+        $invMod    = new InventarioModel();
+
+        $lineas = $db->table('remisiones_detalle')
+            ->where('remisiones_id', $remisionId)
+            ->where('item_general_id IS NOT NULL')
+            ->get()->getResultArray();
+
+        if (empty($lineas)) return;
+
+        $remision = $db->table('remisiones')->where('id_remisiones', $remisionId)->get()->getRowArray();
+        $responsable = $this->getUsername();
+
+        $db->transBegin();
+        try {
+            foreach ($lineas as $linea) {
+                $itemId   = (int) $linea['item_general_id'];
+                $cantidad = (float) $linea['cantidad'];
+                $bodegaId = $linea['bodega_id'] ? (int) $linea['bodega_id'] : null;
+
+                if ($cantidad <= 0) continue;
+
+                // Verificar stock disponible
+                if (!$capasMod->tieneCapas($itemId)) {
+                    throw new \Exception(
+                        "Sin stock para despachar item #{$itemId} «{$linea['descripcion']}» (cantidad solicitada: {$cantidad})"
+                    );
+                }
+
+                $consumos = $capasMod->consumirCapasFIFO($itemId, $cantidad, $bodegaId);
+                $consumido = array_sum(array_column($consumos, 'cantidad_consumida'));
+
+                if ($consumido < $cantidad - 0.0001) {
+                    throw new \Exception(
+                        "Stock insuficiente para item #{$itemId}. Disponible: {$consumido}, Requerido: {$cantidad}"
+                    );
+                }
+
+                // Registrar audit detallado por capa
+                $capasMod->registrarConsumosRemision($remisionId, (int) $linea['id_detalle'], $consumos);
+
+                // Actualizar inventario legacy (compatibilidad — no romper queries antiguas)
+                $stockRow = $db->table('inventario')
+                    ->where('item_general_id', $itemId)
+                    ->orderBy('cantidad', 'DESC')->limit(1)
+                    ->get()->getRowArray();
+                $saldoAntes = $stockRow ? (float) $stockRow['cantidad'] : 0;
+                if ($stockRow) {
+                    $db->table('inventario')
+                        ->where('id_inventario', $stockRow['id_inventario'])
+                        ->set('cantidad', "GREATEST(cantidad - {$cantidad}, 0)", false)
+                        ->update();
+                }
+
+                // Costo unitario promedio del consumo
+                $costoTotal = array_sum(array_column($consumos, 'costo_total'));
+                $costoUnit  = $consumido > 0 ? $costoTotal / $consumido : 0;
+
+                // Audit log SALIDA
+                $movMod->registrar([
+                    'tipo'             => MovimientoInventarioModel::TIPO_SALIDA,
+                    'item_general_id'  => $itemId,
+                    'bodega_id'        => $bodegaId ?? ($stockRow['bodegas_id'] ?? null),
+                    'cantidad'         => $consumido,
+                    'referencia_tipo'  => MovimientoInventarioModel::REF_REMISION,
+                    'referencia_id'    => $remisionId,
+                    'descripcion'      => "Despacho remisión {$remision['numero']} línea {$linea['id_detalle']}",
+                    'costo_unitario'   => $costoUnit,
+                    'saldo_anterior'   => $saldoAntes,
+                    'saldo_nuevo'      => max($saldoAntes - $consumido, 0),
+                    'responsable'      => $responsable,
+                    'metadata'         => [
+                        'remision_id'     => $remisionId,
+                        'remision_numero' => $remision['numero'],
+                        'cliente_id'      => $remision['cliente_id'],
+                        'detalle_id'      => (int) $linea['id_detalle'],
+                        'descripcion'     => $linea['descripcion'],
+                        'capas_consumidas'=> count($consumos),
+                    ],
+                ]);
+            }
+
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            // Limpiar consumos parciales si quedaron registrados antes del fallo
+            $capasMod->restaurarCapasRemision($remisionId);
+            throw $e;
+        }
+    }
+
+    /**
+     * Restaura las capas consumidas y registra audit log de la anulación.
+     */
+    private function restaurarStockAnulacion(int $remisionId): void
+    {
+        $db        = \Config\Database::connect();
+        $capasMod  = new InventarioCapasModel();
+        $movMod    = new MovimientoInventarioModel();
+
+        $remision = $db->table('remisiones')->where('id_remisiones', $remisionId)->get()->getRowArray();
+
+        // Restaurar capas en BD + obtener movimientos para el audit log de reverso
+        $consumosAntes = $db->table('remision_consumo_capas')
+            ->where('remision_id', $remisionId)
+            ->get()->getResultArray();
+
+        if (empty($consumosAntes)) return;  // nada que restaurar
+
+        // Agrupar por item para el audit log (1 ENTRADA por item)
+        $porItem = [];
+        foreach ($consumosAntes as $c) {
+            $key = (int) $c['item_general_id'];
+            if (!isset($porItem[$key])) {
+                $porItem[$key] = ['cantidad' => 0, 'costo_total' => 0];
+            }
+            $porItem[$key]['cantidad']    += (float) $c['cantidad_consumida'];
+            $porItem[$key]['costo_total'] += (float) $c['costo_total'];
+        }
+
+        $count = $capasMod->restaurarCapasRemision($remisionId);
+
+        $responsable = $this->getUsername();
+
+        // Audit log ENTRADA por reverso
+        foreach ($porItem as $itemId => $info) {
+            $costoUnit = $info['cantidad'] > 0 ? $info['costo_total'] / $info['cantidad'] : 0;
+            $movMod->registrar([
+                'tipo'             => MovimientoInventarioModel::TIPO_ENTRADA,
+                'item_general_id'  => $itemId,
+                'cantidad'         => $info['cantidad'],
+                'referencia_tipo'  => MovimientoInventarioModel::REF_ANULACION,
+                'referencia_id'    => $remisionId,
+                'descripcion'      => "Anulación remisión {$remision['numero']} (reintegro de stock)",
+                'costo_unitario'   => $costoUnit,
+                'responsable'      => $responsable,
+                'metadata'         => [
+                    'remision_id'     => $remisionId,
+                    'remision_numero' => $remision['numero'],
+                    'origen_estado'   => $remision['estado'],
+                    'capas_restauradas' => $count,
+                ],
+            ]);
         }
     }
 
@@ -265,7 +457,12 @@ class RemisionesController extends ResourceController
             ->get()
             ->getRowArray();
 
-        $seq = $last ? ((int) end(explode('-', $last['numero'])) + 1) : 1;
+        if ($last) {
+            $partes = explode('-', $last['numero']);
+            $seq = ((int) end($partes)) + 1;
+        } else {
+            $seq = 1;
+        }
 
         return "{$prefijo}-{$year}-" . str_pad($seq, 4, '0', STR_PAD_LEFT);
     }

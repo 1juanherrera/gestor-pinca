@@ -903,10 +903,19 @@ class FormulacionesModel extends BaseModel
                 throw new Exception('Error al guardar la formulación.');
             }
 
+            // Snapshot inmutable de la versión inicial (post-commit, no rompe la tx anterior)
+            $versionId = $this->crearVersion(
+                (int) $formulacionId,
+                $data['responsable'] ?? null,
+                'Versión inicial'
+            );
+
             return [
-                'success'       => true,
-                'message'       => 'Formulación creada correctamente.',
+                'success'        => true,
+                'message'        => 'Formulación creada correctamente.',
                 'formulacion_id' => $formulacionId,
+                'version_id'     => $versionId,
+                'version_num'    => 1,
             ];
 
         } catch (Exception $e) {
@@ -966,14 +975,165 @@ class FormulacionesModel extends BaseModel
                 throw new Exception('Error al actualizar la formulación.');
             }
 
+            // Snapshot de la nueva versión post-edición
+            $versionId = $this->crearVersion(
+                (int) $formulacionId,
+                $data['responsable'] ?? null,
+                $data['notas_version'] ?? 'Edición de formulación'
+            );
+
+            $nuevaVer = (int) $this->db->table('formulaciones')
+                ->where('id_formulaciones', $formulacionId)
+                ->get()->getRowArray()['version_actual'];
+
             return [
-                'success' => true,
-                'message' => 'Formulación actualizada correctamente.',
+                'success'     => true,
+                'message'     => 'Formulación actualizada correctamente.',
+                'version_id'  => $versionId,
+                'version_num' => $nuevaVer,
             ];
 
         } catch (Exception $e) {
             $this->db->transRollback();
             throw $e;
         }
+    }
+
+    /**
+     * Crea un snapshot inmutable del estado actual de la formulación.
+     * Llamar SIEMPRE después de modificar `item_general_formulaciones` para
+     * que las preparaciones futuras puedan trazar la receta exacta usada.
+     *
+     * @return int  ID de la versión creada
+     */
+    public function crearVersion(int $formulacionId, ?string $createdBy = null, ?string $notas = null): int
+    {
+        $form = $this->db->table('formulaciones')
+            ->where('id_formulaciones', $formulacionId)
+            ->get()->getRowArray();
+
+        if (!$form) {
+            throw new Exception("Formulación #{$formulacionId} no encontrada para versionar.");
+        }
+
+        $ingredientes = $this->db->query("
+            SELECT
+                igf.item_general_id,
+                igf.cantidad,
+                igf.porcentaje,
+                ig.nombre AS item_nombre,
+                ig.codigo AS item_codigo
+            FROM item_general_formulaciones igf
+            LEFT JOIN item_general ig ON ig.id_item_general = igf.item_general_id
+            WHERE igf.formulaciones_id = ?
+            ORDER BY igf.id_item_general_formulaciones
+        ", [$formulacionId])->getResultArray();
+
+        // Próximo número de versión
+        $maxRow  = $this->db->table('formulaciones_versiones')
+            ->selectMax('version_num')
+            ->where('formulacion_id', $formulacionId)
+            ->get()->getRowArray();
+        $nextVer = ((int) ($maxRow['version_num'] ?? 0)) + 1;
+
+        $this->db->table('formulaciones_versiones')->insert([
+            'formulacion_id' => $formulacionId,
+            'version_num'    => $nextVer,
+            'nombre'         => $form['nombre'],
+            'descripcion'    => $form['descripcion'],
+            'ingredientes'   => json_encode($ingredientes, JSON_UNESCAPED_UNICODE),
+            'notas'          => $notas,
+            'created_by'     => $createdBy ?? 'sistema',
+            'created_at'     => date('Y-m-d H:i:s'),
+        ]);
+
+        $versionId = (int) $this->db->insertID();
+
+        // Mantener pointer de versión actual
+        $this->db->table('formulaciones')
+            ->where('id_formulaciones', $formulacionId)
+            ->update(['version_actual' => $nextVer]);
+
+        return $versionId;
+    }
+
+    /**
+     * Lista las versiones de una formulación (sin el snapshot completo, para listado).
+     */
+    public function listarVersiones(int $formulacionId): array
+    {
+        return $this->db->query("
+            SELECT
+                fv.id,
+                fv.version_num,
+                fv.notas,
+                fv.created_by,
+                fv.created_at,
+                f.version_actual,
+                (fv.version_num = f.version_actual) AS es_actual
+            FROM formulaciones_versiones fv
+            JOIN formulaciones f ON f.id_formulaciones = fv.formulacion_id
+            WHERE fv.formulacion_id = ?
+            ORDER BY fv.version_num DESC
+        ", [$formulacionId])->getResultArray();
+    }
+
+    /**
+     * Devuelve una versión específica con su snapshot completo + diff vs anterior.
+     */
+    public function detalleVersion(int $versionId): ?array
+    {
+        $ver = $this->db->table('formulaciones_versiones')
+            ->where('id', $versionId)
+            ->get()->getRowArray();
+        if (!$ver) return null;
+
+        $ver['ingredientes'] = json_decode($ver['ingredientes'] ?? '[]', true) ?: [];
+
+        // Versión anterior para diff
+        $anterior = $this->db->table('formulaciones_versiones')
+            ->where('formulacion_id', $ver['formulacion_id'])
+            ->where('version_num <', $ver['version_num'])
+            ->orderBy('version_num', 'DESC')
+            ->limit(1)
+            ->get()->getRowArray();
+
+        $diff = ['agregados' => [], 'removidos' => [], 'modificados' => []];
+
+        if ($anterior) {
+            $ingAnterior = json_decode($anterior['ingredientes'] ?? '[]', true) ?: [];
+            $mapAnt = [];
+            foreach ($ingAnterior as $i) $mapAnt[(int) $i['item_general_id']] = $i;
+            $mapNew = [];
+            foreach ($ver['ingredientes'] as $i) $mapNew[(int) $i['item_general_id']] = $i;
+
+            foreach ($mapNew as $id => $cur) {
+                if (!isset($mapAnt[$id])) {
+                    $diff['agregados'][] = $cur;
+                } elseif ((float) $mapAnt[$id]['cantidad'] !== (float) $cur['cantidad']) {
+                    $diff['modificados'][] = [
+                        'item_general_id' => $id,
+                        'item_nombre'     => $cur['item_nombre'] ?? null,
+                        'item_codigo'     => $cur['item_codigo'] ?? null,
+                        'cantidad_antes'  => (float) $mapAnt[$id]['cantidad'],
+                        'cantidad_despues'=> (float) $cur['cantidad'],
+                    ];
+                }
+            }
+            foreach ($mapAnt as $id => $prev) {
+                if (!isset($mapNew[$id])) {
+                    $diff['removidos'][] = $prev;
+                }
+            }
+        }
+
+        $ver['version_anterior'] = $anterior ? [
+            'id'          => (int) $anterior['id'],
+            'version_num' => (int) $anterior['version_num'],
+            'created_at'  => $anterior['created_at'],
+        ] : null;
+        $ver['diff'] = $diff;
+
+        return $ver;
     }
 }

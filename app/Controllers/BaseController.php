@@ -67,4 +67,5 @@ abstract class BaseController extends Controller
         log_message('error', '[' . get_class($this) . '] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
         return $this->response->setStatusCode(500)->setJSON(['success' => false, 'message' => $genericMsg]);
     }
+
 }

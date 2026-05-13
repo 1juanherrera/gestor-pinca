@@ -8,6 +8,8 @@ use Exception;
 
 class RequisicionesCompraController extends BaseController
 {
+    use \App\Traits\JwtUserAware;
+
     private RequisicionesCompraModel $model;
 
     public function __construct()
@@ -35,6 +37,67 @@ class RequisicionesCompraController extends BaseController
         try {
             $result = $this->model->verificarDisponibilidad($itemId, $cantidad, $unidadId);
             return $this->response->setJSON(['success' => true, 'data' => $result]);
+        } catch (Exception $e) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * POST /api/requisiciones/sugerir-mrp
+     * Body: { item_general_id, cantidad (volumen galones), unidad_id, preparacion_id?: int }
+     *
+     * Simula la producción y, si hay déficit, crea requisiciones SUGERIDA con
+     * el mejor proveedor por precio/kg para cada MP faltante.
+     */
+    public function sugerirMRP(): ResponseInterface
+    {
+        $body = $this->request->getJSON(true) ?? [];
+        $itemId   = (int)   ($body['item_general_id'] ?? 0);
+        $cantidad = (float) ($body['cantidad'] ?? 0);
+        $unidadId = (int)   ($body['unidad_id'] ?? 0);
+        $prepId   = isset($body['preparacion_id']) ? (int) $body['preparacion_id'] : null;
+
+        if (!$itemId || $cantidad <= 0 || !$unidadId) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'success' => false,
+                'message' => 'Parámetros requeridos: item_general_id, cantidad (> 0), unidad_id.',
+            ]);
+        }
+
+        try {
+            $result = $this->model->sugerirRequisicionesMRP($itemId, $cantidad, $unidadId, $prepId);
+
+            $cantCreadas = count($result['creadas']);
+            if ($cantCreadas > 0) {
+                $notif = new \App\Models\NotificacionModel();
+                $notif->crear([
+                    'tipo'       => \App\Models\NotificacionModel::TIPO_REQUISICION_NUEVA,
+                    'titulo'     => "MRP generó {$cantCreadas} requisición(es) sugerida(s)",
+                    'mensaje'    => "Hay déficit detectado para producir el item. Revisa y aprueba las requisiciones para convertir a OC.",
+                    'rol_target' => 'admin',
+                    'link'       => '/compras',
+                    'metadata'   => [
+                        'origen'          => 'mrp',
+                        'item_general_id' => $itemId,
+                        'cantidad'        => $cantCreadas,
+                        'sin_proveedor'   => count($result['sin_proveedor']),
+                    ],
+                    'dedup_key'  => "mrp-{$itemId}-" . date('Y-m-d-H'),
+                ]);
+            }
+
+            log_message('info', sprintf(
+                '[MRP] Usuario "%s" generó %d sugeridas para item #%d (volumen %.2f). Sin proveedor: %d',
+                $this->getUsername(), $cantCreadas, $itemId, $cantidad, count($result['sin_proveedor'])
+            ));
+
+            return $this->response->setStatusCode(201)->setJSON([
+                'success' => true,
+                'data'    => $result,
+            ]);
         } catch (Exception $e) {
             return $this->response->setStatusCode(422)->setJSON([
                 'success' => false,
@@ -100,6 +163,20 @@ class RequisicionesCompraController extends BaseController
 
         try {
             $created = $this->model->crearRequisiciones($items);
+
+            // Notif: nueva requisición pendiente de aprobación → rol admin
+            $count = is_array($created) ? count($created) : 1;
+            $notif = new \App\Models\NotificacionModel();
+            $notif->crear([
+                'tipo'       => \App\Models\NotificacionModel::TIPO_REQUISICION_NUEVA,
+                'titulo'     => $count === 1 ? 'Nueva requisición de compra' : "{$count} requisiciones nuevas",
+                'mensaje'    => 'Hay requisiciones pendientes de aprobación para convertir a OC.',
+                'rol_target' => 'admin',
+                'link'       => '/compras',
+                'metadata'   => ['count' => $count],
+                'dedup_key'  => 'req-nueva-' . date('Y-m-d-H'),
+            ]);
+
             return $this->response->setStatusCode(201)->setJSON([
                 'success' => true,
                 'data'    => $created,

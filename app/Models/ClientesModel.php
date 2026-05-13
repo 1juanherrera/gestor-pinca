@@ -26,11 +26,7 @@ class ClientesModel extends BaseModel
         parent::__construct();
     }
 
-    public function get($id, $table)
-    {
-        $this->table = $table;
-        return $this->find($id);
-    }
+    // get() heredado de BaseModel — respeta soft-deletes automáticamente
 
     public function create_cliente($data, $table)
     {

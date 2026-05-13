@@ -8,6 +8,7 @@ class UsuarioModel extends BaseModel
 
     protected $allowedFields = [
         'username',
+        'nombre',
         'password',
         'rol',
     ];

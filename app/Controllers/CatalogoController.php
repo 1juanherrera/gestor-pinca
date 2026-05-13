@@ -2,12 +2,24 @@
 
 namespace App\Controllers;
 
+use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\CatalogoModel;
 
 class CatalogoController extends ResourceController
 {
+    use \App\Traits\ValidatesJson;
+
     protected $modelName = CatalogoModel::class;
+
+    private const RULES_BASE = [
+        'nombre'        => 'required|max_length[36]',
+        'codigo'        => 'permit_empty|max_length[10]',
+        'tipo'          => 'permit_empty',
+        'categoria_id'  => 'permit_empty|integer',
+        'unidad_id'     => 'permit_empty|integer',
+        'unidad_almacenaje_id' => 'permit_empty|integer',
+    ];
 
     public function index()
     {
@@ -39,15 +51,8 @@ class CatalogoController extends ResourceController
 
     public function create()
     {
-        $data = $this->request->getJSON(true);
-
-        if (!$data) {
-            return $this->fail('No se recibieron datos válidos.', 400);
-        }
-
-        if (empty($data['nombre'])) {
-            return $this->failValidationErrors('El nombre es obligatorio.');
-        }
+        $data = $this->validateJson(self::RULES_BASE);
+        if ($data instanceof ResponseInterface) return $data;
 
         try {
             $newId = $this->model->crearItem($data);
@@ -66,10 +71,8 @@ class CatalogoController extends ResourceController
     {
         if (!$id) return $this->fail('ID no proporcionado', 400);
 
-        $data = $this->request->getJSON(true);
-        if (!$data) {
-            return $this->fail('No se recibieron datos válidos.', 400);
-        }
+        $data = $this->validateJson(self::RULES_BASE);
+        if ($data instanceof ResponseInterface) return $data;
 
         try {
             $this->model->actualizarItem((int) $id, $data);
@@ -92,8 +95,28 @@ class CatalogoController extends ResourceController
             return $this->failNotFound("Ítem con ID {$id} no encontrado.");
         }
 
+        // useSoftDeletes activo → delete() hace UPDATE deleted_at, no DELETE físico
         $this->model->delete($id);
-        return $this->respondDeleted(['message' => "Ítem {$id} eliminado del catálogo"]);
+        return $this->respondDeleted(['message' => "Ítem {$id} archivado del catálogo"]);
+    }
+
+    /**
+     * POST /api/catalogo/:id/restore — restaura un ítem soft-deleted.
+     */
+    public function restore($id = null)
+    {
+        if (!$id) return $this->failValidationErrors('No se proporcionó un ID válido.');
+
+        // withDeleted() incluye los borrados; find() devolvería null para ellos
+        $item = $this->model->withDeleted()->find($id);
+        if (!$item) {
+            return $this->failNotFound("Ítem con ID {$id} no encontrado.");
+        }
+        if (empty($item['deleted_at'])) {
+            return $this->fail('El ítem no está archivado.');
+        }
+        $this->model->update($id, ['deleted_at' => null]);
+        return $this->respond(['message' => "Ítem {$id} restaurado."]);
     }
 
     public function proveedores($id = null)

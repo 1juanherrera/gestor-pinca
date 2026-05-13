@@ -1,5 +1,8 @@
 # CLAUDE.md
 
+> **Última actualización**: 2026-05-13.
+> Backend en estado funcional con seguridad activa (JWT global + RBAC). Ver §"Estado real de la auditoría" al final antes de creer cualquier aserción de seguridad — la auditoría histórica 2026-05-09 quedó obsoleta.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Development Commands
@@ -41,11 +44,12 @@ PINCA is a **manufacturing and procurement management REST API** built on CodeIg
 HTTP Request → CorsFilter (all routes) → [JwtFilter (protected routes)] → Controller → Model → DB
 ```
 
-- **CORS**: `CorsFilter` applied via aliases in `app/Config/Filters.php`.
-- **JWT Auth**: Applied selectively per route. `JwtFilter` expects `Authorization: Bearer <token>`. Tokens expire in 8 hours. Secret key comes from `TOKEN_SECRET` env var (falls back to a hardcoded default).
+- **CORS**: `CorsFilter` applied via aliases in `app/Config/Filters.php`. Origen restringido a `http://localhost:5173` desde `.env`.
+- **JWT Auth**: **Aplicado globalmente** en `app/Config/Filters.php` como `'jwt' => ['except' => ['api/login', 'api/crear']]`. TODAS las rutas requieren `Authorization: Bearer <token>` excepto login y registro. Tokens expiran en 8 horas. Secret leído de `TOKEN_SECRET` en `.env` (64 chars hex). Mensaje de error: `{"ok": false, "msg": "Token no proporcionado|expirado|inválido"}`.
+- **RBAC**: Tabla `permisos_rol_modulo` controla acceso por módulo. Roles: `admin` (15 módulos), `operador` (11), `visor` (9). Frontend filtra el sidebar; backend valida en endpoints sensibles via `rol` en el JWT.
 - All routes are prefixed with `/api` (see `app/Config/Routes.php`).
 
-### Controllers (30 total)
+### Controllers (32 total)
 
 All controllers live in `app/Controllers/`. They either extend `BaseController` or CodeIgniter's `ResourceController`. Controllers never return HTML — they use `$this->response->setJSON(...)` or `$this->respond(...)`.
 
@@ -80,8 +84,10 @@ All controllers live in `app/Controllers/`. They either extend `BaseController` 
 | `EmpresaController` | Company profile |
 | `InstalacionesController` | Installations / locations |
 | `CapasInventarioController` | Cost layers (capas): stock by item, bodegas with layers, consumption history |
+| `SincronizacionController` | **(2026-05-13)** Auditoría catálogo↔proveedores: stats, maestro, pendientes, duplicados, huérfanos, merge |
+| `PermisosController` | **(2026-05-12)** RBAC: lista/aplica permisos por rol, listado de usuarios, cambio de rol |
 
-### Models (29 total)
+### Models (31 total)
 
 All models extend `BaseModel` (`app/Models/BaseModel.php`) which extends CI4's `Model`. `BaseModel` provides generic helpers:
 - `get_all()` — fetch all records
@@ -105,7 +111,13 @@ Models use `allowedFields` for mass assignment protection. Complex queries (JOIN
 1. `2026-04-17-000001_CreateTamboresTable` — tambores table
 2. `2026-04-21-000001_CreateRequisicionesCompraTable` — requisiciones_compra table
 3. `2026-04-21-000002_AddUnidadBaseAndItemProveedorCompra` — adds KILO to unidad table; adds `unidad_compra_id` (FK→unidad) and `factor_conversion DECIMAL(15,6)` to `item_proveedor`
-4. `2026-04-23-000001_CreateInventarioCapasSystem` — creates `inventario_capas` and `preparacion_consumo_capas` tables; migrates existing inventory saldos into legacy layers
+4. `2026-04-22-000001_MergeUnidadEmpaqueIntoUnidadCompra` — consolida columnas de unidad de empaque
+5. `2026-04-23-000001_CreateInventarioCapasSystem` — creates `inventario_capas` and `preparacion_consumo_capas` tables; migrates existing inventory saldos into legacy layers
+6. `2026-04-24-000001_CreateProduccionInsumosDetalle` — snapshot de costo congelado por preparación
+7. `2026-05-11-000001_AddRolToUsuarios` — agrega `rol ENUM('admin','operador','visor')` con default `'operador'` a `usuarios`
+8. `2026-05-11-000002_CreatePermisosRolModulo` — tabla `permisos_rol_modulo (id, rol, modulo, activo)` con 15 módulos para admin, 11 operador, 9 visor
+9. `2026-05-11-000003_CreateLoginAttempts` — tabla `login_attempts (id, ip_address, username_attempt, created_at)` para auditoría de intentos
+10. `2026-05-13-000001_ExtendMovimientoInventario` — agrega 9 columnas a `movimiento_inventario` (item_general_id, bodega_id, referencia_id, costo_unitario, saldo_anterior, saldo_nuevo, responsable, metadata JSON, created_at), cambia `fecha_movimiento` a DATETIME, amplía `descripcion` a 255, agrega 5 índices
 
 SQL dumps in `/initdb/` are auto-loaded by Docker on first run.
 
@@ -189,6 +201,52 @@ Manages cost layers for inventory tracking by provider/lot/date. Each inventory 
 - Calculate `cantidadBase = cantidadRecibida × factorConversion` and `costoUnitarioKg = precio_unit / factorConversion`
 - Create a cost layer via `crearCapa()` with provider, OC, unit conversion, lot info
 - Call `recalcularPromedioPonderado()` to update `costos_item`
+
+### SincronizacionModel + SincronizacionController (2026-05-13)
+
+Centro de auditoría de la relación `item_general` ↔ `item_proveedor`. Endpoints:
+
+| Verbo | Ruta | Descripción |
+|-------|------|-------------|
+| GET | `/api/sincronizacion/stats` | KPIs: total MP, con/sin proveedor, 1 vs 2+ proveedores, items pendientes, duplicados, **ahorro_potencial** (stock × (costo_actual − precio_min_kg)) |
+| GET | `/api/sincronizacion/maestro?search=&cobertura=&tipo=` | Tabla MP con `precio_min_kg`, `precio_max_kg`, `spread_pct` calculados; subarray `proveedores` por item (sin N+1 — query secundaria agrupada) |
+| GET | `/api/sincronizacion/pendientes` | `item_proveedor` con `item_general_id IS NULL` + top 3 sugerencias vía `ItemModel::buscarFuzzy` con score `similar_text` |
+| GET | `/api/sincronizacion/duplicados?threshold=70` | Pares `tipo=1` similares por Levenshtein normalizado + bonus categoría compartida (+10). Threshold 50-100 |
+| GET | `/api/sincronizacion/huerfanos` | MP sin proveedores activos + última compra (JOIN `ordenes_compra`) + stock residual |
+| POST | `/api/sincronizacion/merge` | Body `{keep_id, remove_id}`. Traslada en transacción: `item_proveedor`, `item_general_formulaciones` (consolida cantidades si el ingrediente estaba duplicado), `costos_indirectos_item`, `inventario`, `inventario_capas`, `movimiento_inventario`, `produccion_insumos_detalle`. Elimina `costos_item` del remove. Marca el item removido con prefijo `[MERGED→keepId]`. Rechaza si stock activo > 0 o si los tipos no coinciden |
+
+### MovimientoInventarioModel — Audit Log de Inventario (2026-05-13)
+
+Reescrito para servir como audit log centralizado. Cada cambio de stock (recepción OC, traspaso, ajuste, producción) lo registra.
+
+**Helper centralizado `registrar(array)`** — único punto de entrada estandarizado:
+- Auto-calcula `saldo_anterior` desde el saldo actual (vía `inventario_capas`) si no se provee.
+- Serializa `metadata` array → JSON con `JSON_UNESCAPED_UNICODE`.
+- Constantes canónicas: `TIPO_ENTRADA|SALIDA|TRASPASO|AJUSTE`, `REF_OC|FACTURA_VENTA|REMISION|PRODUCCION|TRASPASO_BODEGA|AJUSTE_MANUAL|ANULACION`.
+- `registrarReverso(array $original, string $motivo)` — atajo para anulaciones que invierte el tipo.
+
+**Schema actualizado de `movimiento_inventario`** (15 columnas):
+- `tipo_movimiento`, `cantidad` (siempre positiva), `fecha_movimiento` **DATETIME**, `descripcion` VARCHAR(255)
+- `referencia_tipo`, `referencia_id` — origen del evento
+- `item_general_id`, `bodega_id` — FK
+- `costo_unitario`, `saldo_anterior`, `saldo_nuevo` DECIMAL(15,4) — snapshot
+- `responsable` VARCHAR(100), `metadata` JSON, `created_at` DATETIME
+- Índices: `idx_mov_item`, `idx_mov_bodega`, `idx_mov_ref (referencia_tipo, referencia_id)`, `idx_mov_fecha`, `idx_mov_tipo`
+
+**Puntos instrumentados** (todas las mutaciones reales de stock):
+- `OrdenesCompraController::recibirLinea` → ENTRADA con metadata `{numero_oc, proveedor_id, factor_conversion, precio_unit_compra, lote_proveedor, item_proveedor_nombre}`
+- `InventarioModel::traspaso` → TRASPASO con metadata `{bodega_origen, bodega_destino, saldo_origen/destino_antes/despues}`
+- `InventarioModel::removeFromBodega` → AJUSTE con metadata `{accion, bodega_nombre, cantidad_removida, motivo}`
+- `PreparacionesModel::_ajustarInventarioPorPreparacion` → SALIDA (consumo) o ENTRADA (reintegro por cancelación) con metadata `{preparacion_id, multiplicador, subtotal}`
+
+**NO instrumentados (por diseño)**: `FacturasController` (cobranza pura, no mueve stock) ni `RemisionesController::create` (su detalle es texto libre sin FK a `item_general` — gap del schema heredado).
+
+### Sistema RBAC (2026-05-11)
+
+- **`usuarios.rol`**: ENUM `('admin','operador','visor')` con default `'operador'`. Incluido en payload JWT.
+- **`permisos_rol_modulo`**: tabla `(id, rol, modulo, activo)`. 15 módulos para admin, 11 operador, 9 visor. Módulos: `panel-principal, catalogo, inventario-global, formulaciones, produccion, rentabilidad, comercial, compras, cartera, clientes, proveedores, movimientos, pagos, tambores, prorrateo, roles, sincronizacion`.
+- **`PermisosController`** expone: `GET /api/roles/permisos`, `GET /api/roles/permisos/:rol`, `PUT /api/roles/:rol/permisos`, `GET /api/roles/usuarios`, `PATCH /api/roles/usuarios/:id/rol`. Requiere `rol=admin` para mutaciones.
+- **`login_attempts`** tabla creada para rate limiting (aún NO instrumentado en `UsuarioController::login` — pendiente).
 
 ### FormulacionesController — Per-ingredient Provider Options
 
@@ -331,158 +389,94 @@ Inventory records can ONLY be created/incremented through two transactional sour
 
 - **Requisiciones management page**: frontend page in Compras module to list, approve, and convert requisitions to OC.
 - **"Sin vincular" badge**: visual indicator on item_proveedor table rows with no `item_general_id`.
+- **Instrumentar `login_attempts`** en `UsuarioController::login` (rate limit por IP+usuario).
+- **Logging de seguridad** en `UsuarioController::login` y deletes críticos.
+- **Refactor `RemisionesController`**: agregar `item_general_id` al detalle para que las salidas descuenten stock real (hoy el detalle es texto libre).
 
 ---
 
-> **Estado del sistema (2026-04-24):** El módulo de Producción cumple el estándar **MRP II — Costeo por Lotes**: selección de proveedor dirigida, consumo FIFO por capa, costo unitario congelado en `produccion_insumos_detalle` al momento de la producción, y atomicidad transaccional completa. El **Catálogo** es la fuente única de creación de ítems. El **Inventario** es estrictamente de solo lectura — todo stock ingresa exclusivamente por Recepción de OC (materias primas) o Cierre de Producción (productos terminados). No existen rutas HTTP para creación manual de inventario.
+> **Estado del sistema (2026-05-13):** Backend funcional con JWT global activo, RBAC implementado, CORS restringido y audit log de inventario robusto. Producción cumple **MRP II — Costeo por Lotes**: selección de proveedor dirigida, consumo FIFO por capa, costo unitario congelado en `produccion_insumos_detalle` al momento de la producción, atomicidad transaccional completa. **Catálogo** es la fuente única de creación de ítems. **Inventario** es de solo lectura — todo stock ingresa exclusivamente por Recepción de OC o Cierre de Producción. **Sincronización** centraliza la auditoría catálogo↔proveedores con detección de duplicados, huérfanos y merge robusto. Cada cambio de stock genera fila en `movimiento_inventario` con metadata JSON via `MovimientoInventarioModel::registrar()`.
 
 ---
 
-## PRODUCCIÓN — Auditoría de Gaps (2026-05-09)
+## Estado real de la auditoría — actualizado 2026-05-13
 
-> Resultado de auditoría pre-producción completa. Resolver los CRÍTICOS antes de cualquier despliegue.
+> Snapshot honesto del estado actual contrastando contra la auditoría histórica del 2026-05-09. **Resueltos 6 de 10 críticos**. Lo que sigue abierto está marcado claramente.
 
-### 🔴 CRÍTICOS — Bloquean producción
+### ✅ RESUELTOS
 
-#### 1. JWT no aplicado a ninguna ruta protegida
-- **Problema**: `JwtFilter` está registrado en aliases pero **no está asignado a ningún grupo de rutas** en `Routes.php` ni en `Filters.php`. Todos los endpoints son públicos.
-- **Impacto**: Cualquier persona sin autenticación puede crear, modificar o eliminar cualquier recurso.
-- **Fix**: En `Routes.php`, envolver todas las rutas protegidas en un grupo con filtro:
-  ```php
-  $routes->group('api', ['filter' => 'jwt'], function($routes) {
-      // rutas protegidas aquí
-  });
-  // Fuera del grupo: solo POST /api/login y POST /api/usuarios/crear
-  ```
+| # | Crítico original | Estado actual |
+|---|------------------|---------------|
+| 1 | JWT no aplicado | **Aplicado globalmente** vía `'jwt' => ['except' => ['api/login', 'api/crear']]` en `app/Config/Filters.php`. Confirmado por mensaje real `{"ok": false, "msg": "Token no proporcionado"}` que retorna `JwtFilter::before` |
+| 2 | Secret JWT débil hardcodeado | **TOKEN_SECRET en .env** con 64 chars hex. El fallback `'miClaveSuperSecreta'` sigue en código pero ya no se usa |
+| 3 | `display_errors = 1` | Cambiado a `0` en `app/Config/Boot/production.php` |
+| 7 | CORS abierto `'*'` | **Restringido a `http://localhost:5173`** vía `.env`. Listo para cambiar al dominio real al deploy |
+| 8 | Sin RBAC | **Implementado**: `usuarios.rol` ENUM + tabla `permisos_rol_modulo` + `PermisosController`. Ver §Sistema RBAC |
+| 10 | Password no re-hasheada en update | `$beforeUpdate = ['hashPassword']` agregado a `UsuarioModel` |
 
-#### 2. Secret JWT hardcodeado con valor débil
-- **Archivos**: `app/Controllers/UsuarioController.php` línea 28, `app/Filters/JwtFilter.php` línea 26
-- **Problema**: Fallback `'miClaveSuperSecreta'` si `TOKEN_SECRET` no está en `.env`.
-- **Fix**: Lanzar excepción si la variable no existe en producción. Generar secret fuerte (≥32 chars).
+### ⚠️ PARCIALMENTE RESUELTOS
 
-#### 3. `display_errors = 1` en producción
-- **Archivo**: `app/Config/Boot/production.php` línea 15
-- **Problema**: Muestra stack traces completos al cliente, exponiendo rutas de archivos, estructura de DB y lógica interna.
-- **Fix**: Cambiar a `ini_set('display_errors', '0');`
+| # | Crítico | Falta |
+|---|---------|-------|
+| 4 | Credenciales DB | Movidas a `.env` ✅, pero las credenciales son las de DEV (`user`/`password`). **Cambiar antes de deploy** |
+| 6 | Rate limit login | ✅ Instrumentado en `UsuarioController::login` (max 5 intentos por IP en ventana de 15 min, retorna 429). Falta solo: extender a otros endpoints de mutación crítica si se quiere |
+| 9 | Logging de seguridad | ✅ Activo en `UsuarioController::login` (`[LOGIN_OK]`, `[LOGIN_FAIL]`), `[PASSWORD]`, `[USUARIO_CREADO]`, `[MERGE_ITEMS]`. Pendiente: extender a deletes críticos (DELETE clientes, facturas, OCs) |
 
-#### 4. Credenciales de DB hardcodeadas en código fuente
-- **Archivo**: `app/Config/Database.php`
-- **Problema**: `hostname`, `username` y `password` están hardcodeados (`user`/`password`). También en `docker-compose.yml` con `MYSQL_ROOT_PASSWORD: password`.
-- **Fix**: Usar exclusivamente variables de entorno. Crear `.env.production` con credenciales fuertes y únicas. Nunca commitear credenciales reales.
+### ❌ ABIERTOS (sin cambios)
 
-#### 5. Sin validación de input en endpoints críticos
-- **Afecta**: `UsuarioController`, `ClientesController`, `CatalogoController` y otros
-- **Problema**: Solo se verifica si el campo está vacío. No hay validación de tipo, longitud, formato ni complejidad de contraseñas.
-- **Fix**: Usar el sistema de validación de CodeIgniter 4 (`$this->validate([...])`) en todos los endpoints que reciben datos del cliente.
+- **#5 Validación de input** — sin `$this->validate([...])` en endpoints críticos. Solo chequeos de "no vacío"
+- **#11 BaseModel auto-genera allowedFields** — sigue siendo riesgo de mass assignment en modelos genéricos
+- **#12 HTTPS no forzado** — `force_https()` comentado en `production.php`
+- **#13 `DBDebug: true`** — sigue true en `Database.php`. Cambiar a `(ENVIRONMENT !== 'production')`
+- **#14 Sin tope max en paginación** — algunos controllers aceptan `?limit=∞`
+- **#16 Sin soft-deletes** — DELETE permanentes, sin `deleted_at`
+- **#17 Sin health check** — agregar `GET /api/health`
+- **#18 Formatos de error inconsistentes** — coexisten `{ok}`, `{success}`, `{status}`
+- **#19 Sin validación de FKs** antes de INSERT
+- **#20 Sin tests** — `tests/` vacío
 
-#### 6. Sin rate limiting en `/api/login`
-- **Problema**: El endpoint de login no tiene límite de intentos — permite fuerza bruta.
-- **Fix**: Implementar throttle (e.g., máximo 5 intentos por IP en 15 minutos) mediante un filtro o middleware.
+### 🔵 Deuda técnica todavía pendiente
 
----
+- Sin `.env.example`
+- Sin versionado de API (`/api/v1/`)
+- Sin OpenAPI/Swagger
+- Sin security headers (`X-Frame-Options`, `Strict-Transport-Security`, etc.)
 
-### 🟠 ALTOS — Resolver antes de abrir a usuarios reales
-
-#### 7. CORS abierto a cualquier origen (`*`)
-- **Archivo**: `app/Config/Cors.php`
-- **Problema**: `'allowedOrigins' => ['*']` permite que cualquier dominio llame a la API.
-- **Fix**: Restringir al dominio real del frontend en producción:
-  ```php
-  'allowedOrigins' => ['https://app.tudominio.com']
-  ```
-
-#### 8. Sin verificación de autorización (roles/permisos)
-- **Problema**: Una vez que JWT esté activo, cualquier usuario autenticado podrá eliminar clientes, crear órdenes de compra, modificar facturas, etc. No existe RBAC.
-- **Fix**: Agregar campo `rol` a la tabla `usuarios`. Verificar rol en endpoints sensibles (DELETE, creación de facturas, aprobación de OC).
-
-#### 9. Sin logging de eventos de seguridad
-- **Problema**: No hay registro de intentos de login fallidos, eliminaciones de datos ni modificaciones críticas. Imposible auditar incidentes.
-- **Fix**: Usar `log_message()` de CI4 en `UsuarioController::login` (éxito y fallo) y en todos los DELETE de recursos críticos.
-
-#### 10. Contraseña no re-hasheada en actualización
-- **Archivo**: `app/Models/UsuarioModel.php`
-- **Problema**: `$beforeInsert = ['hashPassword']` solo aplica en INSERT. Si se llama `update()` con nueva contraseña, se guarda en texto plano.
-- **Fix**: Agregar también `$beforeUpdate = ['hashPassword']` con verificación de que el campo existe en `$data`.
-
-#### 11. `BaseModel` auto-genera `allowedFields` desde el schema
-- **Archivo**: `app/Models/BaseModel.php`
-- **Problema**: `allowedFields` se construye dinámicamente con todos los campos de la tabla — vulnerabilidad de mass assignment. Un payload malicioso puede alterar campos como `id`, `created_at` o campos de estado.
-- **Fix**: Definir `allowedFields` explícito en cada modelo de entidad crítica.
-
-#### 12. HTTPS no forzado
-- **Archivo**: `app/Config/Boot/production.php`
-- **Problema**: `forcehttps` está comentado. Tokens JWT pueden viajar por HTTP plano.
-- **Fix**: Habilitar `force_https()` en producción o configurar redirección en el servidor web (nginx/Apache).
-
-#### 13. `DBDebug: true` en configuración de DB
-- **Archivo**: `app/Config/Database.php` línea 36
-- **Problema**: Puede loggear queries SQL completas con datos sensibles.
-- **Fix**: `'DBDebug' => (ENVIRONMENT !== 'production')`
-
-#### 14. Límite de paginación sin tope máximo
-- **Archivo**: `app/Controllers/PreparacionesController.php`
-- **Problema**: `?limit=1000000` en la querystring puede causar consultas masivas (DoS).
-- **Fix**: `$limit = min((int)($this->request->getGet('limit') ?? 20), 200);`
-
----
-
-### 🟡 MEDIOS — Mejoras importantes post-MVP
-
-#### 15. Mensajes de error exponen detalles internos
-- **Problema**: Algunos controllers retornan `implode(', ', $this->model->errors())` directamente al cliente, exponiendo nombres de campos y restricciones de DB.
-- **Fix**: Loggear el error completo internamente; retornar mensaje genérico al cliente.
-
-#### 16. Sin soft-deletes
-- **Problema**: Los DELETE son permanentes. No existe historial de clientes, proveedores o ítems eliminados. Viola auditorías y puede romper referencias históricas.
-- **Fix**: Agregar columna `deleted_at TIMESTAMP NULL` y filtrar con `WHERE deleted_at IS NULL` en todos los modelos críticos.
-
-#### 17. Sin endpoint de health check
-- **Problema**: No existe `GET /api/health` para que balanceadores de carga o monitoreo verifiquen disponibilidad.
-- **Fix**: Agregar ruta pública que retorne `{"status": "ok", "timestamp": "..."}`.
-
-#### 18. Formatos de error inconsistentes entre controllers
-- **Problema**: Algunos usan `{ok: false, msg}`, otros `{success: false, message}`, otros `{status: 400}`.
-- **Fix**: Centralizar en un método helper en `BaseController`:
-  ```php
-  protected function error(string $msg, int $code = 400): ResponseInterface { ... }
-  protected function success($data, int $code = 200): ResponseInterface { ... }
-  ```
-
-#### 19. Sin validación de existencia de FKs antes de INSERT
-- **Afecta**: `OrdenesCompraController`, `FacturasController`, `PreparacionesController`
-- **Problema**: No se verifica que `proveedor_id`, `cliente_id`, `formulacion_id`, etc. existan antes de crear el documento.
-- **Fix**: Verificar existencia de entidades relacionadas antes de INSERT.
-
-#### 20. Sin tests automatizados
-- **Problema**: El directorio `tests/` existe pero está vacío. Sin tests, cualquier refactor puede romper flujos críticos de costo/producción sin detección.
-- **Fix prioritario**: Escribir tests de integración para:
-  1. Login JWT (éxito y fallo)
-  2. Flujo completo OC: crear → recibir → verificar capas de costo
-  3. Flujo producción: crear preparación → consumir capas → verificar `produccion_insumos_detalle`
-
----
-
-### 🔵 BAJOS — Deuda técnica
-
-- **Sin `.env.example`**: Nuevo desarrollador no sabe qué variables configurar. Crear con todas las variables requeridas.
-- **Sin versionado de API**: Rutas usan `/api/` sin `/api/v1/`. Cualquier cambio breaking afecta a todos los clientes.
-- **Sin OpenAPI/Swagger**: No existe documentación del API. Toda la referencia está en CLAUDE.md.
-- **Sin security headers**: El filtro `secureheaders` está definido pero no aplicado (`X-Frame-Options`, `X-Content-Type-Options`, `Strict-Transport-Security`).
-
----
-
-### Checklist Pre-Deploy
+### Checklist actualizado para deploy real
 
 ```
-□ JWT aplicado a todas las rutas protegidas
-□ TOKEN_SECRET fuerte y en .env (no en código)
-□ display_errors = 0 en production.php
-□ Credenciales DB en .env con valores fuertes
-□ CORS restringido al dominio del frontend
-□ HTTPS forzado (nginx o production.php)
-□ Rate limiting en /api/login
+✅ JWT aplicado a todas las rutas protegidas
+✅ TOKEN_SECRET fuerte y en .env
+✅ display_errors = 0 en production.php
+✅ RBAC funcional con permisos por módulo
+✅ CORS restringido al frontend
+✅ Rate limiting instrumentado en login (5 intentos / 15 min / IP)
+✅ Logs de intentos de login habilitados
+✅ Audit log de cambios de stock con responsable real (vía JwtUserAware trait)
+□ Credenciales DB de PRODUCCIÓN (no las de dev)
+□ HTTPS forzado
 □ DBDebug = false en producción
 □ Security headers activados
 □ Health check endpoint disponible
-□ Logs de intentos de login habilitados
+□ Validación de input con $this->validate()
+□ Soft-deletes en entidades críticas
+□ Tests de integración para OC, producción y login
 ```
+
+### Trait `JwtUserAware` (2026-05-13)
+
+Archivo: `app/Traits/JwtUserAware.php`. Trait reutilizable que expone los datos del JWT decodificado (que `JwtFilter::before` guarda en `$request->usuario`) como métodos tipados:
+
+```php
+class MiController extends ResourceController {
+    use \App\Traits\JwtUserAware;
+
+    public function metodo() {
+        $username = $this->getUsername();        // 'jperez' o 'sistema' si no hay sesión
+        $rol      = $this->getUserRol();         // 'admin' | 'operador' | 'visor'
+        if (!$this->userHasRole('admin')) { ... }
+    }
+}
+```
+
+Aplicado en: `OrdenesCompraController`, `InventarioController`, `PreparacionesController`, `SincronizacionController`. Reemplaza el viejo header `X-User` que el frontend mandaba como workaround. Cuando un controller registra un movimiento de inventario, el `responsable` viene del trait, no del cliente — el usuario no puede falsificar su identidad.

@@ -8,6 +8,9 @@ use Exception;
 
 class PreparacionesController extends BaseController
 {
+    use \App\Traits\JwtUserAware;
+    use \App\Traits\ValidatesJson;
+
     private PreparacionesModel $model;
 
     public function __construct()
@@ -37,10 +40,28 @@ class PreparacionesController extends BaseController
      */
     public function create(): ResponseInterface
     {
-        $body = $this->request->getJSON(true) ?? $this->request->getPost();
+        $body = $this->validateJson([
+            'item_general_id' => 'required|integer|greater_than[0]',
+            'cantidad'        => 'required|decimal|greater_than[0]',
+            'unidad_id'       => 'required|integer|greater_than[0]',
+            'fecha_inicio'    => 'permit_empty|valid_date',
+            'fecha_fin'       => 'permit_empty|valid_date',
+            'observaciones'   => 'permit_empty|max_length[500]',
+        ]);
+        if ($body instanceof ResponseInterface) return $body;
+
+        // Inyectar responsable real desde JWT si no vino en el body
+        if (empty($body['responsable'])) {
+            $body['responsable'] = $this->getUsername();
+        }
 
         try {
             $result = $this->model->create_preparacion($body);
+
+            // Detectar MP que quedaron en stock crítico tras este consumo
+            // y notificar a admin para que reaccione (requisición / OC).
+            $this->notificarStockCriticoSiCorresponde($result);
+
             return $this->response
                 ->setStatusCode(201)
                 ->setJSON(['success' => true, 'data' => $result]);
@@ -48,6 +69,62 @@ class PreparacionesController extends BaseController
             return $this->response
                 ->setStatusCode(422)
                 ->setJSON(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Genera notificación si tras esta producción algún ingrediente quedó
+     * con stock < 7 días (consumo promedio últimos 30 días).
+     */
+    private function notificarStockCriticoSiCorresponde($result): void
+    {
+        try {
+            $prepId = $result['id'] ?? $result['id_preparaciones'] ?? null;
+            if (!$prepId) return;
+
+            $db = \Config\Database::connect();
+            $criticas = $db->query("
+                SELECT ig.id_item_general, ig.nombre,
+                       COALESCE(SUM(ic.cantidad_disponible), 0) AS stock,
+                       (SELECT SUM(pid.cantidad)
+                          FROM produccion_insumos_detalle pid
+                          JOIN preparaciones p ON p.id_preparaciones = pid.preparacion_id
+                          WHERE pid.item_general_id = ig.id_item_general
+                            AND p.fecha_creacion >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                            AND p.estado != 0) AS consumo_30d
+                FROM item_general ig
+                LEFT JOIN inventario_capas ic
+                       ON ic.item_general_id = ig.id_item_general AND ic.estado = 1
+                WHERE ig.id_item_general IN (
+                    SELECT item_general_id FROM produccion_insumos_detalle WHERE preparacion_id = ?
+                )
+                GROUP BY ig.id_item_general, ig.nombre
+            ", [$prepId])->getResultArray();
+
+            $notif = new \App\Models\NotificacionModel();
+            foreach ($criticas as $mp) {
+                $stock      = (float) $mp['stock'];
+                $consumo30  = (float) $mp['consumo_30d'];
+                $diario     = $consumo30 > 0 ? $consumo30 / 30 : 0;
+                $diasRest   = $diario > 0 ? (int) round($stock / $diario) : null;
+                if ($diasRest !== null && $diasRest < 7) {
+                    $notif->crear([
+                        'tipo'       => \App\Models\NotificacionModel::TIPO_MP_CRITICA,
+                        'titulo'     => "Stock crítico: {$mp['nombre']}",
+                        'mensaje'    => "Quedan ~{$diasRest} días de stock al ritmo actual. Considerá generar OC.",
+                        'rol_target' => 'admin',
+                        'link'       => '/inventario-global',
+                        'metadata'   => [
+                            'item_general_id' => (int) $mp['id_item_general'],
+                            'stock'           => $stock,
+                            'dias_restantes'  => $diasRest,
+                        ],
+                        'dedup_key'  => 'mp-critica-' . $mp['id_item_general'] . '-' . date('Y-m-d'),
+                    ]);
+                }
+            }
+        } catch (Exception $e) {
+            log_message('warning', '[Notif stock crítico] ' . $e->getMessage());
         }
     }
 
@@ -90,6 +167,10 @@ class PreparacionesController extends BaseController
     public function update(int $id): ResponseInterface
     {
         $body = $this->request->getJSON(true) ?? json_decode($this->request->getRawInput(), true) ?? [];
+
+        if (empty($body['responsable'])) {
+            $body['responsable'] = $this->getUsername();
+        }
 
         try {
             $result = $this->model->update_preparacion($id, $body);

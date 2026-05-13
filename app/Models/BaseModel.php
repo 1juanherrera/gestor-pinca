@@ -13,21 +13,53 @@ class BaseModel extends Model
         parent::__construct();
     }
 
-    // OBTENER TODOS
+    /**
+     * Tablas cuyo primary key NO sigue la convención `id_<tabla>`.
+     */
+    private const PK_OVERRIDE = [
+        'ordenes_compra' => 'id_orden',
+    ];
+
+    private function pkOf(string $table): string
+    {
+        return self::PK_OVERRIDE[$table] ?? ('id_' . $table);
+    }
+
+    /**
+     * Detecta si la tabla soporta soft-deletes (tiene columna `deleted_at`).
+     */
+    private function tieneSoftDelete(string $table): bool
+    {
+        return $this->db->fieldExists('deleted_at', $table);
+    }
+
+    // OBTENER TODOS — filtra automáticamente registros soft-deleted
     public function get_all($table, $where = null)
     {
         $this->table = $table;
         if ($where) {
             $this->where($where);
         }
+        if ($this->tieneSoftDelete($table)) {
+            $this->where("{$table}.deleted_at IS NULL");
+        }
         return $this->findAll();
     }
 
-    // OBTENER UNO
+    // OBTENER UNO — también filtra soft-deleted (find devuelve null si está borrado)
     public function get($id, $table)
     {
         $this->table = $table;
-        $this->primaryKey = 'id_' . $table;
+        $this->primaryKey = $this->pkOf($table);
+
+        if ($this->tieneSoftDelete($table)) {
+            // Builder directo para combinar where previo + PK lookup
+            $row = $this->db->table($table)
+                ->where($this->primaryKey, $id)
+                ->where('deleted_at', null)
+                ->get()->getRowArray();
+            return $row ?: null;
+        }
         return $this->find($id);
     }
 
@@ -35,9 +67,7 @@ class BaseModel extends Model
     public function create_table($data, $table)
     {
         $this->table = $table;
-        // Resetear allowedFields cada vez
-        $this->allowedFields = $this->db->getFieldNames($table); //array_keys($firstRow);
-        // Detectar si es batch o normal
+        $this->allowedFields = $this->db->getFieldNames($table);
         $isBatch = isset($data[0]) && is_array($data[0]);
 
         if ($isBatch) {
@@ -54,11 +84,10 @@ class BaseModel extends Model
     }
 
     public function update_table($id, $data, $table)
-    {   
+    {
         $this->table = $table;
-        $this->primaryKey = 'id_' . $table;
+        $this->primaryKey = $this->pkOf($table);
 
-        // 🔥 allowedFields dinámicos desde $data
         if (empty($this->allowedFields)) {
             $this->allowedFields = array_keys($data);
         }
@@ -71,17 +100,43 @@ class BaseModel extends Model
         return $updated;
     }
 
+    /**
+     * DELETE inteligente:
+     *   - Si la tabla tiene `deleted_at` → SOFT delete (UPDATE)
+     *   - Si no → DELETE físico (comportamiento original)
+     */
     public function delete_table($id, $table)
     {
         $this->table = $table;
-        $this->primaryKey = 'id_' . $table;
+        $this->primaryKey = $this->pkOf($table);
 
-        $this->delete($id);
+        if ($this->tieneSoftDelete($table)) {
+            // Soft delete — marcar como borrado, conservar referencias FK
+            $this->db->table($table)
+                ->where($this->pkOf($table), $id)
+                ->where('deleted_at', null)
+                ->update(['deleted_at' => date('Y-m-d H:i:s')]);
 
-        if ($this->db->affectedRows() === 0) {
-            return false;
+            return $this->db->affectedRows() > 0;
         }
 
-        return true;
+        $this->delete($id);
+        return $this->db->affectedRows() > 0;
+    }
+
+    /**
+     * Restaura un registro soft-deleted.
+     * Solo aplicable si la tabla tiene `deleted_at`.
+     */
+    public function restore_table($id, $table): bool
+    {
+        if (!$this->tieneSoftDelete($table)) return false;
+
+        $this->db->table($table)
+            ->where('id_' . $table, $id)
+            ->where('deleted_at IS NOT NULL')
+            ->update(['deleted_at' => null]);
+
+        return $this->db->affectedRows() > 0;
     }
 }
