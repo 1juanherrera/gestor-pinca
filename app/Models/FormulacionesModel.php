@@ -2,6 +2,7 @@
 namespace App\Models;
 
 use App\Libraries\Formatter;
+use App\Helpers\Cfg;
 use Exception;
 
 class FormulacionesModel extends BaseModel
@@ -9,6 +10,12 @@ class FormulacionesModel extends BaseModel
     public function __construct()
     {
         parent::__construct();
+    }
+
+    /** Margen de utilidad por defecto (configurable desde Configuración → Financiero). */
+    private function margenDefault(): int
+    {
+        return Cfg::n('margen_utilidad_default_pct', 50);
     }
 
     public function get_items_formulaciones()
@@ -122,7 +129,7 @@ class FormulacionesModel extends BaseModel
                 COALESCE(ci.bandeja, 0)            AS bandeja,
                 COALESCE(ci.plastico, 0)           AS plastico,
                 COALESCE(ci.costo_mod, 0)          AS costo_mod,
-                COALESCE(ci.porcentaje_utilidad, 50) AS porcentaje_utilidad
+                COALESCE(ci.porcentaje_utilidad, '. $this->margenDefault() .') AS porcentaje_utilidad
             FROM item_general ig
             LEFT JOIN inventario i   ON i.item_general_id   = ig.id_item_general
             LEFT JOIN costos_item ci ON ci.item_general_id  = ig.id_item_general
@@ -245,7 +252,7 @@ class FormulacionesModel extends BaseModel
                     COALESCE(ci.precio_venta, 0) as precio_venta_actual,
                     COALESCE(ci.cantidad_total, 0) as cantidad_total_actual,
                     COALESCE(ci.costo_mod, 0) as costo_mod,
-                    COALESCE(ci.porcentaje_utilidad, 50) as porcentaje_utilidad,
+                    COALESCE(ci.porcentaje_utilidad, '. $this->margenDefault() .') as porcentaje_utilidad,
                     ci.precio_venta as precio_venta_raw
                 FROM item_general ig
                 LEFT JOIN inventario i ON i.item_general_id = ig.id_item_general
@@ -471,7 +478,7 @@ class FormulacionesModel extends BaseModel
                 COALESCE(ci.bandeja, 0)             AS bandeja,
                 COALESCE(ci.plastico, 0)            AS plastico,
                 COALESCE(ci.costo_mod, 0)           AS costo_mod,
-                COALESCE(ci.porcentaje_utilidad, 50) AS porcentaje_utilidad
+                COALESCE(ci.porcentaje_utilidad, '. $this->margenDefault() .') AS porcentaje_utilidad
             FROM item_general ig
             LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
             WHERE ig.id_item_general = ?
@@ -678,7 +685,7 @@ class FormulacionesModel extends BaseModel
                 COALESCE(ci.bandeja, 0)                  AS bandeja,
                 COALESCE(ci.plastico, 0)                 AS plastico,
                 COALESCE(ci.costo_mod, 0)                AS costo_mod,
-                COALESCE(ci.porcentaje_utilidad, 50)     AS porcentaje_utilidad
+                COALESCE(ci.porcentaje_utilidad, '. $this->margenDefault() .')     AS porcentaje_utilidad
             FROM item_general ig
             LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
             WHERE ig.id_item_general = ?

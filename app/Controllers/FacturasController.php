@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\FacturasModel;
+use App\Models\NumeracionModel;
 
 class FacturasController extends ResourceController
 {
@@ -128,6 +129,7 @@ class FacturasController extends ResourceController
             unset($data['items']);
 
             $data['saldo_pendiente'] = $data['total'] ?? 0;
+            if (empty($data['numero'])) $data['numero'] = (new NumeracionModel())->reservar('factura');
 
             $id = $this->model->create_table($data, 'facturas');
             if (!$id) throw new \Exception(implode(', ', $this->model->errors()));

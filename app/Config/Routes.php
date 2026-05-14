@@ -9,7 +9,10 @@ use CodeIgniter\Router\RouteCollection;
 $routes->group('api', function ($routes) {
 
     // EMPRESA
-    $routes->get('empresa', 'EmpresaController::empresa');
+    $routes->get('empresa',                'EmpresaController::empresa');
+    $routes->get('empresa/logo-base64',    'EmpresaController::logoBase64');
+    $routes->post('empresa/logo',          'EmpresaController::uploadLogo');
+    $routes->delete('empresa/logo',        'EmpresaController::deleteLogo');
 
     // USUARIOS
     $routes->post('login',                  'UsuarioController::login');
@@ -149,7 +152,11 @@ $routes->group('api', function ($routes) {
     $routes->delete('unidades/(:num)', 'UnidadController::delete/$1');
 
     // CATEGORIAS
-    $routes->get('categorias', 'CategoriaController::categorias');
+    $routes->get('categorias',                 'CategoriaController::categorias');
+    $routes->get('categorias/(:num)',          'CategoriaController::show/$1');
+    $routes->post('categorias',                'CategoriaController::create');
+    $routes->put('categorias/(:num)',          'CategoriaController::update/$1');
+    $routes->delete('categorias/(:num)',       'CategoriaController::delete/$1');
 
     // PREPARACIONES
     $routes->get('preparaciones', 'PreparacionesController::index');
@@ -254,6 +261,24 @@ $routes->group('api', function ($routes) {
     $routes->get('sincronizacion/duplicados',  'SincronizacionController::duplicados');
     $routes->get('sincronizacion/huerfanos',   'SincronizacionController::huerfanos');
     $routes->post('sincronizacion/merge',      'SincronizacionController::merge');
+
+    // CONFIGURACIÓN DEL SISTEMA (parámetros globales: tributaria, umbrales, numeración, …)
+    // Específicas PRIMERO (antes del :clave genérico)
+    $routes->get('configuracion',                       'ConfiguracionController::index');
+    $routes->put('configuracion/bulk',                  'ConfiguracionController::bulkUpdate');
+    $routes->get('configuracion/tipos-movimiento',      'ConfiguracionController::tiposMovimiento');
+    $routes->get('configuracion/grupo/(:segment)',      'ConfiguracionController::porGrupo/$1');
+    $routes->get('configuracion/(:segment)',            'ConfiguracionController::show/$1');
+    $routes->put('configuracion/(:segment)',            'ConfiguracionController::update/$1');
+
+    // NUMERACIÓN DE DOCUMENTOS
+    $routes->get('numeracion',          'NumeracionController::index');
+    $routes->post('numeracion',         'NumeracionController::create');
+    $routes->put('numeracion/(:num)',   'NumeracionController::update/$1');
+
+    // AUDITORÍA (admin only)
+    $routes->get('auditoria/login-attempts', 'AuditoriaController::loginAttempts');
+    $routes->get('auditoria/movimientos',    'AuditoriaController::movimientos');
 
     // ÓRDENES DE COMPRA
     $routes->get('ordenes_compra',                        'OrdenesCompraController::index');

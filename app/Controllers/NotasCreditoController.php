@@ -5,6 +5,7 @@ namespace App\Controllers;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\NotasCreditoModel;
 use App\Models\FacturasModel;
+use App\Models\NumeracionModel;
 
 class NotasCreditoController extends ResourceController
 {
@@ -85,8 +86,8 @@ class NotasCreditoController extends ResourceController
             if ($monto > (float) $factura['saldo_pendiente'])
                 throw new \Exception("El monto ($monto) supera el saldo pendiente ({$factura['saldo_pendiente']})");
 
-            // Número automático
-            $data['numero'] = $this->model->generarNumero();
+            // Número automático (centralizado en NumeracionModel)
+            $data['numero'] = (new NumeracionModel())->reservar('nota_credito');
             $data['estado'] = 'Activa';
 
             $id = $this->model->create_table($data, 'notas_credito');

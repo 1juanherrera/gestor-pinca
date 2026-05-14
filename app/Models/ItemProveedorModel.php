@@ -5,6 +5,9 @@ class ItemProveedorModel extends BaseModel
 {
     protected $table      = 'item_proveedor';
     protected $primaryKey = 'id_item_proveedor';
+    protected $useSoftDeletes = true;
+    protected $deletedField   = 'deleted_at';
+    protected $dateFormat     = 'datetime';
     protected $allowedFields = [
         'nombre',
         'codigo',
@@ -42,6 +45,7 @@ class ItemProveedorModel extends BaseModel
                 LEFT JOIN item_general ig ON ig.id_item_general   = ip.item_general_id
                 LEFT JOIN unidad       uc ON uc.id_unidad         = ip.unidad_compra_id
                 LEFT JOIN unidad       ua ON ua.id_unidad         = ig.unidad_almacenaje_id
+                WHERE ip.deleted_at IS NULL
         ';
 
         $items = $this->db->query($sql)->getResult();

@@ -480,3 +480,132 @@ class MiController extends ResourceController {
 ```
 
 Aplicado en: `OrdenesCompraController`, `InventarioController`, `PreparacionesController`, `SincronizacionController`. Reemplaza el viejo header `X-User` que el frontend mandaba como workaround. Cuando un controller registra un movimiento de inventario, el `responsable` viene del trait, no del cliente — el usuario no puede falsificar su identidad.
+
+---
+
+## Sesión 2026-05-14 — Configuración del Sistema + PDFs (snapshot)
+
+### Tabla nueva: `configuracion_sistema` (key/value/JSON)
+
+Migración `2026-05-14-000002_CreateConfiguracionSistema`. Esquema:
+- `id_configuracion`, `grupo` VARCHAR(40), `clave` VARCHAR(80) UNIQUE, `valor` JSON, `tipo` (`string|number|boolean|json`), `descripcion`, `updated_at`, `updated_by`
+
+Grupos seedeados:
+| Grupo | Migración | Claves |
+|---|---|---|
+| `tributaria` | `_000003` | iva_default(19), retencion_fuente_pct(2.5), retencion_iva_pct(15), retencion_ica_default(11.04), aplicar_iva_por_default(true) |
+| `umbrales` | `_000004` | stock_critico_dias(7), stock_warning_dias(30), mora_warning_dias(30), mora_critica_dias(60), margen_minimo_pct(10), margen_objetivo_pct(20) |
+| `seguridad`, `financiero`, `comercial`, `notificaciones`, `paginacion` | `_000007` | jwt_expiracion_horas(8), max_intentos_login(5), ventana_intentos_segundos(900), password_min_caracteres(8), margen_utilidad_default_pct(50), dias_vencimiento_factura(30), dias_credito_default(30), limit_default(30), limit_maximo(100), dias_alerta_vencimiento(3), page_size_default(25), max_per_page(200) |
+| `apariencia` | `_000008` | avatar_palette (json array con 8 gradientes) |
+
+### Tabla nueva: `numeracion_documentos`
+
+Migración `2026-05-14-000005`. Control centralizado de numeración correlativa para los 5 tipos de documento. Schema completo: `id_numeracion`, `tipo_doc`, `prefijo` (con placeholder `{Y}`), `padding`, `proximo_numero`, `anio_actual`, `reinicia_anual`, `resolucion_dian`, `fecha_resolucion`, `rango_min/max`, `fecha_vigencia_hasta`, `activo`, audit cols.
+
+Seeds que detectan el próximo número desde data existente (no resetean):
+- `factura` → FAC-{Y}-, 4 dígitos
+- `cotizacion` → COT-{Y}-, 4 dígitos
+- `remision` → REM-{Y}-, 4 dígitos
+- `orden_compra` → OC-, 3 dígitos (no se reinicia anual)
+- `nota_credito` → NC-, 3 dígitos (no se reinicia anual)
+
+### Modelos nuevos
+
+**`ConfiguracionModel`** — métodos `obtener(clave, default)`, `guardar(clave, valor, usuario)`, `getGrupo(grupo)`, `getAllGrouped()`, `seedIfMissing(grupo, clave, valor, tipo, desc)`. **Importante**: usa `obtener`/`guardar` y NO `get`/`set` para no chocar con `BaseModel::get($id, $table)` y `CI4 Model::set($key, $value, $escape)`.
+
+**`NumeracionModel`** — método estrella `reservar(string $tipoDoc): string` con transacción + `SELECT … FOR UPDATE`. Maneja reset anual automático si `reinicia_anual=1` y validación de `rango_max` DIAN. Devuelve número formateado: `"FAC-2026-0001"` o `"OC-022"`.
+
+### Controllers nuevos
+
+| Controller | Endpoints | Notas |
+|---|---|---|
+| `ConfiguracionController` | `GET /configuracion`, `GET /configuracion/grupo/:g`, `GET /configuracion/:clave`, `PUT /configuracion/:clave`, `PUT /configuracion/bulk`, `GET /configuracion/tipos-movimiento` | Mutaciones gated por `rol=admin` (vía `JwtUserAware`) |
+| `NumeracionController` | `GET /numeracion`, `POST /numeracion`, `PUT /numeracion/:id` | El consumo (reservar) es interno desde Facturas/OC/etc. Crear nueva activa desactiva la anterior automáticamente. |
+| `AuditoriaController` | `GET /auditoria/login-attempts?...`, `GET /auditoria/movimientos?...` | Solo `rol=admin`. Paginado con `page` + `per_page`. Movimientos hace JOIN a `item_general` + `bodegas` y decodifica `metadata` JSON. |
+
+### Helper PHP nuevo: `App\Helpers\Cfg`
+
+Cache estático per-request para evitar leer DB cada vez. API:
+```php
+Cfg::n('clave', $default = 0)   // number (int o float según default)
+Cfg::s('clave', $default = '')  // string
+Cfg::b('clave', $default = false) // boolean
+Cfg::flush()                    // invalida cache (después de mutar config)
+```
+
+Usado en: `UsuarioController` (JWT, password, rate limit), `BodegasModel` + `FormulacionesModel` (margen utilidad default 50), `CotizacionesController` (vencimiento factura), `AuditoriaController` (page_size), `NotificacionModel` (limits).
+
+### EmpresaController extendido
+
+Migración `_000006_ExtendEmpresa` agrega: `direccion`, `email`, `celular`, `locale` (default `es-CO`), `moneda` (default `COP`), `logo_path`. Backfill con valores que estaban hardcodeados en frontend.
+
+Endpoints nuevos:
+- `GET /empresa` — devuelve OBJETO único (antes devolvía array)
+- `PUT /empresa` — admin only, acepta locale/moneda/logo_path además de los originales
+- `POST /empresa/logo` — multipart con campo `logo`. Valida tipo (PNG/JPG/WEBP) y tamaño (≤2MB). Guarda en `public/uploads/empresa/logo_TIMESTAMP.ext`, borra el anterior, actualiza `logo_path`.
+- `DELETE /empresa/logo` — quita el logo actual y borra archivo del disco.
+- `GET /empresa/logo-base64` — devuelve `data:image/png;base64,...` (lo usa el frontend para incrustar el logo en jsPDF, evita CORS al fetch directo de `/uploads/`).
+
+Migración `_000009_SeedDefaultLogo` setea `logo_path = '/uploads/empresa/logo_default.png'` si está vacío. El archivo se copia manualmente desde `pinca_frontend/src/assets/pincaicono.png`.
+
+### Soft-delete en `item_proveedor`
+
+Migración `_000001_AddSoftDeleteToItemProveedor` agrega `deleted_at` + índice. **No requirió tocar el controller** — `BaseModel::delete_table()` ya detecta la columna y hace UPDATE en vez de DELETE. Modelo declara `useSoftDeletes = true`. El `get_item_proveedores()` (query raw) tuvo que sumar `WHERE ip.deleted_at IS NULL` manualmente.
+
+Resuelve el FK constraint con `historial_precios` y `ordenes_compra_detalle`.
+
+### Refactors críticos
+
+- **`UsuarioController`**: JWT secret sin fallback (lanza excepción si `TOKEN_SECRET` está vacío o usa `'miClaveSuperSecreta'`); JWT expiración + max intentos + ventana + password mín leídos de `Cfg`.
+- **`BodegasModel` + `FormulacionesModel`**: 5 ocurrencias de `COALESCE(ci.porcentaje_utilidad, 50)` → `Cfg::n('margen_utilidad_default_pct', 50)`.
+- **`CotizacionesController::convertir`**: `+30 days` → `dias_vencimiento_factura` config.
+- **`AuditoriaController`**: `min(200, ...)` → `Cfg::n('max_per_page', 200)`.
+- **`NotificacionModel::listarPara`**: limit default/máximo configurables.
+- **5 controllers de documentos** (Facturas, Cotizaciones, Remisiones, OrdenesCompra, NotasCredito): reemplazaron sus `generarNumero()` legacy por `(new NumeracionModel())->reservar('factura' | 'cotizacion' | 'remision' | 'orden_compra' | 'nota_credito')`. Las funciones legacy quedaron eliminadas.
+
+### Migraciones aplicadas en esta sesión
+
+```
+2026-05-14-000001 AddSoftDeleteToItemProveedor
+2026-05-14-000002 CreateConfiguracionSistema
+2026-05-14-000003 SeedConfiguracionTributaria
+2026-05-14-000004 SeedConfiguracionUmbrales
+2026-05-14-000005 CreateNumeracionDocumentos
+2026-05-14-000006 ExtendEmpresa
+2026-05-14-000007 SeedConfiguracionSeguridadFinanciero
+2026-05-14-000008 SeedAvatarPalette
+2026-05-14-000009 SeedDefaultLogo
+```
+
+### Estado de la auditoría histórica — actualizado
+
+Resueltos en esta sesión (de los #11-20 que quedaban abiertos):
+- ✅ **#16 Soft-deletes** — implementado en `item_proveedor` (la migración `_000007` previa ya cubría clientes/proveedor/item_general/facturas/OCs/cotizaciones/remisiones).
+- ⚠️ **#11 Mass assignment** — sigue siendo riesgo en `BaseModel::create_table` que llena `allowedFields` desde `getFieldNames()`. NO resuelto.
+- ⚠️ **#13 DBDebug** — aún `true` en `Database.php`. NO resuelto.
+- ⚠️ **#14 Tope max paginación** — resuelto en `AuditoriaController` y `NotificacionModel::listarPara` vía `Cfg`. Otros controllers siguen sin tope. Parcialmente resuelto.
+
+### Endpoints nuevos resumidos
+
+```
+GET    /api/configuracion
+GET    /api/configuracion/tipos-movimiento
+GET    /api/configuracion/grupo/:grupo
+GET    /api/configuracion/:clave
+PUT    /api/configuracion/:clave         (admin)
+PUT    /api/configuracion/bulk           (admin)
+GET    /api/numeracion
+POST   /api/numeracion                   (admin)
+PUT    /api/numeracion/:id               (admin)
+GET    /api/auditoria/login-attempts     (admin)
+GET    /api/auditoria/movimientos        (admin)
+GET    /api/empresa                      (devuelve objeto único)
+PUT    /api/empresa                      (admin)
+POST   /api/empresa/logo                 (admin)
+DELETE /api/empresa/logo                 (admin)
+GET    /api/empresa/logo-base64
+GET    /api/categorias/:id               (faltaba)
+POST   /api/categorias                   (faltaba)
+PUT    /api/categorias/:id               (faltaba)
+DELETE /api/categorias/:id               (faltaba)
+```

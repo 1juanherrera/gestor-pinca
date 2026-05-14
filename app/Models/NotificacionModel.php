@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use CodeIgniter\Model;
+use App\Helpers\Cfg;
 
 /**
  * Sistema centralizado de notificaciones in-app.
@@ -94,7 +95,9 @@ class NotificacionModel extends Model
     public function listarPara(int $userId, string $rol, array $opts = []): array
     {
         $soloNoLeidas = !empty($opts['solo_no_leidas']);
-        $limit        = min((int) ($opts['limit'] ?? 30), 100);
+        $defLim       = Cfg::n('limit_default', 30);
+        $maxLim       = Cfg::n('limit_maximo',  100);
+        $limit        = min((int) ($opts['limit'] ?? $defLim), $maxLim);
         $offset       = max(0, (int) ($opts['offset'] ?? 0));
 
         $builder = $this->builder()

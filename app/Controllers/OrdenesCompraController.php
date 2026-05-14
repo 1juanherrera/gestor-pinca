@@ -6,6 +6,7 @@ use CodeIgniter\RESTful\ResourceController;
 use App\Models\OrdenesCompraModel;
 use App\Models\InventarioModel;
 use App\Models\InventarioCapasModel;
+use App\Models\NumeracionModel;
 
 class OrdenesCompraController extends ResourceController
 {
@@ -56,7 +57,7 @@ class OrdenesCompraController extends ResourceController
             $lineas = $data['lineas'] ?? [];
             unset($data['lineas']);
 
-            $data['numero'] = $this->model->generarNumero();
+            $data['numero'] = (new NumeracionModel())->reservar('orden_compra');
             $data['estado'] = 'Borrador';
 
             $db->table('ordenes_compra')->insert($data);

@@ -3,14 +3,31 @@
 namespace App\Controllers;
 
 use App\Models\UsuarioModel;
+use App\Models\ConfiguracionModel;
 use CodeIgniter\HTTP\ResponseInterface;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
 class UsuarioController extends BaseController
 {
-    private const MAX_LOGIN_ATTEMPTS = 5;
-    private const RATE_LIMIT_WINDOW  = 900; // 15 minutos en segundos
+    /**
+     * Lee el secret JWT del .env. Sin fallback inseguro:
+     * si TOKEN_SECRET no está definido o está vacío lanza InvalidArgumentException.
+     */
+    private function getJwtSecret(): string
+    {
+        $secret = $_ENV['TOKEN_SECRET'] ?? '';
+        if ($secret === '' || $secret === 'miClaveSuperSecreta') {
+            log_message('critical', '[SECURITY] TOKEN_SECRET no está configurado en .env o usa el fallback inseguro.');
+            throw new \InvalidArgumentException('Configuración de seguridad inválida (TOKEN_SECRET).');
+        }
+        return $secret;
+    }
+
+    private function cfg(): ConfiguracionModel
+    {
+        return new ConfiguracionModel();
+    }
 
     public function login()
     {
@@ -30,17 +47,21 @@ class UsuarioController extends BaseController
         $ip  = $this->request->getIPAddress();
         $db  = \Config\Database::connect();
 
-        // Rate limiting
-        $cutoff   = date('Y-m-d H:i:s', time() - self::RATE_LIMIT_WINDOW);
+        // Rate limiting (parámetros configurables desde Configuración → Seguridad)
+        $cfg            = $this->cfg();
+        $maxIntentos    = (int) $cfg->obtener('max_intentos_login',         5);
+        $ventanaSeg     = (int) $cfg->obtener('ventana_intentos_segundos',  900);
+        $cutoff         = date('Y-m-d H:i:s', time() - $ventanaSeg);
         $attempts = $db->table('login_attempts')
             ->where('ip_address', $ip)
             ->where('created_at >', $cutoff)
             ->countAllResults();
 
-        if ($attempts >= self::MAX_LOGIN_ATTEMPTS) {
+        if ($attempts >= $maxIntentos) {
+            $minutos = (int) ceil($ventanaSeg / 60);
             log_message('warning', "[LOGIN] IP $ip bloqueada por exceso de intentos (usuario: $username)");
             return $this->response->setStatusCode(429)
-                ->setJSON(['ok' => false, 'msg' => 'Demasiados intentos fallidos. Espera 15 minutos.']);
+                ->setJSON(['ok' => false, 'msg' => "Demasiados intentos fallidos. Espera {$minutos} minutos."]);
         }
 
         // Registrar intento (antes de verificar credenciales, para contar cualquier intento)
@@ -72,13 +93,19 @@ class UsuarioController extends BaseController
             ->get()->getResultArray();
         $modulos = array_column($modulosRows, 'modulo');
 
-        $secretKey = $_ENV['TOKEN_SECRET'] ?? 'miClaveSuperSecreta';
+        try {
+            $secretKey = $this->getJwtSecret();
+        } catch (\InvalidArgumentException $e) {
+            return $this->response->setStatusCode(500)
+                ->setJSON(['ok' => false, 'msg' => 'Error de configuración del servidor.']);
+        }
+        $jwtHoras = (int) $this->cfg()->obtener('jwt_expiracion_horas', 8);
 
         $nombre = $usuario['nombre'] ?? null;
 
         $payload = [
             'iat' => time(),
-            'exp' => time() + 8 * 3600,
+            'exp' => time() + $jwtHoras * 3600,
             'data' => [
                 'id'       => $usuario['id_usuarios'],
                 'username' => $usuario['username'],
@@ -152,8 +179,14 @@ class UsuarioController extends BaseController
         log_message('info', "[PERFIL] Usuario {$this->request->usuario->username} actualizó su nombre a: " . ($nombre ?: '(vacío)'));
 
         // Re-emitir token con el nombre nuevo así no hace falta re-login
-        $secretKey = $_ENV['TOKEN_SECRET'] ?? 'miClaveSuperSecreta';
-        $db        = \Config\Database::connect();
+        try {
+            $secretKey = $this->getJwtSecret();
+        } catch (\InvalidArgumentException $e) {
+            return $this->response->setStatusCode(500)
+                ->setJSON(['ok' => false, 'msg' => 'Error de configuración del servidor.']);
+        }
+        $jwtHoras    = (int) $this->cfg()->obtener('jwt_expiracion_horas', 8);
+        $db          = \Config\Database::connect();
         $modulosRows = $db->table('permisos_rol_modulo')
             ->select('modulo')
             ->where('rol', $this->request->usuario->rol)
@@ -163,7 +196,7 @@ class UsuarioController extends BaseController
 
         $payload = [
             'iat'  => time(),
-            'exp'  => time() + 8 * 3600,
+            'exp'  => time() + $jwtHoras * 3600,
             'data' => [
                 'id'       => $userId,
                 'username' => $this->request->usuario->username,
@@ -199,9 +232,10 @@ class UsuarioController extends BaseController
         $currentPassword = $body['currentPassword'] ?? '';
         $newPassword     = $body['newPassword']     ?? '';
 
-        if (strlen($newPassword) < 8) {
+        $minPwd = (int) $this->cfg()->obtener('password_min_caracteres', 8);
+        if (strlen($newPassword) < $minPwd) {
             return $this->response->setStatusCode(400)
-                ->setJSON(['ok' => false, 'msg' => 'La nueva contraseña debe tener al menos 8 caracteres.']);
+                ->setJSON(['ok' => false, 'msg' => "La nueva contraseña debe tener al menos {$minPwd} caracteres."]);
         }
 
         $usuarioModel = new UsuarioModel();
@@ -238,9 +272,10 @@ class UsuarioController extends BaseController
             return $this->response->setStatusCode(400)
                 ->setJSON(['ok' => false, 'msg' => 'El username debe tener entre 3 y 50 caracteres.']);
         }
-        if (strlen($password) < 8) {
+        $minPwd = (int) $this->cfg()->obtener('password_min_caracteres', 8);
+        if (strlen($password) < $minPwd) {
             return $this->response->setStatusCode(400)
-                ->setJSON(['ok' => false, 'msg' => 'La contraseña debe tener al menos 8 caracteres.']);
+                ->setJSON(['ok' => false, 'msg' => "La contraseña debe tener al menos {$minPwd} caracteres."]);
         }
         if (!in_array($rol, ['admin', 'operador', 'visor'], true)) {
             return $this->response->setStatusCode(400)

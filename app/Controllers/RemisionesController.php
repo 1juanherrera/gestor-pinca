@@ -9,6 +9,7 @@ use App\Models\FacturasModel;
 use App\Models\InventarioCapasModel;
 use App\Models\InventarioModel;
 use App\Models\MovimientoInventarioModel;
+use App\Models\NumeracionModel;
 
 class RemisionesController extends ResourceController
 {
@@ -79,7 +80,7 @@ class RemisionesController extends ResourceController
             $items = $data['items'];
             unset($data['items']);
 
-            if (empty($data['numero'])) $data['numero'] = $this->generarNumero();
+            if (empty($data['numero'])) $data['numero'] = (new NumeracionModel())->reservar('remision');
             if (empty($data['estado'])) $data['estado'] = 'Pendiente';
 
             $id = $this->model->create_table($data, 'remisiones');
@@ -366,7 +367,7 @@ class RemisionesController extends ResourceController
             $total    = $subtotal + $iva;
 
             $facturaModel = new FacturasModel();
-            $numeroFac    = $this->generarNumeroFactura();
+            $numeroFac    = (new NumeracionModel())->reservar('factura');
 
             $facturaData = [
                 'numero'            => $numeroFac,
@@ -434,36 +435,5 @@ class RemisionesController extends ResourceController
         }
     }
 
-    // ── Generadores de número correlativo ─────────────────────────────────
-    private function generarNumero(): string
-    {
-        return $this->correlativo('remisiones', 'REM');
-    }
-
-    private function generarNumeroFactura(): string
-    {
-        return $this->correlativo('facturas', 'FAC');
-    }
-
-    private function correlativo(string $tabla, string $prefijo): string
-    {
-        $db   = \Config\Database::connect();
-        $year = date('Y');
-
-        $last = $db->table($tabla)
-            ->like('numero', "{$prefijo}-{$year}-", 'after')
-            ->orderBy("id_{$tabla}", 'DESC')
-            ->limit(1)
-            ->get()
-            ->getRowArray();
-
-        if ($last) {
-            $partes = explode('-', $last['numero']);
-            $seq = ((int) end($partes)) + 1;
-        } else {
-            $seq = 1;
-        }
-
-        return "{$prefijo}-{$year}-" . str_pad($seq, 4, '0', STR_PAD_LEFT);
-    }
+    // ── Numeración correlativa: ahora delegada a NumeracionModel::reservar()
 }

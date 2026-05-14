@@ -5,6 +5,8 @@ namespace App\Controllers;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\CotizacionesModel;
 use App\Models\FacturasModel;
+use App\Models\NumeracionModel;
+use App\Models\ConfiguracionModel;
 
 class CotizacionesController extends ResourceController
 {
@@ -67,7 +69,7 @@ class CotizacionesController extends ResourceController
             $items = $data['items'] ?? [];
             unset($data['items'], $data['cliente_libre']);
 
-            if (empty($data['numero'])) $data['numero'] = $this->generarNumero('COT');
+            if (empty($data['numero'])) $data['numero'] = (new NumeracionModel())->reservar('cotizacion');
             if (empty($data['estado'])) $data['estado'] = 'Borrador';
 
             // Limpiar campos opcionales vacíos
@@ -189,13 +191,13 @@ class CotizacionesController extends ResourceController
             }
 
             $facturaModel = new FacturasModel();
-            $numeroFac    = $this->generarNumero('FAC');
+            $numeroFac    = (new NumeracionModel())->reservar('factura');
 
             $facturaData = [
                 'numero'            => $numeroFac,
                 'cliente_id'        => $cotizacion['cliente_id'],
                 'fecha_emision'     => date('Y-m-d'),
-                'fecha_vencimiento' => date('Y-m-d', strtotime('+30 days')),
+                'fecha_vencimiento' => date('Y-m-d', strtotime('+' . ((int) (new ConfiguracionModel())->obtener('dias_vencimiento_factura', 30)) . ' days')),
                 'subtotal'          => $cotizacion['subtotal'],
                 'descuento'         => $cotizacion['descuento'],
                 'impuestos'         => $cotizacion['impuestos'],
@@ -263,23 +265,5 @@ class CotizacionesController extends ResourceController
         }
     }
 
-    // ── Número correlativo ────────────────────────────────────────────────
-    private function generarNumero(string $prefijo): string
-    {
-        $tabla = $prefijo === 'COT' ? 'cotizaciones' : 'facturas';
-        $db    = \Config\Database::connect();
-        $year  = date('Y');
-
-        $last = $db->table($tabla)
-            ->like('numero', "{$prefijo}-{$year}-", 'after')
-            ->orderBy("id_{$tabla}", 'DESC')
-            ->limit(1)
-            ->get()
-            ->getRowArray();
-
-        $parts = explode('-', $last['numero'] ?? '');
-        $seq   = $last ? ((int) end($parts) + 1) : 1;
-
-        return "{$prefijo}-{$year}-" . str_pad($seq, 4, '0', STR_PAD_LEFT);
-    }
+    // ── Número correlativo: ahora delegado a NumeracionModel::reservar() ──
 }

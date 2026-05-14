@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 use Exception;
+use App\Helpers\Cfg;
 
 class BodegasModel extends BaseModel
 {
@@ -94,9 +95,10 @@ class BodegasModel extends BaseModel
                     : null;
 
                 if ($item['formulacion_id'] !== null) {
+                    $margenDef = Cfg::n('margen_utilidad_default_pct', 50);
 
-                    $itemData = $db->query('
-                        SELECT 
+                    $itemData = $db->query("
+                        SELECT
                             ig.viscosidad, ig.p_g, ig.color, ig.secado, ig.cubrimiento, ig.brillo_60,
                             COALESCE(NULLIF(ci.volumen, 0), 1) AS volumen_base,
                             COALESCE(ci.envase, 0)             AS envase,
@@ -104,11 +106,11 @@ class BodegasModel extends BaseModel
                             COALESCE(ci.bandeja, 0)            AS bandeja,
                             COALESCE(ci.plastico, 0)           AS plastico,
                             COALESCE(ci.costo_mod, 0)          AS costo_mod,
-                            COALESCE(ci.porcentaje_utilidad, 50) AS porcentaje_utilidad
+                            COALESCE(ci.porcentaje_utilidad, {$margenDef}) AS porcentaje_utilidad
                         FROM item_general ig
                         LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
                         WHERE ig.id_item_general = ?
-                    ', [$item['id_item_general']])->getRow();
+                    ", [$item['id_item_general']])->getRow();
 
                     $materiasPrimas = $db->query('
                         SELECT
