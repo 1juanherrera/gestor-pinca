@@ -8,6 +8,8 @@ class RemisionesModel extends BaseModel
 {
     protected $table      = 'remisiones';
     protected $primaryKey = 'id_remisiones';
+    protected $useSoftDeletes = true;
+    protected $deletedField   = 'deleted_at';
 
     protected $allowedFields = [
         'numero',
@@ -33,6 +35,7 @@ class RemisionesModel extends BaseModel
             ->select('r.*, c.nombre_empresa, c.nombre_encargado, c.numero_documento AS nit_cliente, f.numero AS numero_factura')
             ->join('clientes c', 'c.id_clientes = r.cliente_id', 'left')
             ->join('facturas f', 'f.id_facturas  = r.facturas_id', 'left')
+            ->where('r.deleted_at', null)
             ->orderBy('r.id_remisiones', 'DESC');
 
         if ($clienteId) $query->where('r.cliente_id', $clienteId);
@@ -52,6 +55,7 @@ class RemisionesModel extends BaseModel
             ->join('clientes c', 'c.id_clientes = r.cliente_id', 'left')
             ->join('facturas f', 'f.id_facturas  = r.facturas_id', 'left')
             ->where('r.id_remisiones', $id)
+            ->where('r.deleted_at', null)
             ->get()
             ->getRow();
 

@@ -78,6 +78,7 @@ class DashboardController extends BaseController
             LEFT JOIN clientes c ON c.id_clientes = f.cliente_id
             WHERE f.estado IN ('Pendiente', 'Parcial', 'Vencida')
               AND f.saldo_pendiente > 0
+              AND f.deleted_at IS NULL
             GROUP BY f.cliente_id, c.nombre_empresa, c.nombre_encargado
             ORDER BY total_deuda DESC
             LIMIT ?
@@ -101,6 +102,7 @@ class DashboardController extends BaseController
                 SUM(CASE WHEN estado = 'Anulada'  THEN 1 ELSE 0 END) AS anuladas
             FROM facturas
             WHERE DATE(fecha_emision) BETWEEN ? AND ?
+              AND deleted_at IS NULL
         ", [$inicioMes, $finMes])->getRowArray() ?: [];
 
         return [
@@ -125,6 +127,7 @@ class DashboardController extends BaseController
                 COALESCE(SUM(CASE WHEN estado IN ('Borrador','Enviada') THEN total ELSE 0 END), 0) AS valor_total
             FROM cotizaciones
             WHERE estado IN ('Borrador', 'Enviada')
+              AND deleted_at IS NULL
         ")->getRowArray() ?: [];
 
         return [
@@ -146,6 +149,7 @@ class DashboardController extends BaseController
                 COUNT(DISTINCT CASE WHEN oc.fecha_esperada < CURDATE() THEN oc.id_orden END) AS retrasadas
             FROM ordenes_compra oc
             WHERE oc.estado = 'Enviada'
+              AND oc.deleted_at IS NULL
         ")->getRowArray() ?: [];
 
         return [
@@ -277,6 +281,7 @@ class DashboardController extends BaseController
             JOIN facturas f ON f.id_facturas = fd.facturas_id
             WHERE DATE(f.fecha_emision) BETWEEN ? AND ?
               AND f.estado != 'Anulada'
+              AND f.deleted_at IS NULL
             GROUP BY fd.descripcion
             ORDER BY monto_total DESC
             LIMIT ?
@@ -298,6 +303,7 @@ class DashboardController extends BaseController
             FROM facturas
             WHERE DATE(fecha_emision) BETWEEN ? AND ?
               AND estado != 'Anulada'
+              AND deleted_at IS NULL
         ", [$inicioMes, $finMes])->getRowArray()['total'] ?? 0);
 
         $costos = (float) ($db->query("

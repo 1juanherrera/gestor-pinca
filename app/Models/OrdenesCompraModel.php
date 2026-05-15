@@ -6,6 +6,8 @@ class OrdenesCompraModel extends BaseModel
 {
     protected $table      = 'ordenes_compra';
     protected $primaryKey = 'id_orden';
+    protected $useSoftDeletes = true;
+    protected $deletedField   = 'deleted_at';
     protected $allowedFields = [
         'numero', 'proveedor_id', 'bodegas_id', 'fecha',
         'fecha_esperada', 'estado', 'total', 'observaciones',
@@ -23,6 +25,7 @@ class OrdenesCompraModel extends BaseModel
     {
         $ultimo = $this->dbc->table('ordenes_compra')
             ->select('numero')
+            ->where('deleted_at', null)
             ->orderBy('id_orden', 'DESC')
             ->limit(1)
             ->get()->getRow();
@@ -43,6 +46,7 @@ class OrdenesCompraModel extends BaseModel
             FROM ordenes_compra oc
             LEFT JOIN proveedor p ON p.id_proveedor = oc.proveedor_id
             LEFT JOIN bodegas   b ON b.id_bodegas   = oc.bodegas_id
+            WHERE oc.deleted_at IS NULL
             ORDER BY oc.id_orden DESC
         ')->getResult('array');
     }
@@ -50,14 +54,14 @@ class OrdenesCompraModel extends BaseModel
     public function detalle(int $id): ?array
     {
         $ordenRaw = $this->dbc->query('
-            SELECT 
+            SELECT
                 oc.*,
                 p.nombre_empresa, p.nombre_encargado, p.telefono, p.email,
                 b.nombre AS bodega_nombre
             FROM ordenes_compra oc
             LEFT JOIN proveedor p ON p.id_proveedor = oc.proveedor_id
             LEFT JOIN bodegas b   ON b.id_bodegas   = oc.bodegas_id
-            WHERE oc.id_orden = ?
+            WHERE oc.id_orden = ? AND oc.deleted_at IS NULL
         ', [$id])->getRow(); // ✅ sin 'array'
 
         if (!$ordenRaw) return null;

@@ -27,12 +27,14 @@ class CarteraModel extends BaseModel
         $totalCartera = (float) ($db->table('facturas')
             ->selectSum('saldo_pendiente')
             ->whereIn('estado', ['Pendiente', 'Parcial', 'Vencida'])
+            ->where('deleted_at', null)
             ->get()->getRowArray()['saldo_pendiente'] ?? 0);
 
         $carteraVencida = (float) ($db->table('facturas')
             ->selectSum('saldo_pendiente')
             ->where('fecha_vencimiento <', $hoy)
             ->whereIn('estado', ['Pendiente', 'Parcial', 'Vencida'])
+            ->where('deleted_at', null)
             ->get()->getRowArray()['saldo_pendiente'] ?? 0);
 
         $recaudoMes = (float) ($db->table('pagos_cliente')
@@ -45,12 +47,14 @@ class CarteraModel extends BaseModel
             ->select('COUNT(DISTINCT cliente_id) as total')
             ->where('fecha_vencimiento <', $hoy)
             ->whereIn('estado', ['Pendiente', 'Parcial', 'Vencida'])
+            ->where('deleted_at', null)
             ->get()->getRowArray()['total'] ?? 0);
 
         $facturaVieja = $db->table('facturas f')
             ->select('f.numero, f.fecha_vencimiento, DATEDIFF(CURDATE(), f.fecha_vencimiento) AS dias_mora')
             ->whereIn('f.estado', ['Pendiente', 'Parcial', 'Vencida'])
             ->where('f.fecha_vencimiento <', $hoy)
+            ->where('f.deleted_at', null)
             ->orderBy('f.fecha_vencimiento', 'ASC')
             ->limit(1)
             ->get()->getRowArray();
@@ -79,6 +83,7 @@ class CarteraModel extends BaseModel
             ->join('clientes c', 'c.id_clientes = f.cliente_id', 'left')
             ->whereIn('f.estado', ['Pendiente', 'Parcial', 'Vencida'])
             ->where('f.saldo_pendiente >', 0)
+            ->where('f.deleted_at', null)
             ->orderBy('dias_mora', 'DESC')
             ->get()->getResultArray();
 
@@ -122,12 +127,14 @@ class CarteraModel extends BaseModel
 
         $cliente = $db->table('clientes')
             ->where('id_clientes', $clienteId)
+            ->where('deleted_at', null)
             ->get()->getRowArray();
 
         if (!$cliente) return null;
 
         $facturas = $db->table('facturas')
             ->where('cliente_id', $clienteId)
+            ->where('deleted_at', null)
             ->orderBy('fecha_emision', 'DESC')
             ->get()->getResultArray();
 

@@ -8,6 +8,8 @@ class ClientesModel extends BaseModel
 
     protected $table = 'clientes';
     protected $primaryKey = 'id_clientes';
+    protected $useSoftDeletes = true;
+    protected $deletedField   = 'deleted_at';
     protected $allowedFields = [
         'nombre_encargado',
         'nombre_empresa',
@@ -73,12 +75,15 @@ class ClientesModel extends BaseModel
             FROM clientes c
             LEFT JOIN facturas f ON f.cliente_id = c.id_clientes
                 AND f.estado IN ('Pendiente','Parcial','Vencida')
+                AND f.deleted_at IS NULL
         ";
 
         $params = [];
         if ($id !== null) {
-            $sql .= " WHERE c.id_clientes = ? ";
+            $sql .= " WHERE c.id_clientes = ? AND c.deleted_at IS NULL ";
             $params[] = (int)$id;
+        } else {
+            $sql .= " WHERE c.deleted_at IS NULL ";
         }
 
         $sql .= " GROUP BY c.id_clientes ORDER BY c.nombre_empresa ASC ";

@@ -6,6 +6,8 @@ class FacturasModel extends BaseModel
 {
     protected $table      = 'facturas';
     protected $primaryKey = 'id_facturas';
+    protected $useSoftDeletes = true;
+    protected $deletedField   = 'deleted_at';
 
     // allowedFields se llena dinámicamente en BaseModel,
     // pero lo declaramos para claridad y validación manual

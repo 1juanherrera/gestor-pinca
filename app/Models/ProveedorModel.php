@@ -6,6 +6,8 @@ class ProveedorModel extends BaseModel
 {
     protected $table      = 'proveedor';
     protected $primaryKey = 'id_proveedor';
+    protected $useSoftDeletes = true;
+    protected $deletedField   = 'deleted_at';
     protected $allowedFields = [
         'nombre_encargado',
         'nombre_empresa',
@@ -23,11 +25,11 @@ class ProveedorModel extends BaseModel
     // ── Proveedor con sus items anidados ──────────────────────────────────
     public function get_item_proveedores($id = null)
     {
-        $sql    = 'SELECT * FROM proveedor';
+        $sql    = 'SELECT * FROM proveedor WHERE deleted_at IS NULL';
         $params = [];
 
         if ($id !== null) {
-            $sql     .= ' WHERE id_proveedor = ?';
+            $sql     .= ' AND id_proveedor = ?';
             $params[] = $id;
         }
 
@@ -35,7 +37,7 @@ class ProveedorModel extends BaseModel
 
         foreach ($proveedores as &$proveedor) {
             $items = $this->db->query(
-                'SELECT ip.* FROM item_proveedor ip WHERE ip.proveedor_id = ?',
+                'SELECT ip.* FROM item_proveedor ip WHERE ip.proveedor_id = ? AND ip.deleted_at IS NULL',
                 [$proveedor->id_proveedor]
             )->getResult();
 

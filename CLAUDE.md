@@ -609,3 +609,83 @@ POST   /api/categorias                   (faltaba)
 PUT    /api/categorias/:id               (faltaba)
 DELETE /api/categorias/:id               (faltaba)
 ```
+
+---
+
+## Sesión 2026-05-15 — Hardening + Trazabilidad + Cmd+K + Notificaciones
+
+### P0 / P1 técnicos resueltos
+
+- **OrdenesCompra::recibirLinea** ahora hace `SELECT … FOR UPDATE` dentro de la transacción para evitar **stock duplicado por recepciones simultáneas**.
+- **BodegasController::patch_cantidad eliminado** (era bypass del audit log; la ruta ya estaba off pero el método huérfano).
+- **factor_conversion > 0** validado en `ItemProveedorController::create/update/vincular`.
+- **FormulacionesModel::validarSumaPorcentajes** — rechaza fórmulas cuyos % no sumen 100 (±0.5).
+- **ItemProveedorModel::resolverItemGeneral** usa `GET_LOCK(md5(nombre))` para evitar duplicados de `item_general` en creaciones simultáneas. También rechaza si existe un item soft-deleted con ese nombre.
+- **PreparacionesModel** excluye items soft-deleted en queries de fórmula e ingredientes (evita consumos fantasma).
+
+### Soft-deletes consistentes
+
+`useSoftDeletes = true` activado en: `OrdenesCompraModel`, `CotizacionesModel`, `RemisionesModel`, `FacturasModel`, `ClientesModel`, `ProveedorModel`. Las queries raw de listados (`OrdenesCompra::listar/detalle/generarNumero`, `RemisionesModel::get_remisiones/get_remision_by_id`, `ClientesModel::get_item_clientes`, `ProveedorModel::get_item_proveedores`, `CarteraModel`, `DashboardController` cartera/ventas/cotizaciones/OCs/rentabilidad) ahora todas filtran `deleted_at IS NULL` explícitamente. Antes el frontend veía registros soft-deleted porque las raw queries no respetaban la columna.
+
+### SearchController — búsqueda global Cmd+K
+
+`GET /api/search?q=texto&limit=5` — endpoint unificado que busca en `item_general`, `clientes`, `proveedor`, `facturas`, `cotizaciones`, `remisiones`, `ordenes_compra`, `notas_credito`. Devuelve array plano `[{tipo, id, label, sublabel, path}]`. Respeta soft-deletes.
+
+### Trazabilidad — UI completa
+
+`TrazabilidadController` ya existía con `porPreparacion / porLote / lotes`. Se agregó el frontend completo: `TrazabilidadPage` (sidebar Inventario), drawers reusables, **PDF de hoja de auditoría carta A4** (`ExportTrazabilidad`) con dos modos.
+
+### AjusteManual de stock
+
+`POST /api/inventario/ajuste-manual` — body `{item_general_id, bodega_id, cantidad, motivo, observacion?}`. Descuenta vía FIFO de la bodega especificada, recalcula promedio ponderado, registra `MovimientoInventario` tipo `AJUSTE` con metadata. Motivo obligatorio: `rotura | derrame | conteo | vencimiento | otro`. El frontend lo expone en `Inventario/Components/DataTable` (acción por fila) e `InventarioGlobalPage` (chip por bodega expandida).
+
+### Notificaciones automáticas
+
+`NotificacionesController::generarAutomaticas()` se ejecuta **lazy en cada `GET /notificaciones`**. Genera (con dedup por día):
+- Stock crítico de MP (`dias_restantes < cfg.stock_critico_dias`)
+- OCs Enviadas hace > 14 días sin recibir
+- Facturas en mora > `cfg.mora_critica_dias`
+
+### Costos / CostosIndirectos consolidados
+
+El módulo standalone CostosIndirectos se eliminó del frontend. La administración real de costos indirectos vive **inline en cada Producción** (`ProduccionDetailModal::CostosIndirectosSection`). El tab "Indirectos" dentro de `/costos` quedó solo como **vista read-only de análisis** del catálogo.
+
+### OrdenesCompraModel.detalle — exposición de unidad/factor
+
+El SELECT del detalle ahora trae `factor_conversion`, `unidad_compra_nombre`, `unidad_base_nombre` (JOIN extra a `unidad ub`). Lo necesita el frontend para mostrar el banner de conversión "10 BULTOS × 25 = 250 kg" en `RecibirLineaModal` antes de confirmar la recepción. La recepción ahora también acepta `lote_proveedor` opcional en el body.
+
+### Filtro por responsable en Movimientos
+
+`MovimientoInventarioController::index` y `MovimientoInventarioModel::get_movimientos` aceptan `?responsable=username` y filtran exact match.
+
+### Clonar fórmula
+
+`POST /formulaciones/clonar` body `{from_item_id, to_item_id, nombre?}` — copia la receta activa del producto origen al destino reusando `crearFormulacion` (respeta validaciones).
+
+### Migraciones aplicadas
+
+```
+2026-05-15-000001 AddTrazabilidadModulo            (RBAC: trazabilidad)
+2026-05-15-000002 AddCostosModulos                  (RBAC: costos)
+2026-05-15-000003 RemoveCostosIndirectosModulo     (limpieza)
+```
+
+### Endpoints nuevos resumidos
+
+```
+GET    /api/search?q=…&limit=5
+GET    /api/trazabilidad/preparacion/:id     (ya existía)
+GET    /api/trazabilidad/lote/:lote          (ya existía)
+GET    /api/trazabilidad/lotes?q=            (ya existía)
+POST   /api/inventario/ajuste-manual
+POST   /api/formulaciones/clonar
+```
+
+### Auditoría histórica — estado al cierre
+
+- ✅ #16 Soft-deletes — ahora consistentes (BD + modelos + queries raw).
+- ⚠️ #11 Mass assignment — sigue abierto.
+- ⚠️ #13 DBDebug — sigue `true`.
+- ⚠️ #14 Tope max paginación — parcial (Auditoria + Notificaciones; otros controllers sin tope).
+- ❌ Race conditions en otros endpoints sin verificar (solo recibirLinea fue arreglada).
+

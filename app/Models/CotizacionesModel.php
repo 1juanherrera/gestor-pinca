@@ -6,6 +6,8 @@ class CotizacionesModel extends BaseModel
 {
     protected $table      = 'cotizaciones';
     protected $primaryKey = 'id_cotizaciones';
+    protected $useSoftDeletes = true;
+    protected $deletedField   = 'deleted_at';
 
     protected $allowedFields = [
         'numero',
