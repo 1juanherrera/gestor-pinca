@@ -206,6 +206,9 @@ class MovimientoInventarioModel extends Model
         if (!empty($filtros['referencia_tipo'])) {
             $builder->where('movimiento_inventario.referencia_tipo', $filtros['referencia_tipo']);
         }
+        if (!empty($filtros['responsable'])) {
+            $builder->where('movimiento_inventario.responsable', $filtros['responsable']);
+        }
         if (!empty($filtros['fecha_inicio'])) {
             $builder->where('DATE(movimiento_inventario.fecha_movimiento) >=', $filtros['fecha_inicio']);
         }

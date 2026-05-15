@@ -82,6 +82,7 @@ $routes->group('api', function ($routes) {
     $routes->get('formulaciones/recalcular_costos/(:num)/(:segment)', 'FormulacionesController::recalcular_costos_por_volumen/$1/$2');
     $routes->get('formulaciones/(:num)', 'FormulacionesController::show/$1');
     $routes->post('formulaciones',        'FormulacionesController::create');
+    $routes->post('formulaciones/clonar', 'FormulacionesController::clonar');
     $routes->put('formulaciones/(:num)',  'FormulacionesController::update/$1');
 
     // PROVEEDORES

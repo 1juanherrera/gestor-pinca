@@ -873,6 +873,65 @@ class FormulacionesModel extends BaseModel
         }
     }
 
+    /**
+     * Clona la fórmula activa de $fromItemId hacia $toItemId.
+     * El producto destino debe existir y NO debe tener una fórmula activa
+     * (si la tiene, se desactiva con UPDATE estado=0 igual que crearFormulacion).
+     */
+    public function clonarFormulacion(int $fromItemId, int $toItemId, ?string $nombre = null, ?string $responsable = null): array
+    {
+        if ($fromItemId === $toItemId) {
+            throw new Exception('El producto origen y destino no pueden ser el mismo.');
+        }
+
+        // Validar destino existe y está activo
+        $destino = $this->db->query(
+            'SELECT id_item_general, nombre FROM item_general WHERE id_item_general = ? AND deleted_at IS NULL LIMIT 1',
+            [$toItemId]
+        )->getRowArray();
+        if (!$destino) {
+            throw new Exception('Producto destino no existe o está archivado.');
+        }
+
+        // Obtener fórmula activa del origen
+        $origen = $this->db->query(
+            'SELECT id_formulaciones, nombre, descripcion FROM formulaciones
+             WHERE item_general_id = ? AND estado = 1 LIMIT 1',
+            [$fromItemId]
+        )->getRowArray();
+        if (!$origen) {
+            throw new Exception('El producto origen no tiene una fórmula activa para clonar.');
+        }
+
+        $ingredientes = $this->db->query(
+            'SELECT igf.item_general_id, igf.cantidad, igf.porcentaje
+             FROM item_general_formulaciones igf
+             INNER JOIN item_general ig ON ig.id_item_general = igf.item_general_id
+             WHERE igf.formulaciones_id = ?
+               AND ig.deleted_at IS NULL',
+            [$origen['id_formulaciones']]
+        )->getResultArray();
+
+        if (empty($ingredientes)) {
+            throw new Exception('La fórmula origen no tiene ingredientes activos.');
+        }
+
+        $materiasPrimas = array_map(fn($i) => [
+            'materia_prima_id' => (int) $i['item_general_id'],
+            'cantidad'         => (float) $i['cantidad'],
+            'porcentaje'       => (float) $i['porcentaje'],
+        ], $ingredientes);
+
+        // Reusar crearFormulacion con la receta copiada
+        return $this->crearFormulacion([
+            'item_general_id' => $toItemId,
+            'nombre'          => $nombre ?: ($origen['nombre'] . ' (clonada)'),
+            'descripcion'     => $origen['descripcion'],
+            'materias_primas' => $materiasPrimas,
+            'responsable'     => $responsable,
+        ]);
+    }
+
     // Crear formulación completa con materias primas
     public function crearFormulacion(array $data): array
     {

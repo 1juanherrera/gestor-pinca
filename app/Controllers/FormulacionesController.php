@@ -108,6 +108,37 @@ class FormulacionesController extends ResourceController
         }
     }
 
+    /**
+     * POST /formulaciones/clonar
+     * Body: { from_item_id, to_item_id, nombre? }
+     * Copia la fórmula activa del producto origen al destino.
+     */
+    public function clonar()
+    {
+        try {
+            $data = $this->request->getJSON(true) ?? [];
+            $fromId = (int) ($data['from_item_id'] ?? 0);
+            $toId   = (int) ($data['to_item_id'] ?? 0);
+            $nombre = isset($data['nombre']) ? trim((string) $data['nombre']) : null;
+
+            if ($fromId <= 0 || $toId <= 0) {
+                return $this->failValidationErrors('from_item_id y to_item_id son obligatorios.');
+            }
+
+            $result = $this->model->clonarFormulacion($fromId, $toId, $nombre, $this->getUsername());
+
+            return $this->respondCreated([
+                'status'      => 'success',
+                'message'     => 'Fórmula clonada correctamente',
+                'id'          => $result['formulacion_id'],
+                'version_id'  => $result['version_id']  ?? null,
+                'version_num' => $result['version_num'] ?? null,
+            ]);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage(), 400);
+        }
+    }
+
     public function proveedores_formulacion($itemId = null)
     {
         try {

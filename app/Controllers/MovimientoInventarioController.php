@@ -19,6 +19,7 @@ class MovimientoInventarioController extends ResourceController
             'bodega_id'       => $this->request->getGet('bodega_id'),
             'tipo_movimiento' => $this->request->getGet('tipo_movimiento'),
             'referencia_tipo' => $this->request->getGet('referencia_tipo'),
+            'responsable'     => $this->request->getGet('responsable'),
             'fecha_inicio'    => $this->request->getGet('fecha_inicio'),
             'fecha_fin'       => $this->request->getGet('fecha_fin'),
             'search'          => $this->request->getGet('search'),
