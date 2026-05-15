@@ -851,6 +851,28 @@ class FormulacionesModel extends BaseModel
         ];
     }
 
+    /**
+     * Valida que la suma de porcentajes de los ingredientes sea ≈ 100%.
+     * Tolerancia: ±0.5% para errores de redondeo en cálculos del frontend.
+     * Lanza Exception si no cuadra.
+     */
+    private function validarSumaPorcentajes(array $materiasPrimas): void
+    {
+        $valid = array_filter($materiasPrimas, fn($mp) => !empty($mp['materia_prima_id']));
+        if (empty($valid)) return;
+
+        $sum = 0.0;
+        foreach ($valid as $mp) {
+            $sum += (float) ($mp['porcentaje'] ?? 0);
+        }
+        if (abs($sum - 100) > 0.5) {
+            throw new Exception(sprintf(
+                'La suma de porcentajes de la fórmula debe ser 100%% (actual: %.2f%%). Revisá los ingredientes.',
+                $sum
+            ));
+        }
+    }
+
     // Crear formulación completa con materias primas
     public function crearFormulacion(array $data): array
     {
@@ -860,6 +882,8 @@ class FormulacionesModel extends BaseModel
         if (empty($data['materias_primas'])) {
             throw new Exception('Debe agregar al menos una materia prima.');
         }
+
+        $this->validarSumaPorcentajes($data['materias_primas']);
 
         $this->db->transStart();
 
@@ -937,6 +961,8 @@ class FormulacionesModel extends BaseModel
         if (empty($data['materias_primas'])) {
             throw new Exception('Debe agregar al menos una materia prima.');
         }
+
+        $this->validarSumaPorcentajes($data['materias_primas']);
 
         $this->db->transStart();
 

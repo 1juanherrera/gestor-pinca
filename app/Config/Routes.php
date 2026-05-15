@@ -121,8 +121,9 @@ $routes->group('api', function ($routes) {
     $routes->delete('facturas/(:num)', 'FacturasController::delete/$1');
 
     // INVENTARIO
-    $routes->get('inventario/global',    'InventarioController::global');
-    $routes->post('inventario/traspaso', 'InventarioController::traspaso');
+    $routes->get('inventario/global',          'InventarioController::global');
+    $routes->post('inventario/traspaso',       'InventarioController::traspaso');
+    $routes->post('inventario/ajuste-manual',  'InventarioController::ajusteManual');
     // POST inventario/ingresar DESHABILITADO — stock solo ingresa por OC o Producción
     $routes->delete('inventario/(:num)/bodega/(:num)', 'InventarioController::removeFromBodega/$1/$2');
 
@@ -261,6 +262,9 @@ $routes->group('api', function ($routes) {
     $routes->get('sincronizacion/duplicados',  'SincronizacionController::duplicados');
     $routes->get('sincronizacion/huerfanos',   'SincronizacionController::huerfanos');
     $routes->post('sincronizacion/merge',      'SincronizacionController::merge');
+
+    // BÚSQUEDA GLOBAL (Cmd+K palette)
+    $routes->get('search', 'SearchController::search');
 
     // CONFIGURACIÓN DEL SISTEMA (parámetros globales: tributaria, umbrales, numeración, …)
     // Específicas PRIMERO (antes del :clave genérico)

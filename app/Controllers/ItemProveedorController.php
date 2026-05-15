@@ -6,9 +6,24 @@ use CodeIgniter\RESTful\ResourceController;
 use App\Models\ItemProveedorModel;
 use App\Models\BaseModel;
 
-class ItemProveedorController extends ResourceController 
+class ItemProveedorController extends ResourceController
 {
     protected $modelName = ItemProveedorModel::class;
+
+    /**
+     * Valida factor_conversion > 0 cuando viene en el payload.
+     * Un factor 0 o negativo causa división por cero al recibir OC
+     * (cantidad_base = qty * factor; costo_kg = precio / factor).
+     */
+    private function validarFactorConversion(array $data): void
+    {
+        if (!array_key_exists('factor_conversion', $data)) return;
+        if ($data['factor_conversion'] === null || $data['factor_conversion'] === '') return;
+        $f = (float) $data['factor_conversion'];
+        if ($f <= 0) {
+            throw new \InvalidArgumentException('El factor de conversión debe ser mayor a 0. Recibido: ' . $data['factor_conversion']);
+        }
+    }
 
     public function item_proveedores()
     {
@@ -42,6 +57,7 @@ class ItemProveedorController extends ResourceController
         }
 
         try {
+            $this->validarFactorConversion($data);
             $itemGeneralId = $this->model->resolverItemGeneral($data);
             $insertId      = $this->model->create_table($data, 'item_proveedor');
 
@@ -70,6 +86,7 @@ class ItemProveedorController extends ResourceController
         }
 
         try {
+            $this->validarFactorConversion($data);
             $this->model->resolverItemGeneral($data);
             $updated = $this->model->update_table($id, $data, 'item_proveedor');
 
@@ -153,6 +170,9 @@ class ItemProveedorController extends ResourceController
             // Actualizar vínculo + unidad de compra + factor de conversión
             $unidadCompraId   = isset($data['unidad_compra_id'])   ? (int)   $data['unidad_compra_id']   : null;
             $factorConversion = isset($data['factor_conversion'])  ? (float) $data['factor_conversion']  : 1.0;
+            if ($factorConversion <= 0) {
+                throw new \InvalidArgumentException('El factor de conversión debe ser mayor a 0.');
+            }
             $this->model->vincular((int) $id, $itemGeneralId, $unidadCompraId, $factorConversion);
 
             // Inventario NO se crea al vincular — stock solo ingresa por OC o Producción

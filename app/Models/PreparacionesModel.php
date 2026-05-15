@@ -45,9 +45,22 @@ class PreparacionesModel extends BaseModel
         $escala          = (float) $unidad->escala;
         $cantidadEnvases = $escala > 0 ? $volumenGalones / $escala : 0;
 
+        // Validar que el producto a producir no esté soft-deleted
+        $itemActivo = $this->db->query(
+            'SELECT id_item_general FROM item_general
+             WHERE id_item_general = ? AND deleted_at IS NULL LIMIT 1',
+            [$itemId]
+        )->getRow();
+        if (!$itemActivo) {
+            throw new Exception("El item a producir no existe o fue archivado.");
+        }
+
         $formulacion = $this->db->query(
-            'SELECT id_formulaciones, version_actual FROM formulaciones
-             WHERE item_general_id = ? AND estado = 1 LIMIT 1',
+            'SELECT f.id_formulaciones, f.version_actual FROM formulaciones f
+             INNER JOIN item_general ig ON ig.id_item_general = f.item_general_id
+             WHERE f.item_general_id = ? AND f.estado = 1
+               AND ig.deleted_at IS NULL
+             LIMIT 1',
             [$itemId]
         )->getRow();
 
@@ -69,12 +82,14 @@ class PreparacionesModel extends BaseModel
         $ingredientes = $this->db->query(
             'SELECT igf.item_general_id, igf.cantidad
              FROM item_general_formulaciones igf
-             WHERE igf.formulaciones_id = ?',
+             INNER JOIN item_general ig ON ig.id_item_general = igf.item_general_id
+             WHERE igf.formulaciones_id = ?
+               AND ig.deleted_at IS NULL',
             [$formulacion->id_formulaciones]
         )->getResult();
 
         if (empty($ingredientes)) {
-            throw new Exception("La formulación no tiene ingredientes asignados.");
+            throw new Exception("La formulación no tiene ingredientes asignados (o fueron archivados).");
         }
 
         // Detalle precalculado desde el frontend (prioridad)

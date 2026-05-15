@@ -222,6 +222,21 @@ class OrdenesCompraController extends ResourceController
         $db->transStart();
 
         try {
+            // Lock pesimista contra recepciones simultáneas: si dos usuarios
+            // intentan recibir la misma línea en paralelo, el segundo espera
+            // al commit del primero y luego ve recibido_en seteado.
+            $lockRow = $db->query(
+                'SELECT recibido_en FROM ordenes_compra_detalle WHERE id_detalle = ? FOR UPDATE',
+                [$idDetalle]
+            )->getRow();
+
+            if (!$lockRow) {
+                throw new \Exception('Línea no encontrada al iniciar la transacción.');
+            }
+            if ($lockRow->recibido_en) {
+                throw new \Exception('Esta línea ya fue recibida por otro usuario.');
+            }
+
             // Marcar línea como recibida
             $db->table('ordenes_compra_detalle')
                 ->where('id_detalle', $idDetalle)

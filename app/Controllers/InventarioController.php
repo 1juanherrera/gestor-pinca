@@ -167,4 +167,111 @@ class InventarioController extends ResourceController
         }
         return $this->fail('No se encontró el ítem en esta bodega', 404);
     }
+
+    /**
+     * POST /api/inventario/ajuste-manual
+     * Body: { item_general_id, bodega_id, cantidad, motivo, observacion? }
+     *
+     * Descuenta `cantidad` del stock de un item en una bodega vía FIFO.
+     * Pensado para ajustes operativos: rotura, derrame, conteo, vencimiento.
+     * Registra movimiento_inventario tipo AJUSTE con motivo en metadata.
+     * NO se puede usar para incrementar stock — eso solo viene por OC o Producción.
+     */
+    public function ajusteManual()
+    {
+        $data = json_decode($this->request->getBody(), true) ?? [];
+
+        $itemId      = (int)   ($data['item_general_id'] ?? 0);
+        $bodegaId    = (int)   ($data['bodega_id']       ?? 0);
+        $cantidad    = (float) ($data['cantidad']        ?? 0);
+        $motivo      = trim((string) ($data['motivo']     ?? ''));
+        $observacion = trim((string) ($data['observacion'] ?? ''));
+
+        if ($itemId <= 0 || $bodegaId <= 0) {
+            return $this->failValidationErrors('item_general_id y bodega_id son obligatorios.');
+        }
+        if ($cantidad <= 0) {
+            return $this->failValidationErrors('La cantidad a descontar debe ser mayor a 0.');
+        }
+        if ($motivo === '') {
+            return $this->failValidationErrors('El motivo del ajuste es obligatorio.');
+        }
+        $motivosValidos = ['rotura', 'derrame', 'conteo', 'vencimiento', 'otro'];
+        if (!in_array(strtolower($motivo), $motivosValidos, true)) {
+            return $this->failValidationErrors('Motivo inválido. Usar: ' . implode(', ', $motivosValidos));
+        }
+
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        try {
+            $capasModel = new \App\Models\InventarioCapasModel();
+
+            // Validar stock disponible en la bodega
+            $stockActual = $db->query(
+                'SELECT COALESCE(SUM(cantidad_disponible), 0) AS s
+                 FROM inventario_capas
+                 WHERE item_general_id = ? AND bodegas_id = ? AND estado = 1',
+                [$itemId, $bodegaId]
+            )->getRow();
+
+            $disponible = (float) ($stockActual->s ?? 0);
+            if ($disponible < $cantidad) {
+                throw new \Exception(sprintf(
+                    'Stock insuficiente. Disponible en esta bodega: %.4f, intentando descontar: %.4f',
+                    $disponible, $cantidad
+                ));
+            }
+
+            // Consumir capas FIFO de la bodega
+            $consumos = $capasModel->consumirCapasFIFO($itemId, $cantidad, $bodegaId);
+            if (empty($consumos)) {
+                throw new \Exception('No se pudieron consumir capas para el ajuste.');
+            }
+
+            $consumido = array_sum(array_column($consumos, 'cantidad_consumida'));
+            $costoTotal = array_sum(array_column($consumos, 'costo_total'));
+            $costoUnitProm = $consumido > 0 ? $costoTotal / $consumido : 0;
+
+            // Recalcular promedio ponderado
+            $capasModel->recalcularPromedioPonderado($itemId);
+
+            // Audit log
+            $movModel = new \App\Models\MovimientoInventarioModel();
+            $movModel->registrar([
+                'tipo'             => \App\Models\MovimientoInventarioModel::TIPO_AJUSTE,
+                'item_general_id'  => $itemId,
+                'bodega_id'        => $bodegaId,
+                'cantidad'         => $consumido,
+                'referencia_tipo'  => \App\Models\MovimientoInventarioModel::REF_AJUSTE,
+                'referencia_id'    => null,
+                'descripcion'      => "Ajuste manual ({$motivo}): descontó {$consumido}",
+                'costo_unitario'   => $costoUnitProm,
+                'responsable'      => $this->getUsername(),
+                'metadata'         => [
+                    'motivo'      => $motivo,
+                    'observacion' => $observacion ?: null,
+                    'capas'       => array_map(fn($c) => [
+                        'capa_id'  => $c['capa_id'],
+                        'cantidad' => $c['cantidad_consumida'],
+                        'costo_u'  => $c['costo_unitario'],
+                    ], $consumos),
+                ],
+            ]);
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Error al confirmar la transacción.');
+            }
+            $db->transCommit();
+
+            return $this->respond([
+                'mensaje'         => 'Ajuste registrado correctamente',
+                'cantidad_descontada' => $consumido,
+                'costo_total_perdido' => $costoTotal,
+            ]);
+        } catch (\Exception $e) {
+            $db->transRollback();
+            return $this->fail($e->getMessage(), 400);
+        }
+    }
 }

@@ -66,14 +66,21 @@ class OrdenesCompraModel extends BaseModel
         $orden = (array) $ordenRaw;
 
         $lineasRaw = $this->dbc->query('
-            SELECT 
+            SELECT
                 ocd.*,
-                ip.nombre AS item_nombre, ip.codigo AS item_codigo, uc.nombre AS unidad_empaque,
-                ig.nombre AS item_general_nombre
+                ip.nombre AS item_nombre, ip.codigo AS item_codigo,
+                ip.factor_conversion AS factor_conversion,
+                ip.unidad_compra_id  AS unidad_compra_id,
+                uc.nombre AS unidad_empaque,
+                uc.nombre AS unidad_compra_nombre,
+                ig.nombre AS item_general_nombre,
+                ig.unidad_almacenaje_id AS unidad_base_id,
+                ub.nombre AS unidad_base_nombre
             FROM ordenes_compra_detalle ocd
             LEFT JOIN item_proveedor ip ON ip.id_item_proveedor = ocd.item_proveedor_id
             LEFT JOIN item_general ig   ON ig.id_item_general   = ocd.item_general_id
             LEFT JOIN unidad       uc   ON uc.id_unidad         = ip.unidad_compra_id
+            LEFT JOIN unidad       ub   ON ub.id_unidad         = ig.unidad_almacenaje_id
             WHERE ocd.ordenes_compra_id = ?
         ', [$id])->getResult(); // ✅ sin 'array'
 

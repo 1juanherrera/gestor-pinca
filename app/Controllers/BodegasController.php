@@ -145,24 +145,9 @@ class BodegasController extends ResourceController
         ]);
     }
 
-    public function patch_cantidad($inventarioId = null)
-    {
-        try {
-            if (!$inventarioId) return $this->failValidationErrors('ID de inventario requerido.');
-            $data = $this->req->getJSON(true);
-            if (!isset($data['cantidad'])) return $this->failValidationErrors('Campo cantidad requerido.');
-
-            $db = \Config\Database::connect();
-            $db->query('UPDATE inventario SET cantidad = ? WHERE id_inventario = ?', [
-                $data['cantidad'] === '' ? null : (float) $data['cantidad'],
-                (int) $inventarioId,
-            ]);
-
-            return $this->respond(['success' => true]);
-        } catch (Exception $e) {
-            return $this->fail($e->getMessage(), 500);
-        }
-    }
+    // patch_cantidad ELIMINADO (2026-05-15) — bypass de audit log.
+    // Stock solo se modifica vía OC, Producción, Traspaso o AjusteManual,
+    // todos pasando por MovimientoInventarioModel::registrar().
 
     public function delete($id = null)
     {

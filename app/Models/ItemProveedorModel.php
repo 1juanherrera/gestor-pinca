@@ -97,39 +97,55 @@ class ItemProveedorModel extends BaseModel
             throw new \Exception('El nombre es obligatorio para auto-vincular el ítem general.');
         }
 
-        // 1. Buscar existente por nombre (insensible a mayúsculas)
-        $existente = $this->db->query(
-            "SELECT id_item_general FROM item_general WHERE UPPER(TRIM(nombre)) = ? LIMIT 1",
-            [$nombre]
-        )->getRowArray();
+        // Lock pesimista vía transacción + LOCK TABLES alternative usando
+        // GET_LOCK con clave derivada del nombre. Garantiza que dos requests
+        // simultáneas con el mismo nombre no creen duplicados.
+        // Clave: prefijo + hash del nombre (max 64 chars MySQL).
+        $lockKey = 'item_general_create:' . md5($nombre);
+        $this->db->query('SELECT GET_LOCK(?, 5) AS got', [$lockKey]);
 
-        if ($existente) {
-            $data['item_general_id'] = (int) $existente['id_item_general'];
-            return $data['item_general_id'];
+        try {
+            // 1. Buscar existente por nombre (insensible a mayúsculas).
+            //    Incluimos soft-deleted para no recrear nombres "ocupados".
+            $existente = $this->db->query(
+                "SELECT id_item_general, deleted_at FROM item_general WHERE UPPER(TRIM(nombre)) = ? LIMIT 1",
+                [$nombre]
+            )->getRowArray();
+
+            if ($existente) {
+                if ($existente['deleted_at']) {
+                    throw new \Exception(
+                        "Ya existe un ítem '{$nombre}' archivado (soft-deleted). " .
+                        'Restauralo desde Catálogo o usá un nombre distinto.'
+                    );
+                }
+                $data['item_general_id'] = (int) $existente['id_item_general'];
+                return $data['item_general_id'];
+            }
+
+            // 2. No existe → crear automáticamente
+            $tipoMap = ['Materia Prima' => 1, 'Insumo' => 2, 'Producto' => 0];
+            $tipo    = $tipoMap[$data['tipo'] ?? ''] ?? 1;
+
+            $kiloId = $this->db->query(
+                "SELECT id_unidad FROM unidad WHERE nombre = 'KILO' LIMIT 1"
+            )->getRowArray()['id_unidad'] ?? null;
+
+            $this->db->query(
+                "INSERT INTO item_general (nombre, tipo, unidad_almacenaje_id) VALUES (?, ?, ?)",
+                [$nombre, $tipo, $kiloId]
+            );
+
+            $nuevoId = $this->db->insertID();
+            if (!$nuevoId) {
+                throw new \Exception("No se pudo crear el ítem general para '{$nombre}'.");
+            }
+
+            $data['item_general_id'] = $nuevoId;
+            return $nuevoId;
+        } finally {
+            $this->db->query('SELECT RELEASE_LOCK(?)', [$lockKey]);
         }
-
-        // 2. No existe → crear automáticamente
-        // Mapear tipo de item_proveedor al tipo numérico de item_general
-        $tipoMap = ['Materia Prima' => 1, 'Insumo' => 2, 'Producto' => 0];
-        $tipo    = $tipoMap[$data['tipo'] ?? ''] ?? 1;
-
-        // Obtener id de la unidad KILO como unidad_almacenaje por defecto
-        $kiloId = $this->db->query(
-            "SELECT id_unidad FROM unidad WHERE nombre = 'KILO' LIMIT 1"
-        )->getRowArray()['id_unidad'] ?? null;
-
-        $this->db->query(
-            "INSERT INTO item_general (nombre, tipo, unidad_almacenaje_id) VALUES (?, ?, ?)",
-            [$nombre, $tipo, $kiloId]
-        );
-
-        $nuevoId = $this->db->insertID();
-        if (!$nuevoId) {
-            throw new \Exception("No se pudo crear el ítem general para '{$nombre}'.");
-        }
-
-        $data['item_general_id'] = $nuevoId;
-        return $nuevoId;
     }
 
     // ── Vincular o desvincular un item_proveedor con item_general ────────
