@@ -240,4 +240,27 @@ class FormulacionesController extends ResourceController
             return $this->fail($e->getMessage(), 500);
         }
     }
+
+    /**
+     * POST /api/formulaciones/versiones/:versionId/restaurar
+     * Body opcional: { notas? }
+     * Restaura una versión histórica como la receta activa (crea nueva versión
+     * con ese snapshot — el historial queda lineal y trazable).
+     */
+    public function restaurarVersion($versionId = 0)
+    {
+        $versionId = (int) $versionId;
+        if ($versionId <= 0) {
+            return $this->failValidationErrors('ID de versión requerido.');
+        }
+        try {
+            $data  = $this->request->getJSON(true) ?? [];
+            $notas = isset($data['notas']) ? trim((string) $data['notas']) : null;
+
+            $result = $this->model->restaurarVersion($versionId, $this->getUsername(), $notas ?: null);
+            return $this->respond($result);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage(), 400);
+        }
+    }
 }

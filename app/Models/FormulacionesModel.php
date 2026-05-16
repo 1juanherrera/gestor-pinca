@@ -1242,4 +1242,99 @@ class FormulacionesModel extends BaseModel
 
         return $ver;
     }
+
+    /**
+     * Restaura una versión histórica como la activa de la formulación.
+     * No reescribe la versión vieja: crea una NUEVA versión cuyos
+     * ingredientes son los del snapshot histórico. Así el historial
+     * queda lineal y trazable ("v.7 — Restaurado desde v.3").
+     */
+    public function restaurarVersion(int $versionId, ?string $responsable = null, ?string $notas = null): array
+    {
+        $ver = $this->db->table('formulaciones_versiones')
+            ->where('id', $versionId)
+            ->get()->getRowArray();
+        if (!$ver) {
+            throw new Exception("Versión #{$versionId} no encontrada.");
+        }
+
+        $formulacionId = (int) $ver['formulacion_id'];
+        $form = $this->db->table('formulaciones')
+            ->where('id_formulaciones', $formulacionId)
+            ->get()->getRowArray();
+        if (!$form) {
+            throw new Exception("Formulación #{$formulacionId} no encontrada.");
+        }
+
+        if ((int) $form['version_actual'] === (int) $ver['version_num']) {
+            throw new Exception("La versión #{$ver['version_num']} ya es la actual de la formulación.");
+        }
+
+        $ingredientes = json_decode($ver['ingredientes'] ?? '[]', true) ?: [];
+        if (empty($ingredientes)) {
+            throw new Exception("La versión #{$ver['version_num']} no tiene ingredientes para restaurar.");
+        }
+
+        // Validar que los items aún existan y no estén archivados
+        $ids = array_unique(array_map(fn($i) => (int) ($i['item_general_id'] ?? 0), $ingredientes));
+        $ids = array_filter($ids);
+        if (!empty($ids)) {
+            $activos = $this->db->table('item_general')
+                ->select('id_item_general')
+                ->whereIn('id_item_general', $ids)
+                ->where('deleted_at IS NULL')
+                ->get()->getResultArray();
+            $idsActivos = array_column($activos, 'id_item_general');
+            $faltantes  = array_diff($ids, $idsActivos);
+            if (!empty($faltantes)) {
+                throw new Exception(
+                    "No se puede restaurar: los siguientes items ya no están disponibles: "
+                    . implode(', ', $faltantes) . '.'
+                );
+            }
+        }
+
+        $this->db->transBegin();
+        try {
+            // Reemplazar receta actual por la del snapshot
+            $this->db->query('DELETE FROM item_general_formulaciones WHERE formulaciones_id = ?', [$formulacionId]);
+
+            foreach ($ingredientes as $ing) {
+                $itemId = (int) ($ing['item_general_id'] ?? 0);
+                if ($itemId <= 0) continue;
+                $this->db->query(
+                    'INSERT INTO item_general_formulaciones (formulaciones_id, item_general_id, cantidad, porcentaje)
+                     VALUES (?, ?, ?, ?)',
+                    [
+                        $formulacionId,
+                        $itemId,
+                        (float) ($ing['cantidad']   ?? 0),
+                        (float) ($ing['porcentaje'] ?? 0),
+                    ]
+                );
+            }
+
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            throw new Exception("Error al restaurar la versión: " . $e->getMessage());
+        }
+
+        // Snapshot de la nueva versión (fuera de la tx anterior, igual que crearFormulacion)
+        $nuevaNota = $notas ?: "Restaurado desde v.{$ver['version_num']}";
+        $nuevaVersionId = $this->crearVersion($formulacionId, $responsable, $nuevaNota);
+
+        $nuevaVer = (int) $this->db->table('formulaciones')
+            ->where('id_formulaciones', $formulacionId)
+            ->get()->getRowArray()['version_actual'];
+
+        return [
+            'success'         => true,
+            'message'         => "Versión {$ver['version_num']} restaurada como v.{$nuevaVer}.",
+            'formulacion_id'  => $formulacionId,
+            'restaurada_de'   => (int) $ver['version_num'],
+            'version_id'      => $nuevaVersionId,
+            'version_num'     => $nuevaVer,
+        ];
+    }
 }

@@ -79,6 +79,7 @@ $routes->group('api', function ($routes) {
     // Versionado de fórmula
     $routes->get('formulaciones/(:num)/versiones',         'FormulacionesController::versiones/$1');
     $routes->get('formulaciones/versiones/(:num)',         'FormulacionesController::versionDetalle/$1');
+    $routes->post('formulaciones/versiones/(:num)/restaurar', 'FormulacionesController::restaurarVersion/$1');
     $routes->get('formulaciones/recalcular_costos/(:num)/(:segment)', 'FormulacionesController::recalcular_costos_por_volumen/$1/$2');
     $routes->get('formulaciones/(:num)', 'FormulacionesController::show/$1');
     $routes->post('formulaciones',        'FormulacionesController::create');
