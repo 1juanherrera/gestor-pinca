@@ -86,6 +86,7 @@ class ItemModel extends BaseModel
             FROM item_general ig
             LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
             WHERE ig.tipo = 1
+              AND ig.deleted_at IS NULL
 
             UNION ALL
 
@@ -101,6 +102,7 @@ class ItemModel extends BaseModel
             FROM item_proveedor ip
             LEFT JOIN proveedor p ON p.id_proveedor = ip.proveedor_id
             WHERE ip.item_general_id IS NULL
+              AND ip.deleted_at IS NULL
 
             ORDER BY nombre ASC
         ";

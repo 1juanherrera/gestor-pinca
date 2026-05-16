@@ -878,7 +878,7 @@ class FormulacionesModel extends BaseModel
      * El producto destino debe existir y NO debe tener una fórmula activa
      * (si la tiene, se desactiva con UPDATE estado=0 igual que crearFormulacion).
      */
-    public function clonarFormulacion(int $fromItemId, int $toItemId, ?string $nombre = null, ?string $responsable = null): array
+    public function clonarFormulacion(int $fromItemId, int $toItemId, ?string $nombre = null, ?string $responsable = null, bool $force = false): array
     {
         if ($fromItemId === $toItemId) {
             throw new Exception('El producto origen y destino no pueden ser el mismo.');
@@ -891,6 +891,20 @@ class FormulacionesModel extends BaseModel
         )->getRowArray();
         if (!$destino) {
             throw new Exception('Producto destino no existe o está archivado.');
+        }
+
+        // Si destino ya tiene fórmula activa y no se forzó el override, rechazar
+        if (!$force) {
+            $existente = $this->db->query(
+                'SELECT id_formulaciones FROM formulaciones WHERE item_general_id = ? AND estado = 1 LIMIT 1',
+                [$toItemId]
+            )->getRowArray();
+            if ($existente) {
+                throw new Exception(
+                    "El producto destino ya tiene una fórmula activa. "
+                    . "Confirmá el reemplazo enviando force=true (la fórmula anterior se conservará como versión histórica)."
+                );
+            }
         }
 
         // Obtener fórmula activa del origen
