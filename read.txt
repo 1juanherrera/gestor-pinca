@@ -1,3 +1,1 @@
-Quiero que le hagas una especie de tracking a el proceso desde la creacion de item_proveedor, item_catalogo, vinculacion, formulacion, produccion y entrada y cambio de stock, literalmente desde donde inicia todo hasta donde finaliza la operacion que es lo mas importante para mi y para el cliente,verificaque  funcione perfectamente y que se lo podría cambiar a nivel intuitivo y de ux
-
-en inventario total me salen las unidades diferentes revisar detenidamente "sé que entenderás y te acordarás"
+En inventario total me salen las unidades diferentes revisar detenidamente "sé que entenderás y te acordarás"
