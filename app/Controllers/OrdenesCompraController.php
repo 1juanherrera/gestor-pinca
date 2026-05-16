@@ -208,14 +208,22 @@ class OrdenesCompraController extends ResourceController
             }
         }
         if (!$linea) return $this->failNotFound("Línea con ID $idDetalle no encontrada.");
-        if ($linea['recibido_en']) return $this->fail('Esta línea ya fue recibida.', 400);
+        if ($linea['recibido_en']) return $this->fail('Esta línea ya fue recibida completamente.', 400);
 
         $data              = json_decode($this->request->getBody(), true);
-        $cantidadRecibida  = (float)($data['cantidad_recibida'] ?? $linea['cantidad']);
+        $cantidadPedida    = (float) $linea['cantidad'];
+        $recibidoPrev      = (float) ($linea['cantidad_recibida'] ?? 0);
+        $pendiente         = max(0, $cantidadPedida - $recibidoPrev);
+        $cantidadRecibida  = (float)($data['cantidad_recibida'] ?? $pendiente);
         $bodegaId          = (int) $orden['bodegas_id'];
 
         if ($cantidadRecibida <= 0) {
             return $this->failValidationErrors('La cantidad recibida debe ser mayor a 0.');
+        }
+        if ($cantidadRecibida > $pendiente + 0.0001) {
+            return $this->failValidationErrors(
+                "La cantidad recibida ({$cantidadRecibida}) supera el pendiente de la línea ({$pendiente})."
+            );
         }
 
         $db = \Config\Database::connect();
@@ -224,9 +232,9 @@ class OrdenesCompraController extends ResourceController
         try {
             // Lock pesimista contra recepciones simultáneas: si dos usuarios
             // intentan recibir la misma línea en paralelo, el segundo espera
-            // al commit del primero y luego ve recibido_en seteado.
+            // al commit del primero y luego ve cantidad_recibida actualizada.
             $lockRow = $db->query(
-                'SELECT recibido_en FROM ordenes_compra_detalle WHERE id_detalle = ? FOR UPDATE',
+                'SELECT recibido_en, cantidad, cantidad_recibida FROM ordenes_compra_detalle WHERE id_detalle = ? FOR UPDATE',
                 [$idDetalle]
             )->getRow();
 
@@ -234,15 +242,28 @@ class OrdenesCompraController extends ResourceController
                 throw new \Exception('Línea no encontrada al iniciar la transacción.');
             }
             if ($lockRow->recibido_en) {
-                throw new \Exception('Esta línea ya fue recibida por otro usuario.');
+                throw new \Exception('Esta línea ya fue recibida completamente.');
             }
 
-            // Marcar línea como recibida
+            $recibidoActual = (float) ($lockRow->cantidad_recibida ?? 0);
+            $pedidoActual   = (float) $lockRow->cantidad;
+            $cantidadAcumulada = $recibidoActual + $cantidadRecibida;
+            $completa = $cantidadAcumulada >= $pedidoActual - 0.0001;
+
+            // Re-check con el valor lockeado para evitar over-receiving en concurrencia
+            if ($cantidadAcumulada > $pedidoActual + 0.0001) {
+                throw new \Exception(
+                    "Otro usuario adelantó la recepción de esta línea. "
+                    . "Pendiente actual: " . max(0, $pedidoActual - $recibidoActual) . " — recargá la orden."
+                );
+            }
+
+            // Acumular cantidad recibida; marcar recibido_en solo si la línea quedó cubierta
             $db->table('ordenes_compra_detalle')
                 ->where('id_detalle', $idDetalle)
                 ->update([
-                    'cantidad_recibida' => $cantidadRecibida,
-                    'recibido_en'       => date('Y-m-d H:i:s'),
+                    'cantidad_recibida' => $cantidadAcumulada,
+                    'recibido_en'       => $completa ? date('Y-m-d H:i:s') : null,
                 ]);
 
             // Ingresar al inventario
@@ -271,7 +292,7 @@ class OrdenesCompraController extends ResourceController
                     'cantidad_original'   => $cantidadBase,
                     'cantidad_disponible' => $cantidadBase,
                     'costo_unitario'      => $costoUnitarioKg,
-                    'unidad_compra_id'    => $itemProv->unidad_compra_id ?? null,
+                    'unidad_compra_id'    => $itemProv?->unidad_compra_id ?? null,
                     'factor_conversion'   => $factorConversion,
                     'precio_compra'       => (float) $linea['precio_unit'],
                     'lote_proveedor'      => $data['lote_proveedor'] ?? null,
@@ -305,9 +326,9 @@ class OrdenesCompraController extends ResourceController
                         'numero_oc'           => $orden['numero'] ?? null,
                         'proveedor_id'        => $orden['proveedor_id'] ?? null,
                         'item_proveedor_id'   => $linea['item_proveedor_id'] ?? null,
-                        'item_proveedor_nombre' => $itemProv->nombre ?? null,
+                        'item_proveedor_nombre' => $itemProv?->nombre ?? null,
                         'cantidad_recibida_unidad_compra' => $cantidadRecibida,
-                        'unidad_compra'       => $itemProv->unidad_compra_id ?? null,
+                        'unidad_compra'       => $itemProv?->unidad_compra_id ?? null,
                         'factor_conversion'   => $factorConversion,
                         'precio_unit_compra'  => (float) $linea['precio_unit'],
                         'lote_proveedor'      => $data['lote_proveedor'] ?? null,

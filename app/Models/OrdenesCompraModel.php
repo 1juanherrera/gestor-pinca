@@ -120,9 +120,10 @@ class OrdenesCompraModel extends BaseModel
     public function todasRecibidas(int $id): bool
     {
         $pendientes = $this->dbc->query('
-            SELECT COUNT(*) as total 
-            FROM ordenes_compra_detalle 
-            WHERE ordenes_compra_id = ? AND recibido_en IS NULL
+            SELECT COUNT(*) as total
+            FROM ordenes_compra_detalle
+            WHERE ordenes_compra_id = ?
+              AND (recibido_en IS NULL OR COALESCE(cantidad_recibida, 0) < cantidad)
         ', [$id])->getRow('array')['total'] ?? 0;
 
         return (int) $pendientes === 0;
