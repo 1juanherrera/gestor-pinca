@@ -237,7 +237,7 @@ class PreparacionesModel extends BaseModel
             $consumosCapas = [];
             if ($multiplicador < 0 && $capasModel->tieneCapas($itemId)) {
                 if ($seleccion && $seleccion['modo'] === 'MANUAL' && !empty($seleccion['capas'])) {
-                    $consumosCapas = $capasModel->consumirCapasManual($seleccion['capas']);
+                    $consumosCapas = $capasModel->consumirCapasManual($seleccion['capas'], $itemId);
 
                 } elseif ($seleccionProveedorId) {
                     $consumosCapas = $capasModel->consumirCapasPorProveedor(

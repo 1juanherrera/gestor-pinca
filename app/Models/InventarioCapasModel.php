@@ -69,7 +69,7 @@ class InventarioCapasModel extends BaseModel
         return $this->_consumirDeCapas($capas, $cantidadRequerida);
     }
 
-    public function consumirCapasManual(array $seleccion): array
+    public function consumirCapasManual(array $seleccion, ?int $expectedItemId = null): array
     {
         $consumos = [];
         foreach ($seleccion as $sel) {
@@ -82,7 +82,19 @@ class InventarioCapasModel extends BaseModel
                 ->where('estado', 1)
                 ->get()->getRow();
 
-            if (!$capa) continue;
+            if (!$capa) {
+                throw new \Exception("La capa #{$capaId} no existe o está agotada.");
+            }
+            if ($expectedItemId !== null && (int) $capa->item_general_id !== $expectedItemId) {
+                throw new \Exception(
+                    "La capa #{$capaId} pertenece al item #{$capa->item_general_id}, no al item #{$expectedItemId}."
+                );
+            }
+            if ($cantidad > (float) $capa->cantidad_disponible + 0.0001) {
+                throw new \Exception(
+                    "La cantidad solicitada de la capa #{$capaId} ({$cantidad}) supera su disponibilidad ({$capa->cantidad_disponible})."
+                );
+            }
 
             $consumir        = min($cantidad, (float) $capa->cantidad_disponible);
             $nuevoDisponible = round((float) $capa->cantidad_disponible - $consumir, 4);
