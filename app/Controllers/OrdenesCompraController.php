@@ -336,11 +336,19 @@ class OrdenesCompraController extends ResourceController
                 ]);
             }
 
+            // Verificar si TODAS las líneas están recibidas (dentro de la misma conexión transaccional)
+            $pendientes = (int) $db->query('
+                SELECT COUNT(*) as total
+                FROM ordenes_compra_detalle
+                WHERE ordenes_compra_id = ?
+                  AND recibido_en IS NULL
+            ', [$idOrden])->getRow()->total;
+
             $db->transComplete();
             if (!$db->transStatus()) throw new \Exception('Error al confirmar la transacción.');
 
-            // Si todas las líneas están recibidas → Recibida
-            if ($this->model->todasRecibidas((int) $idOrden)) {
+            // Solo marcar Recibida si no queda ninguna línea pendiente
+            if ($pendientes === 0) {
                 $this->model->update((int) $idOrden, ['estado' => 'Recibida']);
             }
 

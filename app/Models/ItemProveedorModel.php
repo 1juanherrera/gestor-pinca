@@ -131,15 +131,40 @@ class ItemProveedorModel extends BaseModel
                 "SELECT id_unidad FROM unidad WHERE nombre = 'KILO' LIMIT 1"
             )->getRowArray()['id_unidad'] ?? null;
 
+            $codigo      = !empty($data['catalogo_codigo'])              ? substr($data['catalogo_codigo'], 0, 10) : null;
+            $categoriaId = !empty($data['catalogo_categoria_id'])        ? (int) $data['catalogo_categoria_id']     : null;
+            $unidadId    = !empty($data['catalogo_unidad_id'])           ? (int) $data['catalogo_unidad_id']        : null;
+            $unidadAlmId = !empty($data['catalogo_unidad_almacenaje_id'])? (int) $data['catalogo_unidad_almacenaje_id'] : $kiloId;
+
             $this->db->query(
-                "INSERT INTO item_general (nombre, tipo, unidad_almacenaje_id) VALUES (?, ?, ?)",
-                [$nombre, $tipo, $kiloId]
+                "INSERT INTO item_general (nombre, codigo, tipo, categoria_id, unidad_id, unidad_almacenaje_id) VALUES (?, ?, ?, ?, ?, ?)",
+                [$nombre, $codigo, $tipo, $categoriaId, $unidadId, $unidadAlmId]
             );
 
             $nuevoId = $this->db->insertID();
             if (!$nuevoId) {
                 throw new \Exception("No se pudo crear el ítem general para '{$nombre}'.");
             }
+
+            $this->db->table('costos_item')->insert([
+                'item_general_id' => $nuevoId,
+                'costo_unitario'  => 0,
+                'costo_mp_galon'  => 0,
+                'costo_mp_kg'     => 0,
+                'costo_cunete'    => 0,
+                'costo_tambor'    => 0,
+                'periodo'         => date('Y-m'),
+                'metodo_calculo'  => 'Catálogo',
+                'fecha_calculo'   => date('Y-m-d'),
+                'envase'          => 0,
+                'etiqueta'        => 0,
+                'bandeja'         => 0,
+                'plastico'        => 0,
+                'precio_venta'    => 0,
+                'costo_mod'       => 0,
+                'volumen'         => 1,
+                'estado'          => 1,
+            ]);
 
             $data['item_general_id'] = $nuevoId;
             return $nuevoId;

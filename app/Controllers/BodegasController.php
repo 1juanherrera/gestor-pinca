@@ -19,7 +19,13 @@ class BodegasController extends ResourceController
 
     public function bodegas()
     {
-        $bodegas = $this->model->get_all('bodegas');
+        $db = \Config\Database::connect();
+        $bodegas = $db->query(
+            'SELECT b.*, i.nombre AS sede_nombre
+             FROM bodegas b
+             LEFT JOIN instalaciones i ON i.id_instalaciones = b.instalaciones_id
+             ORDER BY i.nombre, b.nombre'
+        )->getResultArray();
         return $this->respond($bodegas);
     }
 

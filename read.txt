@@ -1,1 +1,9 @@
 En inventario total me salen las unidades diferentes revisar detenidamente "sé que entenderás y te acordarás"
+
+costo de productos vinculado a formulaciones y a inventarios, que sea en automatico seleccionando el proveedor mas barato
+volver a hacer una produccion o clonarla sin tener que hacer el proceso con formulaciones
+
+
+debo crear una vista o seccion nueva donde se pueda ver el costo final de mi producto a producir, como en mi vista formulaciones 
+pero solo mostrando el resultado final, obviamente teniendo en cuenta que todas sus materias primas tengan sus respectivo precio de 
+proveedor ya que sin eso no serviría y sería erroneo el resultado final
