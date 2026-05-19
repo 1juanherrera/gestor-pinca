@@ -88,6 +88,18 @@ class BaseModel extends Model
         $this->table = $table;
         $this->primaryKey = $this->pkOf($table);
 
+        // Bloquear updates sobre registros soft-deleted: si alguien
+        // saltó el get() previo y llama directo, no debe poder editarlo.
+        if ($this->tieneSoftDelete($table)) {
+            $archivado = $this->db->table($table)
+                ->where($this->primaryKey, $id)
+                ->where('deleted_at IS NOT NULL')
+                ->countAllResults();
+            if ($archivado > 0) {
+                return ['archivado' => "El registro #{$id} de {$table} está archivado y no puede editarse. Restauralo primero."];
+            }
+        }
+
         if (empty($this->allowedFields)) {
             $this->allowedFields = array_keys($data);
         }
@@ -133,7 +145,7 @@ class BaseModel extends Model
         if (!$this->tieneSoftDelete($table)) return false;
 
         $this->db->table($table)
-            ->where('id_' . $table, $id)
+            ->where($this->pkOf($table), $id)
             ->where('deleted_at IS NOT NULL')
             ->update(['deleted_at' => null]);
 

@@ -54,16 +54,26 @@ class NumeracionController extends ResourceController
         $payload['updated_at'] = date('Y-m-d H:i:s');
         $payload['updated_by'] = $this->getUsername();
 
-        // Si activo cambia a 1, desactivar otras series del mismo tipo_doc
-        if (!empty($payload['activo']) && (int) $payload['activo'] === 1) {
-            $this->db->table('numeracion_documentos')
-                ->where('tipo_doc', $existente['tipo_doc'])
-                ->where('id_numeracion !=', $id)
-                ->update(['activo' => 0, 'updated_at' => date('Y-m-d H:i:s')]);
-        }
+        $db = db_connect();
+        $db->transBegin();
+        try {
+            // Si activo cambia a 1, desactivar otras series del mismo tipo_doc
+            if (!empty($payload['activo']) && (int) $payload['activo'] === 1) {
+                $db->table('numeracion_documentos')
+                    ->where('tipo_doc', $existente['tipo_doc'])
+                    ->where('id_numeracion !=', $id)
+                    ->update(['activo' => 0, 'updated_at' => date('Y-m-d H:i:s')]);
+            }
 
-        $ok = $this->model->update($id, $payload);
-        if (!$ok) return $this->fail('No se pudo actualizar la serie.');
+            if (!$this->model->update($id, $payload)) {
+                throw new \Exception('No se pudo actualizar la serie.');
+            }
+
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            return $this->fail($e->getMessage());
+        }
 
         return $this->respond([
             'mensaje' => "Serie #$id actualizada",
@@ -83,21 +93,31 @@ class NumeracionController extends ResourceController
             return $this->failValidationErrors('`tipo_doc` y `prefijo` son obligatorios.');
         }
 
-        // Si la nueva queda activa, desactivar las anteriores del mismo tipo
         $activarNueva = !isset($body['activo']) || (int) $body['activo'] === 1;
-        if ($activarNueva) {
-            $this->db->table('numeracion_documentos')
-                ->where('tipo_doc', $body['tipo_doc'])
-                ->update(['activo' => 0, 'updated_at' => date('Y-m-d H:i:s')]);
-        }
 
         $body['activo']     = $activarNueva ? 1 : 0;
         $body['created_at'] = date('Y-m-d H:i:s');
         $body['updated_at'] = date('Y-m-d H:i:s');
         $body['updated_by'] = $this->getUsername();
 
-        $id = $this->model->insert($body, true);
-        if (!$id) return $this->fail('No se pudo crear la serie.');
+        $db = db_connect();
+        $db->transBegin();
+        try {
+            // Si la nueva queda activa, desactivar las anteriores del mismo tipo
+            if ($activarNueva) {
+                $db->table('numeracion_documentos')
+                    ->where('tipo_doc', $body['tipo_doc'])
+                    ->update(['activo' => 0, 'updated_at' => date('Y-m-d H:i:s')]);
+            }
+
+            $id = $this->model->insert($body, true);
+            if (!$id) throw new \Exception('No se pudo crear la serie.');
+
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            return $this->fail($e->getMessage());
+        }
 
         return $this->respondCreated([
             'mensaje' => "Serie '{$body['tipo_doc']}' creada",

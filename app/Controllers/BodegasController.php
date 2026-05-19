@@ -103,29 +103,9 @@ class BodegasController extends ResourceController
         return $this->fail('Error al crear la bodega');
     }
 
-    public function update_item_bodega($id = null)
-    {
-        try {
-            if ($id === null) {
-                return $this->failValidationErrors('El ID del item es obligatorio.');
-            }
-
-            $data = $this->req->getJSON(true); 
-
-            if (empty($data)) {
-                return $this->failValidationErrors('No se recibieron datos válidos.');
-            }
-
-            $result = $this->model->update_item_bodega((int) $id, $data);
-
-            return $this->respond([
-                'status'  => 'success',
-                'message' => $result['message']
-            ]);
-        } catch (Exception $e) {
-            return $this->fail($e->getMessage(), 500);
-        }
-    }
+    // update_item_bodega ELIMINADO — bypaseaba capas y audit log.
+    // Stock solo se modifica vía OC, Producción, Traspaso o AjusteManual.
+    // Atributos del catálogo se editan vía CatalogoController::update.
 
     public function update($id = null)
     {

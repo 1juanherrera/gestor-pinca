@@ -145,7 +145,8 @@ class DashboardController extends BaseController
         $row = $db->query("
             SELECT
                 COUNT(DISTINCT oc.id_orden) AS total,
-                COALESCE(SUM(oc.total), 0)   AS valor_total,
+                COALESCE(SUM(oc.total), 0)                                         AS valor_total,
+                COALESCE(SUM(oc.total * (1 + COALESCE(oc.iva_pct, 0) / 100)), 0)    AS valor_total_con_iva,
                 COUNT(DISTINCT CASE WHEN oc.fecha_esperada < CURDATE() THEN oc.id_orden END) AS retrasadas
             FROM ordenes_compra oc
             WHERE oc.estado = 'Enviada'
@@ -153,9 +154,10 @@ class DashboardController extends BaseController
         ")->getRowArray() ?: [];
 
         return [
-            'total'       => (int)   ($row['total']       ?? 0),
-            'valor_total' => (float) ($row['valor_total'] ?? 0),
-            'retrasadas'  => (int)   ($row['retrasadas']  ?? 0),
+            'total'               => (int)   ($row['total']               ?? 0),
+            'valor_total'         => (float) ($row['valor_total']         ?? 0),
+            'valor_total_con_iva' => (float) ($row['valor_total_con_iva'] ?? 0),
+            'retrasadas'          => (int)   ($row['retrasadas']          ?? 0),
         ];
     }
 
@@ -183,7 +185,7 @@ class DashboardController extends BaseController
             FROM produccion_insumos_detalle pid
             JOIN preparaciones p ON p.id_preparaciones = pid.preparacion_id
             WHERE p.fecha_creacion >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-              AND p.estado != 0
+              AND p.estado != 3
             GROUP BY pid.item_general_id
         ")->getResultArray();
 
@@ -311,7 +313,7 @@ class DashboardController extends BaseController
             FROM produccion_insumos_detalle pid
             JOIN preparaciones p ON p.id_preparaciones = pid.preparacion_id
             WHERE DATE(p.fecha_creacion) BETWEEN ? AND ?
-              AND p.estado != 0
+              AND p.estado != 3
         ", [$inicioMes, $finMes])->getRowArray()['total'] ?? 0);
 
         $utilidad = $ingresos - $costos;

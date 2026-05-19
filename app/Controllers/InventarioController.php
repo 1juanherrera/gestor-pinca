@@ -89,7 +89,7 @@ class InventarioController extends ResourceController
             FROM produccion_insumos_detalle pid
             JOIN preparaciones p ON p.id_preparaciones = pid.preparacion_id
             WHERE p.fecha_creacion >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-              AND p.estado != 'cancelada'
+              AND p.estado != 3
             GROUP BY pid.item_general_id
         ")->getResultArray();
 

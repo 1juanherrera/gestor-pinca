@@ -129,11 +129,13 @@ class InventarioCapasModel extends BaseModel
             ->get()->getResult();
 
         foreach ($consumos as $c) {
-            $this->db->table('inventario_capas')
-                ->where('id_capa', $c->capa_id)
-                ->set('cantidad_disponible', "cantidad_disponible + {$c->cantidad_consumida}", false)
-                ->set('estado', 1)
-                ->update();
+            $this->db->query(
+                'UPDATE inventario_capas
+                    SET cantidad_disponible = cantidad_disponible + ?,
+                        estado = 1
+                  WHERE id_capa = ?',
+                [(float) $c->cantidad_consumida, (int) $c->capa_id]
+            );
         }
 
         $this->db->table('preparacion_consumo_capas')
@@ -186,11 +188,13 @@ class InventarioCapasModel extends BaseModel
             ->get()->getResult();
 
         foreach ($consumos as $c) {
-            $this->db->table('inventario_capas')
-                ->where('id_capa', $c->capa_id)
-                ->set('cantidad_disponible', "cantidad_disponible + {$c->cantidad_consumida}", false)
-                ->set('estado', 1)
-                ->update();
+            $this->db->query(
+                'UPDATE inventario_capas
+                    SET cantidad_disponible = cantidad_disponible + ?,
+                        estado = 1
+                  WHERE id_capa = ?',
+                [(float) $c->cantidad_consumida, (int) $c->capa_id]
+            );
         }
 
         $count = count($consumos);
@@ -274,6 +278,13 @@ class InventarioCapasModel extends BaseModel
             ];
 
             $pendiente -= $consumir;
+        }
+
+        if ($pendiente > 0.0001) {
+            $consumido = round($cantidadRequerida - $pendiente, 4);
+            throw new \Exception(
+                "Stock insuficiente. Requerido: {$cantidadRequerida}, Disponible: {$consumido}, Faltante: " . round($pendiente, 4) . "."
+            );
         }
 
         return $consumos;

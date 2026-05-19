@@ -89,6 +89,17 @@ class FormulacionesController extends ResourceController
                 return $this->failValidationErrors('No se recibieron datos válidos.');
             }
 
+            // Validar que el item destino exista y no esté archivado.
+            if (!empty($data['item_general_id'])) {
+                $existe = db_connect()->table('item_general')
+                    ->where('id_item_general', (int) $data['item_general_id'])
+                    ->where('deleted_at', null)
+                    ->countAllResults();
+                if ($existe === 0) {
+                    return $this->failValidationErrors("El item #{$data['item_general_id']} no existe o está archivado.");
+                }
+            }
+
             // Inyectar responsable real para el snapshot de versión inicial
             if (empty($data['responsable'])) {
                 $data['responsable'] = $this->getUsername();

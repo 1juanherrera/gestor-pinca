@@ -549,6 +549,26 @@ class PreparacionesModel extends BaseModel
             throw new Exception('No hay campos válidos para actualizar.');
         }
 
+        // Normalizar estado: aceptamos string (PENDIENTE/EN_PROCESO/COMPLETADA/CANCELADA)
+        // o entero. Un "(int) 'CANCELADA'" caería a 0 silenciosamente y no
+        // dispararía la rama de cancelación más abajo.
+        if (isset($fields['estado'])) {
+            $estadoMap = ['PENDIENTE' => 0, 'EN_PROCESO' => 1, 'COMPLETADA' => 2, 'CANCELADA' => 3];
+            if (is_string($fields['estado']) && !ctype_digit($fields['estado'])) {
+                $key = strtoupper(trim($fields['estado']));
+                if (!isset($estadoMap[$key])) {
+                    throw new Exception("Estado '{$fields['estado']}' inválido. Permitidos: " . implode(', ', array_keys($estadoMap)));
+                }
+                $fields['estado'] = $estadoMap[$key];
+            } else {
+                $intEstado = (int) $fields['estado'];
+                if (!in_array($intEstado, [0, 1, 2, 3], true)) {
+                    throw new Exception("Estado {$intEstado} inválido. Permitidos: 0..3.");
+                }
+                $fields['estado'] = $intEstado;
+            }
+        }
+
         $oldPrep = $this->db->query('SELECT estado FROM preparaciones WHERE id_preparaciones = ?', [$id])->getRow();
         if (!$oldPrep) {
             throw new Exception("Preparación con ID {$id} no encontrada.");

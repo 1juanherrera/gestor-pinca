@@ -10,6 +10,7 @@ use App\Models\InventarioCapasModel;
 use App\Models\InventarioModel;
 use App\Models\MovimientoInventarioModel;
 use App\Models\NumeracionModel;
+use App\Helpers\Cfg;
 
 class RemisionesController extends ResourceController
 {
@@ -76,6 +77,8 @@ class RemisionesController extends ResourceController
             return $this->failValidationErrors('La remisión debe tener al menos un ítem.');
         }
 
+        $db = \Config\Database::connect();
+        $db->transBegin();
         try {
             $items = $data['items'];
             unset($data['items']);
@@ -86,7 +89,6 @@ class RemisionesController extends ResourceController
             $id = $this->model->create_table($data, 'remisiones');
             if (!$id) throw new \Exception(implode(', ', $this->model->errors()));
 
-            $db = \Config\Database::connect();
             foreach ($items as $item) {
                 $db->query(
                     "INSERT INTO remisiones_detalle
@@ -104,6 +106,8 @@ class RemisionesController extends ResourceController
                 );
             }
 
+            $db->transCommit();
+
             return $this->respondCreated([
                 'status'  => 201,
                 'message' => 'Remisión creada exitosamente',
@@ -111,6 +115,7 @@ class RemisionesController extends ResourceController
             ]);
 
         } catch (\Exception $e) {
+            $db->transRollback();
             return $this->fail($e->getMessage(), 400);
         }
     }
@@ -247,10 +252,11 @@ class RemisionesController extends ResourceController
                     ->get()->getRowArray();
                 $saldoAntes = $stockRow ? (float) $stockRow['cantidad'] : 0;
                 if ($stockRow) {
-                    $db->table('inventario')
-                        ->where('id_inventario', $stockRow['id_inventario'])
-                        ->set('cantidad', "GREATEST(cantidad - {$cantidad}, 0)", false)
-                        ->update();
+                    $db->query(
+                        'UPDATE inventario SET cantidad = GREATEST(cantidad - ?, 0)
+                          WHERE id_inventario = ?',
+                        [(float) $cantidad, (int) $stockRow['id_inventario']]
+                    );
                 }
 
                 // Costo unitario promedio del consumo
@@ -353,6 +359,8 @@ class RemisionesController extends ResourceController
         $remision = $this->model->find($id);
         if (!$remision) return $this->failNotFound("Remisión con ID $id no encontrada.");
 
+        $db = \Config\Database::connect();
+        $db->transBegin();
         try {
             if ($remision['estado'] === 'Facturada') {
                 throw new \Exception('Esta remisión ya fue convertida a factura');
@@ -363,7 +371,8 @@ class RemisionesController extends ResourceController
 
             $items    = $this->model->get_detalle((int) $id);
             $subtotal = array_sum(array_column($items, 'subtotal'));
-            $iva      = round($subtotal * 0.19, 2);
+            $ivaPct   = (float) Cfg::n('iva_default', 19);
+            $iva      = round($subtotal * $ivaPct / 100, 2);
             $total    = $subtotal + $iva;
 
             $facturaModel = new FacturasModel();
@@ -404,6 +413,8 @@ class RemisionesController extends ResourceController
                 'facturas_id' => $facturaId,
             ], 'remisiones');
 
+            $db->transCommit();
+
             return $this->respondCreated([
                 'status'  => 201,
                 'message' => "Remisión convertida. Factura $numeroFac creada.",
@@ -411,6 +422,7 @@ class RemisionesController extends ResourceController
             ]);
 
         } catch (\Exception $e) {
+            $db->transRollback();
             return $this->fail($e->getMessage(), 400);
         }
     }

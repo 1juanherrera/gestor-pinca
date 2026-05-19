@@ -10,7 +10,7 @@ class OrdenesCompraModel extends BaseModel
     protected $deletedField   = 'deleted_at';
     protected $allowedFields = [
         'numero', 'proveedor_id', 'bodegas_id', 'fecha',
-        'fecha_esperada', 'estado', 'total', 'observaciones',
+        'fecha_esperada', 'estado', 'total', 'iva_pct', 'observaciones',
     ];
 
     protected $dbc; // ✅ conexión propia
@@ -21,23 +21,12 @@ class OrdenesCompraModel extends BaseModel
         $this->dbc = \Config\Database::connect(); // ✅
     }
 
-    public function generarNumero(): string
-    {
-        $ultimo = $this->dbc->table('ordenes_compra')
-            ->select('numero')
-            ->where('deleted_at', null)
-            ->orderBy('id_orden', 'DESC')
-            ->limit(1)
-            ->get()->getRow();
-
-        if (!$ultimo) return 'OC-001';
-        $num = (int) substr($ultimo->numero, 3);
-        return 'OC-' . str_pad($num + 1, 3, '0', STR_PAD_LEFT);
-    }
+    // generarNumero ELIMINADO — reemplazado por
+    // (new NumeracionModel())->reservar('orden_compra') que usa SELECT … FOR UPDATE.
 
     public function listar(): array
     {
-        return $this->dbc->query('
+        $rows = $this->dbc->query('
             SELECT
                 oc.*,
                 p.nombre_empresa,
@@ -49,6 +38,26 @@ class OrdenesCompraModel extends BaseModel
             WHERE oc.deleted_at IS NULL
             ORDER BY oc.id_orden DESC
         ')->getResult('array');
+
+        return array_map([$this, 'enrichWithIva'], $rows);
+    }
+
+    /**
+     * Enriquece una fila de OC con campos derivados de IVA.
+     * `total` conserva su semántica histórica (subtotal sin IVA).
+     * Agrega `iva_monto` y `total_con_iva` calculados desde `iva_pct`.
+     */
+    private function enrichWithIva(array $row): array
+    {
+        $total  = (float) ($row['total']   ?? 0);
+        $ivaPct = (float) ($row['iva_pct'] ?? 0);
+
+        $row['total']         = round($total, 2);
+        $row['iva_pct']       = $ivaPct;
+        $row['iva_monto']     = round($total * $ivaPct / 100, 2);
+        $row['total_con_iva'] = round($total + $row['iva_monto'], 2);
+
+        return $row;
     }
 
     public function detalle(int $id): ?array
@@ -98,10 +107,8 @@ class OrdenesCompraModel extends BaseModel
             $lineas[] = $l;
         }
 
-        $orden['total']  = (float) $orden['total'];
         $orden['lineas'] = $lineas;
-
-        return $orden;
+        return $this->enrichWithIva($orden);
     }
 
     public function recalcularTotal(int $id): void

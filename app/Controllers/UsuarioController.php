@@ -64,24 +64,31 @@ class UsuarioController extends BaseController
                 ->setJSON(['ok' => false, 'msg' => "Demasiados intentos fallidos. Espera {$minutos} minutos."]);
         }
 
-        // Registrar intento (antes de verificar credenciales, para contar cualquier intento)
-        $db->table('login_attempts')->insert([
-            'ip_address'       => $ip,
-            'username_attempt' => $username,
-        ]);
-
         $usuarioModel = new UsuarioModel();
         $usuario = $usuarioModel->where('username', $username)->first();
 
+        $registrarFallo = function () use ($db, $ip, $username) {
+            $db->table('login_attempts')->insert([
+                'ip_address'       => $ip,
+                'username_attempt' => $username,
+            ]);
+        };
+
         if (!$usuario) {
+            $registrarFallo();
             log_message('warning', "[LOGIN_FAIL] Usuario no encontrado: $username | IP: $ip");
             return $this->response->setJSON(['ok' => false, 'msg' => 'Usuario o contraseña incorrectos.']);
         }
 
         if (!password_verify($password, $usuario['password'])) {
+            $registrarFallo();
             log_message('warning', "[LOGIN_FAIL] Contraseña incorrecta para: $username | IP: $ip");
             return $this->response->setJSON(['ok' => false, 'msg' => 'Usuario o contraseña incorrectos.']);
         }
+
+        // Login exitoso → limpiar intentos previos de esta IP para no
+        // autobloquear al usuario después de re-logins legítimos.
+        $db->table('login_attempts')->where('ip_address', $ip)->delete();
 
         $rol = $usuario['rol'] ?? 'operador';
 

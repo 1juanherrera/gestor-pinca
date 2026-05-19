@@ -49,10 +49,11 @@ class InventarioModel extends Model
             $saldoOrigenDespues = $saldoOrigenAntes - $cantidad;
 
             // Descontar en origen
-            $this->db->table('inventario')
-                ->where(['item_general_id' => $itemId, 'bodegas_id' => $origen])
-                ->set('cantidad', "cantidad - $cantidad", false)
-                ->update();
+            $this->db->query(
+                'UPDATE inventario SET cantidad = cantidad - ?
+                  WHERE item_general_id = ? AND bodegas_id = ?',
+                [(float) $cantidad, (int) $itemId, (int) $origen]
+            );
 
             $this->db->table('inventario')
                 ->where(['item_general_id' => $itemId, 'bodegas_id' => $origen])
@@ -67,10 +68,11 @@ class InventarioModel extends Model
             $saldoDestinoAntes = $checkDestino ? (float) $checkDestino->cantidad : 0;
 
             if ($checkDestino) {
-                $this->db->table('inventario')
-                    ->where(['item_general_id' => $itemId, 'bodegas_id' => $destino])
-                    ->set('cantidad', "cantidad + $cantidad", false)
-                    ->update();
+                $this->db->query(
+                    'UPDATE inventario SET cantidad = cantidad + ?
+                      WHERE item_general_id = ? AND bodegas_id = ?',
+                    [(float) $cantidad, (int) $itemId, (int) $destino]
+                );
             } else {
                 $this->db->table('inventario')->insert([
                     'item_general_id' => $itemId,
@@ -182,10 +184,11 @@ class InventarioModel extends Model
             ->get()->getRow();
 
         if ($existe) {
-            $this->db->table('inventario')
-                ->where(['item_general_id' => $itemGeneralId, 'bodegas_id' => $bodegaId])
-                ->set('cantidad', "cantidad + $cantidad", false)
-                ->update();
+            $this->db->query(
+                'UPDATE inventario SET cantidad = cantidad + ?
+                  WHERE item_general_id = ? AND bodegas_id = ?',
+                [(float) $cantidad, (int) $itemGeneralId, (int) $bodegaId]
+            );
         } else {
             $this->db->table('inventario')->insert([
                 'item_general_id' => $itemGeneralId,

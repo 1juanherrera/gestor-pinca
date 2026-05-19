@@ -72,8 +72,12 @@ class RequisicionesCompraModel extends BaseModel
             $ingId           = (int) $ing->item_general_id;
             $cantidadNecesaria = round((float) $ing->cantidad_base * $factorVolumen, 4);
 
+            // Fuente de verdad: inventario_capas (no la tabla `inventario` legacy
+            // que puede drift por ajustes/traspasos).
             $stock = $this->db->query(
-                'SELECT COALESCE(SUM(cantidad), 0) AS total FROM inventario WHERE item_general_id = ?',
+                'SELECT COALESCE(SUM(cantidad_disponible), 0) AS total
+                   FROM inventario_capas
+                  WHERE item_general_id = ? AND estado = 1',
                 [$ingId]
             )->getRow();
 
@@ -121,7 +125,7 @@ class RequisicionesCompraModel extends BaseModel
              FROM item_proveedor ip
              INNER JOIN proveedor p ON p.id_proveedor = ip.proveedor_id
              LEFT  JOIN unidad   uc ON uc.id_unidad   = ip.unidad_compra_id
-             WHERE ip.item_general_id = ? AND ip.disponible = 1
+             WHERE ip.item_general_id = ? AND ip.disponible = 1 AND ip.deleted_at IS NULL
              ORDER BY ip.precio_unitario ASC',
             [$itemGeneralId]
         )->getResult();
@@ -292,7 +296,7 @@ class RequisicionesCompraModel extends BaseModel
                          ELSE ip.precio_unitario END AS precio_kg
              FROM item_proveedor ip
              JOIN proveedor p ON p.id_proveedor = ip.proveedor_id
-             WHERE ip.item_general_id = ? AND ip.disponible = 1
+             WHERE ip.item_general_id = ? AND ip.disponible = 1 AND ip.deleted_at IS NULL
              ORDER BY precio_kg ASC
              LIMIT 1',
             [$itemGeneralId]
@@ -454,13 +458,11 @@ class RequisicionesCompraModel extends BaseModel
 
         $ocCreadas = [];
 
+        $numeracion = new NumeracionModel();
+
         foreach ($grupos as $proveedorId => $reqs) {
-            // Generar número de OC
-            $ultimo = $this->db->query(
-                'SELECT numero FROM ordenes_compra ORDER BY id_orden DESC LIMIT 1'
-            )->getRow();
-            $num   = $ultimo ? (int) substr($ultimo->numero, 3) + 1 : 1;
-            $numOC = 'OC-' . str_pad($num, 3, '0', STR_PAD_LEFT);
+            // Reserva atómica (SELECT … FOR UPDATE en NumeracionModel)
+            $numOC = $numeracion->reservar('orden_compra');
 
             $this->db->query(
                 'INSERT INTO ordenes_compra (numero, proveedor_id, bodegas_id, fecha, estado, total, observaciones)

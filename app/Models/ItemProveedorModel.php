@@ -102,7 +102,15 @@ class ItemProveedorModel extends BaseModel
         // simultáneas con el mismo nombre no creen duplicados.
         // Clave: prefijo + hash del nombre (max 64 chars MySQL).
         $lockKey = 'item_general_create:' . md5($nombre);
-        $this->db->query('SELECT GET_LOCK(?, 5) AS got', [$lockKey]);
+        $lockRow = $this->db->query('SELECT GET_LOCK(?, 5) AS got', [$lockKey])->getRowArray();
+        if (($lockRow['got'] ?? null) != 1) {
+            // 0 = timeout, NULL = error interno MySQL. Sin lock no podemos
+            // garantizar unicidad, abortamos con mensaje claro.
+            throw new \Exception(
+                "No se pudo obtener el lock para crear '{$nombre}'. " .
+                "Otra operación concurrente está procesando un nombre similar. Reintentá."
+            );
+        }
 
         try {
             // 1. Buscar existente por nombre (insensible a mayúsculas).

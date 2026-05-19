@@ -31,4 +31,58 @@ class FacturasModel extends BaseModel
     {
         parent::__construct();
     }
+
+    /**
+     * Recalcula saldo_pendiente y estado de una factura a partir de
+     * pagos_cliente y notas_credito activas.
+     *
+     * Reglas de estado:
+     *  - Anulada / soft-deleted: no se toca.
+     *  - saldo ≤ 0.01: Pagada.
+     *  - Vencida con abono parcial: sigue Vencida (vencimiento prevalece).
+     *  - Otro caso con pagos o NC: Parcial.
+     *  - Sin movimientos: vuelve a Pendiente si estaba en Pagada/Parcial.
+     */
+    public function recalcularSaldo(int $id): void
+    {
+        $factura = $this->db->table('facturas')
+            ->where('id_facturas', $id)
+            ->where('deleted_at', null)
+            ->get()->getRowArray();
+
+        if (!$factura) return;
+        if ($factura['estado'] === 'Anulada') return;
+
+        $total = (float) ($factura['total'] ?? 0);
+
+        $pagos = (float) ($this->db->table('pagos_cliente')
+            ->selectSum('monto', 't')
+            ->where('facturas_id', $id)
+            ->get()->getRow()->t ?? 0);
+
+        $nc = (float) ($this->db->table('notas_credito')
+            ->selectSum('monto', 't')
+            ->where('facturas_id', $id)
+            ->where('estado', 'Activa')
+            ->get()->getRow()->t ?? 0);
+
+        $saldo  = max(0, $total - $pagos - $nc);
+        $estado = $factura['estado'];
+
+        if ($saldo <= 0.01) {
+            $nuevoEstado = 'Pagada';
+        } elseif (($pagos + $nc) > 0) {
+            // Vencida con abono parcial conserva su estado de vencimiento.
+            $nuevoEstado = ($estado === 'Vencida') ? 'Vencida' : 'Parcial';
+        } else {
+            $nuevoEstado = in_array($estado, ['Pagada', 'Parcial'], true) ? 'Pendiente' : $estado;
+        }
+
+        $this->db->table('facturas')
+            ->where('id_facturas', $id)
+            ->update([
+                'saldo_pendiente' => round($saldo, 2),
+                'estado'          => $nuevoEstado,
+            ]);
+    }
 }

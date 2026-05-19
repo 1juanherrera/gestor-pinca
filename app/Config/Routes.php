@@ -61,7 +61,7 @@ $routes->group('api', function ($routes) {
     // BODEGAS
     $routes->get('bodegas', 'BodegasController::bodegas');
     // POST bodegas/item DESHABILITADO — stock solo ingresa por OC o Producción
-    $routes->put('bodegas/item/(:num)', 'BodegasController::update_item_bodega/$1');
+    // PUT bodegas/item DESHABILITADO — bypaseaba capas y audit log (eliminado).
     $routes->get('bodegas/inventario/(:num)', 'BodegasController::bodega_inventario/$1');
     // PATCH inventario/cantidad DESHABILITADO — stock solo ingresa por OC o Producción
     $routes->get('bodegas/(:num)', 'BodegasController::show/$1');

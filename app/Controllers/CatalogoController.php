@@ -95,6 +95,22 @@ class CatalogoController extends ResourceController
             return $this->failNotFound("Ítem con ID {$id} no encontrado.");
         }
 
+        // Rechazar si el ítem tiene stock activo: si lo archivamos, los rows
+        // de inventario_capas quedan huérfanos (nombre = NULL en queries con
+        // LEFT JOIN). El usuario debe ajustar el stock a 0 o usar Merge.
+        $stock = (float) (db_connect()->table('inventario_capas')
+            ->selectSum('cantidad_disponible', 'total')
+            ->where('item_general_id', (int) $id)
+            ->where('estado', 1)
+            ->get()->getRow()->total ?? 0);
+        if ($stock > 0.0001) {
+            return $this->fail(
+                "No se puede archivar el ítem #{$id}: tiene {$stock} unidades de stock activo. " .
+                "Ajustá el stock a 0 (Inventario → AjusteManual) o usá Sincronización → Merge.",
+                409
+            );
+        }
+
         // useSoftDeletes activo → delete() hace UPDATE deleted_at, no DELETE físico
         $this->model->delete($id);
         return $this->respondDeleted(['message' => "Ítem {$id} archivado del catálogo"]);

@@ -113,12 +113,22 @@ class MovimientoInventarioModel extends Model
         $cantidad       = abs((float) $data['cantidad']);
 
         if (!isset($data['saldo_anterior'])) {
-            // Inferir el saldo anterior según el tipo
+            // Solo ENTRADA y SALIDA pueden inferirse desde la cantidad.
+            // TRASPASO/AJUSTE exigen saldos explícitos: el caller conoce el
+            // antes/después en cada lado del movimiento. Si no se proveen,
+            // registrar antes==después oculta el evento en el kardex.
             $saldoAnterior = match ($data['tipo']) {
                 self::TIPO_ENTRADA  => $saldoNuevo - $cantidad,
                 self::TIPO_SALIDA   => $saldoNuevo + $cantidad,
-                default             => $saldoNuevo,
+                default             => null,
             };
+            if ($saldoAnterior === null) {
+                log_message('warning',
+                    "[MovimientoInventario] tipo {$data['tipo']} sin saldo_anterior explícito — " .
+                    "delta perdido. item={$itemId}, bodega={$bodegaId}"
+                );
+                $saldoAnterior = $saldoNuevo; // fallback no-op para no romper, pero queda loggeado
+            }
         } else {
             $saldoAnterior = $data['saldo_anterior'];
         }
@@ -171,14 +181,6 @@ class MovimientoInventarioModel extends Model
             'responsable'      => $responsable,
             'metadata'         => array_merge($original['metadata'] ?? [], ['motivo_reverso' => $motivo]),
         ]);
-    }
-
-    /**
-     * @deprecated Usar registrar() en su lugar.
-     */
-    public function registrarMovimiento(array $data)
-    {
-        return $this->insert($data);
     }
 
     /**

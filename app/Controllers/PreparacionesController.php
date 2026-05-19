@@ -91,7 +91,7 @@ class PreparacionesController extends BaseController
                           JOIN preparaciones p ON p.id_preparaciones = pid.preparacion_id
                           WHERE pid.item_general_id = ig.id_item_general
                             AND p.fecha_creacion >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-                            AND p.estado != 0) AS consumo_30d
+                            AND p.estado != 3) AS consumo_30d
                 FROM item_general ig
                 LEFT JOIN inventario_capas ic
                        ON ic.item_general_id = ig.id_item_general AND ic.estado = 1

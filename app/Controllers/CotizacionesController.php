@@ -65,6 +65,8 @@ class CotizacionesController extends ResourceController
         $data = $this->request->getJSON(true);
         if (!$data) return $this->fail('No se recibieron datos o el JSON es inválido', 400);
 
+        $db = \Config\Database::connect();
+        $db->transBegin();
         try {
             $items = $data['items'] ?? [];
             unset($data['items'], $data['cliente_libre']);
@@ -82,7 +84,6 @@ class CotizacionesController extends ResourceController
 
             // Insertar ítems con query directa para evitar conflictos de allowedFields
             if (!empty($items)) {
-                $db = \Config\Database::connect();
                 foreach ($items as $item) {
                     $db->query(
                         "INSERT INTO cotizaciones_detalle
@@ -100,6 +101,8 @@ class CotizacionesController extends ResourceController
                 }
             }
 
+            $db->transCommit();
+
             return $this->respondCreated([
                 'status'  => 201,
                 'message' => 'Cotización creada exitosamente',
@@ -107,6 +110,7 @@ class CotizacionesController extends ResourceController
             ]);
 
         } catch (\Exception $e) {
+            $db->transRollback();
             return $this->fail($e->getMessage(), 400);
         }
     }
@@ -182,6 +186,8 @@ class CotizacionesController extends ResourceController
         $cotizacion = $this->model->find($id);
         if (!$cotizacion) return $this->failNotFound("Cotización con ID $id no encontrada.");
 
+        $db = \Config\Database::connect();
+        $db->transBegin();
         try {
             if ($cotizacion['estado'] === 'Convertida') {
                 throw new \Exception('Esta cotización ya fue convertida a factura');
@@ -214,7 +220,6 @@ class CotizacionesController extends ResourceController
             // Copiar ítems con query directa
             $items = $this->model->get_all('cotizaciones_detalle', ['cotizaciones_id' => $id]);
             if (!empty($items)) {
-                $db = \Config\Database::connect();
                 foreach ($items as $item) {
                     $db->query(
                         "INSERT INTO facturas_detalle
@@ -237,6 +242,8 @@ class CotizacionesController extends ResourceController
                 'facturas_id' => $facturaId,
             ], 'cotizaciones');
 
+            $db->transCommit();
+
             return $this->respondCreated([
                 'status'  => 201,
                 'message' => "Cotización convertida. Factura {$numeroFac} creada.",
@@ -244,6 +251,7 @@ class CotizacionesController extends ResourceController
             ]);
 
         } catch (\Exception $e) {
+            $db->transRollback();
             return $this->fail($e->getMessage(), 400);
         }
     }

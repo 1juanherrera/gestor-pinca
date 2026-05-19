@@ -7,6 +7,7 @@ use App\Models\OrdenesCompraModel;
 use App\Models\InventarioModel;
 use App\Models\InventarioCapasModel;
 use App\Models\NumeracionModel;
+use App\Helpers\Cfg;
 
 class OrdenesCompraController extends ResourceController
 {
@@ -38,6 +39,7 @@ class OrdenesCompraController extends ResourceController
             'fecha'                     => 'permit_empty|valid_date',
             'fecha_esperada'            => 'permit_empty|valid_date',
             'observaciones'             => 'permit_empty|max_length[500]',
+            'iva_pct'                   => 'permit_empty|decimal|greater_than_equal_to[0]|less_than_equal_to[100]',
             'lineas'                    => 'required',
             'lineas.*.item_proveedor_id'=> 'required|integer|greater_than[0]',
             'lineas.*.cantidad'         => 'required|decimal|greater_than[0]',
@@ -50,6 +52,16 @@ class OrdenesCompraController extends ResourceController
         }
 
         $db = \Config\Database::connect();
+
+        // Validar que el proveedor exista y no esté archivado.
+        $proveedorActivo = $db->table('proveedor')
+            ->where('id_proveedor', (int) $data['proveedor_id'])
+            ->where('deleted_at', null)
+            ->countAllResults();
+        if ($proveedorActivo === 0) {
+            return $this->failValidationErrors("El proveedor #{$data['proveedor_id']} no existe o está archivado.");
+        }
+
         $db->transStart();
 
         try {
@@ -59,6 +71,10 @@ class OrdenesCompraController extends ResourceController
 
             $data['numero'] = (new NumeracionModel())->reservar('orden_compra');
             $data['estado'] = 'Borrador';
+            // iva_pct persistido: respeta el override del cliente; si no, default global.
+            $data['iva_pct'] = isset($data['iva_pct'])
+                ? (float) $data['iva_pct']
+                : (float) Cfg::n('iva_default', 19);
 
             $db->table('ordenes_compra')->insert($data);
             if (!$db->affectedRows()) throw new \Exception('Error al crear la orden.');
@@ -167,9 +183,6 @@ class OrdenesCompraController extends ResourceController
     // Body: { estado: 'Enviada' | 'Cancelada' }
     public function cambiarEstado($id = null)
     {
-        $orden = $this->model->detalle((int) $id);
-        if (!$orden) return $this->failNotFound("Orden con ID $id no encontrada.");
-
         $data        = $this->request->getJSON(true) ?? $this->request->getPost();
         $nuevoEstado = $data['estado'] ?? null;
 
@@ -178,12 +191,37 @@ class OrdenesCompraController extends ResourceController
             'Enviada'  => ['Cancelada'],
         ];
 
-        $permitidos = $transiciones[$orden['estado']] ?? [];
-        if (!in_array($nuevoEstado, $permitidos)) {
-            return $this->fail("No se puede cambiar de {$orden['estado']} a $nuevoEstado.", 400);
-        }
+        $db = \Config\Database::connect();
+        $db->transBegin();
+        try {
+            // Lock pesimista del row para evitar transiciones concurrentes.
+            $orden = $db->table('ordenes_compra')
+                ->where('id_orden', (int) $id)
+                ->where('deleted_at', null)
+                ->orderBy('id_orden')
+                ->getCompiledSelect();
+            $orden = $db->query($orden . ' FOR UPDATE')->getRowArray();
 
-        $this->model->update((int) $id, ['estado' => $nuevoEstado]);
+            if (!$orden) {
+                $db->transRollback();
+                return $this->failNotFound("Orden con ID $id no encontrada.");
+            }
+
+            $permitidos = $transiciones[$orden['estado']] ?? [];
+            if (!in_array($nuevoEstado, $permitidos)) {
+                $db->transRollback();
+                return $this->fail("No se puede cambiar de {$orden['estado']} a $nuevoEstado.", 400);
+            }
+
+            $db->table('ordenes_compra')
+                ->where('id_orden', (int) $id)
+                ->update(['estado' => $nuevoEstado]);
+
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            return $this->fail($e->getMessage(), 400);
+        }
 
         return $this->respond(['mensaje' => "Estado actualizado a $nuevoEstado"]);
     }
@@ -303,12 +341,15 @@ class OrdenesCompraController extends ResourceController
                 $ok = $inventarioModel->ingresarABodega($itemGeneralId, $bodegaId, $cantidadBase);
                 if (!$ok) throw new \Exception('Error al ingresar al inventario.');
 
-                // Recalcular promedio ponderado
-                $capasModel->recalcularPromedioPonderado($itemGeneralId);
+                // Recalcular promedio ponderado (devuelve el costo promedio recalculado).
+                $promedio = $capasModel->recalcularPromedioPonderado($itemGeneralId);
 
+                // item_general.costo_produccion debe reflejar el promedio, no
+                // el costo de la última OC (de lo contrario subestima/sobrestima
+                // tras varias recepciones).
                 $db->table('item_general')
                     ->where('id_item_general', $itemGeneralId)
-                    ->update(['costo_produccion' => $costoUnitarioKg]);
+                    ->update(['costo_produccion' => $promedio]);
 
                 // ── Audit log: ENTRADA por recepción de OC ─────────────
                 $movModel = new \App\Models\MovimientoInventarioModel();

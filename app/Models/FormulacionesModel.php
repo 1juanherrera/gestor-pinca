@@ -495,7 +495,10 @@ class FormulacionesModel extends BaseModel
 
         if (empty($materias)) return ['item' => [], 'materias' => []];
 
-        $catalogo = $this->db->query('
+        $mpIds = array_values(array_unique(array_map(fn($m) => (int) $m->item_general_id, $materias)));
+        $placeholders = implode(',', array_fill(0, count($mpIds), '?'));
+
+        $catalogo = $this->db->query("
             SELECT ip.id_item_proveedor, ip.item_general_id, ip.nombre,
                    ip.precio_unitario, ip.factor_conversion,
                    ip.proveedor_id, p.nombre_empresa,
@@ -504,7 +507,9 @@ class FormulacionesModel extends BaseModel
             INNER JOIN proveedor p ON p.id_proveedor = ip.proveedor_id
             LEFT JOIN unidad uc ON uc.id_unidad = ip.unidad_compra_id
             WHERE ip.disponible = 1
-        ')->getResult();
+              AND ip.deleted_at IS NULL
+              AND (ip.item_general_id IN ($placeholders) OR ip.item_general_id IS NULL)
+        ", $mpIds)->getResult();
 
         $resultado = [];
 
@@ -603,13 +608,18 @@ class FormulacionesModel extends BaseModel
 
         $totalMaterias = count($materias);
 
-        $catalogo = $this->db->query('
+        $mpIds = array_values(array_unique(array_map(fn($m) => (int) $m->item_general_id, $materias)));
+        $placeholders = implode(',', array_fill(0, count($mpIds), '?'));
+
+        $catalogo = $this->db->query("
             SELECT ip.id_item_proveedor, ip.item_general_id, ip.nombre,
                    ip.proveedor_id, p.nombre_empresa, p.nombre_encargado
             FROM item_proveedor ip
             INNER JOIN proveedor p ON p.id_proveedor = ip.proveedor_id
             WHERE ip.disponible = 1
-        ')->getResult();
+              AND ip.deleted_at IS NULL
+              AND (ip.item_general_id IN ($placeholders) OR ip.item_general_id IS NULL)
+        ", $mpIds)->getResult();
 
         $provCobertura = [];
 
@@ -991,14 +1001,6 @@ class FormulacionesModel extends BaseModel
                     $mp['cantidad']   ?? 0,
                     $mp['porcentaje'] ?? 0,
                 ]);
-
-                // Actualizar costo_unitario de la materia prima si viene
-                if (!empty($mp['costo_unitario'])) {
-                    $this->db->query('
-                        UPDATE costos_item SET costo_unitario = ?
-                        WHERE item_general_id = ?
-                    ', [$mp['costo_unitario'], $mp['materia_prima_id']]);
-                }
             }
 
             $this->db->transComplete();
@@ -1066,13 +1068,6 @@ class FormulacionesModel extends BaseModel
                     $mp['cantidad']   ?? 0,
                     $mp['porcentaje'] ?? 0,
                 ]);
-
-                if (!empty($mp['costo_unitario'])) {
-                    $this->db->query('
-                        UPDATE costos_item SET costo_unitario = ?
-                        WHERE item_general_id = ?
-                    ', [$mp['costo_unitario'], $mp['materia_prima_id']]);
-                }
             }
 
             $this->db->transComplete();
