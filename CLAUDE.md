@@ -689,3 +689,29 @@ POST   /api/formulaciones/clonar
 - ⚠️ #14 Tope max paginación — parcial (Auditoria + Notificaciones; otros controllers sin tope).
 - ❌ Race conditions en otros endpoints sin verificar (solo recibirLinea fue arreglada).
 
+---
+
+## Sesión 2026-05-18 — Costos de Formulaciones vinculados a Proveedores
+
+### Contexto
+
+El frontend ahora auto-selecciona el proveedor más barato por ingrediente en la tabla de formulaciones usando `GET /formulaciones/{id}/opciones-ingredientes`. El costo mostrado por ingrediente es `precio_por_kg` del proveedor seleccionado (no `costos_item.costo_unitario`). El usuario puede cambiar el proveedor manualmente por ingrediente.
+
+### Defecto identificado — `costos_item.costo_unitario` overwrite
+
+`FormulacionesModel::crearFormulacion()` (líneas 996-1001) y `actualizarFormulacion()` (líneas 1070-1075) ejecutan:
+```php
+if (!empty($mp['costo_unitario'])) {
+    $this->db->query('UPDATE costos_item SET costo_unitario = ? WHERE item_general_id = ?',
+        [$mp['costo_unitario'], $mp['materia_prima_id']]);
+}
+```
+Esto permite que el payload de una formulación sobrescriba un campo que debería ser calculado exclusivamente por `InventarioCapasModel::recalcularPromedioPonderado()`. El frontend actualmente NO envía este campo, pero la puerta está abierta. Ver `MEJORAS.md` para la recomendación de fix.
+
+### Endpoint clave para el frontend
+
+`GET /formulaciones/{id}/opciones-ingredientes` → `get_opciones_proveedor_formulacion()`:
+- Devuelve `{ item: {...}, materias: { [mpId]: { opciones: [...sorted by precio_por_kg ASC] } } }`
+- `opciones[0]` es siempre el proveedor más barato por ingrediente
+- Matching: prioridad 1 = vinculado por `item_general_id`, prioridad 2-3 = match por nombre (exacto / parcial)
+
