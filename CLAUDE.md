@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-> **Última actualización**: 2026-05-13.
-> Backend en estado funcional con seguridad activa (JWT global + RBAC). Ver §"Estado real de la auditoría" al final antes de creer cualquier aserción de seguridad — la auditoría histórica 2026-05-09 quedó obsoleta.
+> **Última actualización**: 2026-05-20.
+> Backend en estado funcional con seguridad activa (JWT global + RBAC + rol superadmin) + análisis profundo aplicado (23 fixes). Ver §"Sesión 2026-05-20 — Costos de Producción + Salud + Superadmin + Backup" para el snapshot más reciente.
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -714,4 +714,247 @@ Esto permite que el payload de una formulación sobrescriba un campo que deberí
 - Devuelve `{ item: {...}, materias: { [mpId]: { opciones: [...sorted by precio_por_kg ASC] } } }`
 - `opciones[0]` es siempre el proveedor más barato por ingrediente
 - Matching: prioridad 1 = vinculado por `item_general_id`, prioridad 2-3 = match por nombre (exacto / parcial)
+
+---
+
+## Sesión 2026-05-19 — Hardening profundo + IVA por OC + unify costos
+
+Sesión grande de consolidación. **23 fixes** del análisis profundo aplicados y verificados con un comando spark de regresión. **IVA persistido por OC**. **Módulo costos unificado con rentabilidad**.
+
+### Bug en formulaciones cerrado (P0 #1 de MEJORAS)
+
+`FormulacionesModel::crearFormulacion` y `actualizarFormulacion` ya no sobreescriben `costos_item.costo_unitario` desde el payload. Ese campo solo lo escribe `InventarioCapasModel::recalcularPromedioPonderado()` al recibir OCs.
+
+Optimización colateral (#21 de MEJORAS): `get_opciones_proveedor_formulacion` ahora pre-filtra `item_proveedor` por `item_general_id IN (...)` de los ingredientes de la fórmula, en lugar de hacer full scan + filter en PHP. Misma lógica aplicada a `get_proveedores_formulacion`. Agregado `deleted_at IS NULL` que faltaba.
+
+### Análisis profundo — 23 fixes aplicados
+
+**🔴 Críticos (10) — bugs activos que rompían lógica:**
+
+1. **`FacturasModel::recalcularSaldo` implementado** — el método se llamaba en 6 lugares (FacturasController, PagosClienteController, NotasCreditoController) pero no existía. Cobranza estaba rota. Calcula `total - pagos - NC activas` y ajusta `estado` (Pagada/Parcial). Respeta `Anulada` y `Vencida`.
+2. **`InventarioCapasModel::_consumirDeCapas` lanza Exception** si `pendiente > 0.0001` post-foreach. Antes silenciaba el déficit y `produccion_insumos_detalle` recibía la cantidad teórica en vez de la real, falsificando el costo congelado. Aplica a FIFO global, por proveedor y manual.
+3. **Filtros `p.estado != 3` corregidos en 5 controllers** — antes había `!= 'cancelada'` (string contra int → no filtraba nada) en `InventarioController:92` y `!= 0` (excluía pendientes) en `DashboardController:186/314`, `NotificacionesController:75`, `PreparacionesController:94`. Todos ahora `!= 3` (CANCELADA).
+4. **Ruta `PUT /bodegas/item/:id` eliminada** — `BodegasModel::update_item_bodega` sobreescribía `inventario.cantidad` y `costos_item.costo_unitario` desde el payload, bypaseando capas y audit log. Removido del Routes.php, controller y modelo.
+5. **`RequisicionesCompraModel::convertirAOC` usa `NumeracionModel::reservar('orden_compra')`** en lugar de `SELECT MAX(numero) + 1`. Cierra race condition de duplicación.
+6. **Transacciones en `RemisionesController::create/convertir`** + **`CotizacionesController::create/convertir`** — antes INSERTs cabecera + N detalles sin tx → falla intermedia dejaba documentos huérfanos.
+7. **SQL injection latente cerrada** — reemplazadas todas las `set('col', "col + {$var}", false)` por queries parametrizadas en `InventarioCapasModel::restaurarCapas/restaurarCapasRemision`, `InventarioModel::traspaso` (2 lugares) + `ingresarABodega`, `RemisionesController:252`.
+8. **Validación FK en create** — `OrdenesCompraController::create` verifica `proveedor_id` existe + `deleted_at IS NULL`. Mismo para `FormulacionesController::create` con `item_general_id`.
+
+**🟡 Importantes (9):**
+
+9. **`MovimientoInventarioModel::registrar`**: TRASPASO/AJUSTE sin `saldo_anterior` explícito ahora loggea warning (antes inferia `saldo_anterior == saldo_nuevo` silenciosamente).
+10. **`OrdenesCompraController::cambiarEstado`** envuelto en `transBegin` + `SELECT ... FOR UPDATE`. Cierra race entre transiciones concurrentes.
+11. **`BaseModel::update_table`** consulta `deleted_at` antes de updatear. Si el record está archivado devuelve `['archivado' => mensaje]` en vez de updatear silenciosamente.
+12. **`BaseModel::restore_table`** usa `pkOf($table)` en vez de `'id_'.$table` hardcoded. Resuelve restore para `ordenes_compra` (PK `id_orden`).
+13. **`ItemProveedorModel::resolverItemGeneral`** lee el retorno de `GET_LOCK`: si timeout (`got = 0`) o error (`got = NULL`) lanza Exception. Antes asumía el lock obtenido.
+14. **`RequisicionesCompraModel::verificarDisponibilidad`** ahora consulta `SUM(inventario_capas.cantidad_disponible) WHERE estado = 1` en lugar de la tabla `inventario` legacy.
+15. **`_getProveedoresPorItem` + `_pickMejorProveedor`** filtran `ip.deleted_at IS NULL`.
+16. **`UsuarioController::login`** registra `login_attempts` solo en fallo, y al login exitoso borra los attempts previos de la IP. Fin del autobloqueo de usuario legítimo con 5 logins en 15 min.
+17. **`CatalogoController::delete`** rechaza con 409 si el item tiene `inventario_capas.cantidad_disponible > 0`. Evita rows huérfanos con `nombre = NULL` en Inventario Global.
+
+**🟢 Menores (4):**
+
+18. **`OrdenesCompraModel::generarNumero` + `NotasCreditoModel::generarNumero` eliminados** — código muerto, reemplazado en sesión 2026-05-14 por `NumeracionModel::reservar(...)`.
+19. **`MovimientoInventarioModel::registrarMovimiento` eliminado** — método deprecated sin callers.
+20. **`OrdenesCompraController::recibirLinea`** ahora setea `item_general.costo_produccion` al **promedio recalculado** (retorno de `recalcularPromedioPonderado`), no al costo de la última OC.
+21. **`PreparacionesModel::update_preparacion`** mapea strings (`PENDIENTE/EN_PROCESO/COMPLETADA/CANCELADA`) → 0..3 antes de updatear. Rechaza valores fuera de rango. Antes `(int) 'CANCELADA' === 0` caía silenciosamente a PENDIENTE.
+
+### IVA persistido por OC (estrategia B+)
+
+**Por qué B+ y no más simple/complejo**: discusión completa en MEJORAS y la sesión. Resumen: agregar `iva_pct` por OC garantiza trazabilidad histórica (si en 2027 cambia el % global, las OCs viejas conservan el suyo) sin la complejidad de agregar régimen por proveedor o IVA por línea de detalle. Cuando aparezca esa necesidad, se extiende sin migración destructiva.
+
+**Migración**: `2026-05-19-000001_AddIvaPctToOrdenesCompra`:
+- Agrega `ordenes_compra.iva_pct DECIMAL(5,2) NULL DEFAULT NULL`.
+- Backfill: lee `iva_default` de `configuracion_sistema` y aplica a OCs históricas.
+
+**Cambios en código**:
+- **`OrdenesCompraController::create`** valida + persiste `iva_pct` (override del cliente o `Cfg::n('iva_default', 19)`).
+- **`OrdenesCompraModel`** tiene `enrichWithIva()` privado que aplica a `listar()` y `detalle()`. Devuelve `total` (sin IVA, semántica histórica), `iva_pct`, `iva_monto`, `total_con_iva`.
+- **`DashboardController::ocsPendientes`** devuelve `valor_total` + `valor_total_con_iva` (`SUM(oc.total * (1 + COALESCE(oc.iva_pct, 0) / 100))`).
+- **`RemisionesController:373`** usa `Cfg::n('iva_default', 19) / 100` en lugar de `0.19` hardcodeado al convertir remisión → factura.
+- **`OrdenesCompraModel::allowedFields`** incluye `iva_pct`.
+
+**Lo que NO cambia**:
+- `total` sigue siendo la suma de subtotales sin IVA (semántica histórica).
+- `inventario_capas.costo_unitario` sigue sin IVA (el IVA es descontable en régimen común — el costo real para producción es la base).
+- `produccion_insumos_detalle.subtotal` igual sin IVA (cadena de costo congelado limpia).
+
+### Merge módulo costos → rentabilidad
+
+Costos era subset puro de Rentabilidad (mismos tabs: Producción, Compras, Indirectos). Rentabilidad añade Resumen + Ganancias. Tener ambos era duplicación.
+
+**Migración `2026-05-19-000002_MergeCostosIntoRentabilidad`**:
+- Para cada rol que tenía `costos = 1`, activa `rentabilidad = 1` (insert si no existía).
+- Elimina todas las filas con `modulo = 'costos'` de `permisos_rol_modulo`.
+- Cero pérdida de acceso.
+
+Frontend eliminó la carpeta `Costos/` completa y redirige `/costos → /rentabilidad`.
+
+### Spark command nuevo: `php spark validar:fixes`
+
+Archivo: `app/Commands/ValidarFixes.php`. Corre **47 tests de regresión** contra la DB real, agrupados por:
+- Críticos (10 tests)
+- Importantes (9 tests)
+- Menores (4 tests)
+- IVA en OCs (5 tests)
+
+Cada test usa `transBegin`/`transRollback` cuando muta datos (excepto los que llaman `NumeracionModel::reservar` que commitea atómicamente — efecto colateral: consume números de OC).
+
+Output muestra ✓/✗ por test + resumen. Última corrida: **47 PASS / 0 FAIL**.
+
+Útil para correr antes de un commit grande: `docker exec gestor-pinca-app php spark validar:fixes`.
+
+### Migraciones aplicadas en esta sesión
+
+```
+2026-05-19-000001 AddIvaPctToOrdenesCompra
+2026-05-19-000002 MergeCostosIntoRentabilidad
+```
+
+### Endpoints nuevos / modificados
+
+```
+POST /api/ordenes_compra            (acepta `iva_pct` en payload — override opcional)
+GET  /api/ordenes_compra            (cada OC trae iva_pct + iva_monto + total_con_iva)
+GET  /api/ordenes_compra/:id/detalle (idem)
+GET  /api/dashboard                  (ocs_pendientes incluye valor_total_con_iva)
+POST /api/remisiones/:id/convertir   (IVA leído de Cfg, ya no hardcoded)
+```
+
+### Estado de MEJORAS.md al cierre
+
+- ✅ P0 #1 — Eliminado overwrite de `costos_item.costo_unitario`
+- ✅ P2 #8 — Validación FKs en endpoints críticos (OC + Formulaciones)
+- ✅ P2 #9 — Race conditions en `cambiarEstado` y `convertirAOC` (PreparacionesModel ya tenía tx; FacturasController::cambiarEstado revisado)
+- ✅ P2 #10 — `validarSumaPorcentajes` cubre los 3 flujos
+- ✅ P3 #13 — Tope de paginación parcial (otras zonas siguen)
+- ✅ P3 #16 — Detalle remisiones gana FK + descuento de stock (sesión 2026-05-15)
+- ✅ P4 #21 — Endpoint costos por proveedor optimizado
+- ⚠️ P3 #11 — Tests: tenemos `validar:fixes` (47 tests) pero no PHPUnit formal
+- ⚠️ P3 #12 — Formato de error inconsistente sigue abierto
+- ⚠️ P4 #17 — Health check sin implementar
+- ❌ P1 (5,6,11,12,13,14,15) — todo lo de PROD/HTTPS/security headers sigue abierto a propósito
+
+### Pendientes que el negocio puede pedir más adelante
+
+- `proveedor.regimen_iva` + `item_proveedor.precio_incluye_iva` para soportar régimen simplificado / items exentos.
+- Endpoint `/api/health` para monitoreo / load balancer.
+- Reescribir `BaseModel::create_table` para que no auto-genere `allowedFields` (mass assignment).
+- PHPUnit tests formales (`tests/` sigue vacío).
+- Versionado API `/api/v1/...`.
+- OpenAPI / Swagger spec.
+
+---
+
+> **Snapshot al cierre 2026-05-19**: Backend en estado de **post-hardening profundo**. Cobranza desbloqueada, FIFO seguro, costos consistentes con/sin IVA, módulos unificados. Validador automatizado para regresiones. 47/47 PASS. Listo para seguir construyendo features sobre fundamentos sólidos. El día que se decida deploy real, el checklist de `MEJORAS.md` § Checklist pre-deploy lista lo que falta (HTTPS, DBDebug, security headers, credenciales prod).
+
+---
+
+## Sesión 2026-05-20 — Costos de Producción + Salud + Superadmin + Backup
+
+### Nuevo módulo: Costos de Producción
+
+Vista unificada que cruza fórmulas + capas + cobertura de proveedores + empaque/MO para mostrar el costo real y precio sugerido de cada producto terminado.
+
+**`CostosProduccionController`** (nuevo):
+- `GET /api/costos-produccion` — listado con stock para producir (cuello de botella + tandas posibles) por producto
+- `GET /api/costos-produccion/:id/historia` — hasta 36 snapshots históricos del producto
+- Migración `2026-05-19-000003_AddCostosProduccionModulo` (RBAC: admin + operador + visor)
+
+**`FormulacionesModel::get_costos_produccion_batch()`** — nuevo método central. Por producto calcula:
+- Costo MP total y por unidad
+- Cobertura: cuántas MPs tienen proveedor activo (estado `completo` / `incompleto`)
+- **Stock para producir**: SUM `inventario_capas.cantidad_disponible` por MP → calcula `tandas_posibles = floor(min(stock_kg / cantidad_por_tanda))`, identifica `cuello_botella`, deriva `galones_posibles`
+
+**Tabla `costos_snapshot`** (migración `2026-05-20-000002_CreateCostosSnapshot`):
+- Schema: id, item_general_id, fecha, estado, volumen_base, costo_mp_total/por_unidad, costo_empaque_mod, costo_total, porcentaje_utilidad, precio_venta_calc, mps_total, mps_cubiertas
+- `UNIQUE (item_general_id, fecha)` para idempotencia
+
+**Spark command `snapshot:costos`** (`app/Commands/SnapshotCostos.php`) — upserts un snapshot por producto con fecha actual. Pensado para correr mensualmente vía cron y poblar la evolución histórica de costos.
+
+### Nuevo módulo: Salud del Sistema
+
+Dashboard de diagnóstico operativo que cruza 6 categorías de issues activos.
+
+**`SaludSistemaController`** (nuevo) — endpoint `GET /api/salud-sistema`:
+- **Cobertura proveedores**: % de MPs con `item_proveedor` activo (con fallback de matching por nombre, no solo `item_general_id`)
+- **MPs sin movimiento >90 días**: stock con `last_movement < NOW() - 90d`
+- **Productos sin fórmula activa**
+- **OCs Enviadas >14 días sin recibir**
+- **Facturas en mora >`mora_critica_dias`** (lee `Cfg`)
+- **Items archivados con stock pendiente**
+- Devuelve `score` 0-100 (% de categorías sin issues), `issues_activos`, `total_checks` (6)
+- Bug fix durante implementación: query de mora usaba `c.nombres/apellidos` (no existen en schema) → corregido a `c.nombre_empresa/nombre_encargado`
+- Migración `2026-05-20-000001_AddSaludSistemaModulo` (RBAC: admin + operador + visor)
+
+### Rol `superadmin` — gestor exclusivo de permisos
+
+Nuevo rol por encima de admin que es el único capaz de mutar `permisos_rol_modulo`. El admin sigue viendo todo lo demás.
+
+**Migración `2026-05-20-000003_AddSuperadminRol`**:
+- `ALTER usuarios.rol` ENUM agrega `'superadmin'` → `('superadmin','admin','operador','visor')`
+- `ADD COLUMN usuarios.password_must_change TINYINT(1) DEFAULT 0` — fuerza cambio de password al primer login
+- Inserta usuario `1juanherrera` / `Juan Herrera` / `superadmin` / password hasheado de `root` (must_change=1)
+- Inserta filas en `permisos_rol_modulo` para `superadmin` con todos los módulos activos (19)
+
+**`JwtUserAware` extendido** (`app/Traits/JwtUserAware.php`):
+- `userIsSuperadmin()` — solo `rol === 'superadmin'`
+- `userHasAdminAccess()` — `rol IN ['admin', 'superadmin']`
+- `userHasModule()` ahora trata superadmin como admin (acceso total)
+
+**Cambios en controllers**:
+| Controller | Antes | Después |
+|---|---|---|
+| `PermisosController` (update/cambiarRol) | `requireAdmin()` | `requireSuperadmin()` — solo superadmin muta permisos |
+| `AuditoriaController`, `EmpresaController`, `NumeracionController`, `ConfiguracionController` | `userHasRole('admin')` | `userHasAdminAccess()` — admin O superadmin |
+
+**`UsuarioController` ajustes**:
+- `login()` devuelve `password_must_change` en `usuario` payload
+- `cambiarPassword()` limpia el flag (`password_must_change = 0`) al guardar password nuevo
+
+**Comportamiento resultante**:
+- Admin: ve todos los módulos, accede a Empresa/Configuración/Auditoría/Numeración, pero recibe 403 si intenta `PUT /api/roles/.../permisos` o `PATCH /api/roles/usuarios/.../rol`
+- Superadmin: lo de admin + única vista a la gestión de roles
+
+### Backup automatizado de DB
+
+`pinca_backend/backups/` (nuevo directorio):
+- `backup-auto.sh` — corre `docker exec gestor-pinca-db mysqldump --no-tablespaces --single-transaction --routines --triggers --events 2>/dev/null > auto_pinca_YYYY-MM-DD_HH-MM-SS.sql`
+- `backup-auto.bat` — wrapper Windows que ejecuta el sh via `wsl.exe`
+- Rotación automática: borra dumps `auto_pinca_*.sql` con `>30 días`
+- Pensado para correr desde Task Scheduler (Windows) o cron (Linux)
+- **Importante**: se descartó la opción de spark command porque `gestor-pinca-app` no tiene `mysql-client` instalado. Solución: script host-side que invoca `docker exec` contra el contenedor de DB
+
+### Endpoints nuevos/modificados
+
+```
+GET  /api/costos-produccion                         (lista con stock para producir)
+GET  /api/costos-produccion/:id/historia            (hasta 36 snapshots)
+GET  /api/salud-sistema                             (score + 6 categorías de issues)
+PUT  /api/roles/:rol/permisos                       (cambió: ahora solo superadmin)
+PATCH /api/roles/usuarios/:id/rol                   (cambió: ahora solo superadmin)
+POST /api/login                                     (cambió: devuelve password_must_change)
+PATCH /api/usuarios/mi-password                     (cambió: limpia password_must_change)
+```
+
+### Migraciones aplicadas en esta sesión
+
+```
+2026-05-19-000003 AddCostosProduccionModulo        (RBAC costos-produccion)
+2026-05-20-000001 AddSaludSistemaModulo            (RBAC salud-sistema)
+2026-05-20-000002 CreateCostosSnapshot             (tabla costos_snapshot + UNIQUE constraint)
+2026-05-20-000003 AddSuperadminRol                 (ENUM + columna must_change + perms + user Juan Herrera)
+```
+
+### Coupling con frontend (saber para no romper)
+
+El frontend depende de que:
+- `GET /salud-sistema` mantenga el shape: `{ score, issues_activos, total_checks, cobertura: {pct, mps_cubiertas, mps_totales}, mps_sin_movimiento_90d: [...], productos_sin_formula: [...], ocs_retrasadas: [...], facturas_en_mora: [...], archivados_con_stock: [...] }`
+- Cada item de `facturas_en_mora` traiga `cliente` (string), no `nombre_empresa`/`nombre_encargado` separados — el controller hace el coalesce
+- `GET /costos-produccion` devuelva por producto: `stock_para_producir: {tandas_posibles, galones_posibles, cuello_botella: {mp_nombre, stock_kg, requerido_por_tanda, tandas_posibles}}`
+- `POST /login` devuelva `usuario.password_must_change` (entero 0|1) — el frontend lo usa para bloquear con `ForceChangePasswordModal`
+
+---
+
+> **Snapshot al cierre 2026-05-20**: Backend con dos features nuevas (Costos de Producción + Salud del Sistema), rol superadmin para gestión exclusiva de permisos, y backup automatizado funcional. La gestión de roles ya no es accesible para admin — solo para el `superadmin` (usuario Juan Herrera). El `admin` mantiene acceso operativo a todo lo demás. Snapshot mensual de costos via `php spark snapshot:costos` (correr 1×/mes para alimentar el gráfico de evolución).
 

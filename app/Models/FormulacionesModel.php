@@ -1332,4 +1332,424 @@ class FormulacionesModel extends BaseModel
             'version_num'     => $nuevaVer,
         ];
     }
+
+    /**
+     * Devuelve, para cada producto (tipo=0) con fórmula activa, su costo
+     * final calculado con el proveedor más barato por ingrediente.
+     *
+     * Sin N+1: 3 queries totales (productos + ingredientes + item_proveedor).
+     *
+     * Reglas:
+     * - Solo cuenta como "cubierta" una MP que tenga `item_proveedor.item_general_id`
+     *   coincidente (priority 1). El match por nombre NO se considera — para
+     *   un cálculo de costos limpio, los items deben estar explícitamente
+     *   vinculados (usar Sincronización para eso).
+     * - Producto se marca `incompleto` si al menos una MP no tiene proveedor
+     *   válido; no se calcula costo de MP en ese caso.
+     * - `costo_indirectos` = envase + etiqueta + bandeja + plastico + costo_mod (por unidad de producto).
+     * - `costo_mp` = Σ(cantidad_kg × precio_por_kg_más_barato) / volumen_base.
+     */
+    public function get_costos_produccion_batch(): array
+    {
+        // 1. Productos con fórmula activa + datos de costos_item + categoria
+        $productos = $this->db->query('
+            SELECT
+                ig.id_item_general,
+                ig.nombre,
+                ig.codigo,
+                ig.precio_venta_manual,
+                ig.precio_manual_activo,
+                cat.nombre AS categoria_nombre,
+                f.id_formulaciones,
+                COALESCE(NULLIF(ci.volumen, 0), 1) AS volumen_base,
+                COALESCE(ci.envase, 0)             AS envase,
+                COALESCE(ci.etiqueta, 0)           AS etiqueta,
+                COALESCE(ci.bandeja, 0)            AS bandeja,
+                COALESCE(ci.plastico, 0)           AS plastico,
+                COALESCE(ci.costo_mod, 0)          AS costo_mod,
+                COALESCE(ci.porcentaje_utilidad, ' . $this->margenDefault() . ') AS porcentaje_utilidad
+            FROM item_general ig
+            INNER JOIN formulaciones f ON f.item_general_id = ig.id_item_general AND f.estado = 1
+            LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
+            LEFT JOIN categoria cat   ON cat.id_categoria = ig.categoria_id
+            WHERE ig.tipo = 0
+              AND ig.deleted_at IS NULL
+            ORDER BY ig.nombre ASC
+        ')->getResultArray();
+
+        if (empty($productos)) return [];
+
+        $formulacionIds = array_column($productos, 'id_formulaciones');
+        $placeholdersF  = implode(',', array_fill(0, count($formulacionIds), '?'));
+
+        // 2. Ingredientes de todas las fórmulas activas (excluye items archivados)
+        $ingredientes = $this->db->query("
+            SELECT
+                igf.formulaciones_id,
+                igf.item_general_id   AS mp_id,
+                igf.cantidad,
+                igf.porcentaje,
+                ig.nombre             AS mp_nombre,
+                ig.codigo             AS mp_codigo,
+                ig.deleted_at         AS mp_deleted
+            FROM item_general_formulaciones igf
+            INNER JOIN item_general ig ON ig.id_item_general = igf.item_general_id
+            WHERE igf.formulaciones_id IN ($placeholdersF)
+            ORDER BY igf.formulaciones_id, ig.nombre
+        ", $formulacionIds)->getResultArray();
+
+        // 3. Mapa MP nombre → id (para resolver matches por nombre a la MP correcta)
+        $mpIds = array_values(array_unique(array_map(fn($i) => (int) $i['mp_id'], $ingredientes)));
+        $mpsPorId = [];
+        foreach ($ingredientes as $i) {
+            $mpsPorId[(int) $i['mp_id']] = [
+                'nombre' => $i['mp_nombre'],
+                'codigo' => $i['mp_codigo'],
+            ];
+        }
+
+        // Stock actual de cada MP (suma de capas activas) — una sola query
+        $stockPorMp = [];
+        if (!empty($mpIds)) {
+            $placeholdersStk = implode(',', array_fill(0, count($mpIds), '?'));
+            $stockRows = $this->db->query("
+                SELECT item_general_id, COALESCE(SUM(cantidad_disponible), 0) AS stock_kg
+                FROM inventario_capas
+                WHERE estado = 1 AND item_general_id IN ($placeholdersStk)
+                GROUP BY item_general_id
+            ", $mpIds)->getResultArray();
+            foreach ($stockRows as $r) {
+                $stockPorMp[(int) $r['item_general_id']] = (float) $r['stock_kg'];
+            }
+        }
+
+        // 4. Trae proveedores: linked (item_general_id IN mpIds) + unlinked (NULL)
+        //    Misma lógica de matching que get_opciones_proveedor_formulacion:
+        //    priority 1 = ip.item_general_id == mp_id (link directo)
+        //    priority 2 = nombre exacto (case-insensitive)
+        //    priority 3 = nombre parcial (substring)
+        //    El más barato por MP (precio_por_kg ASC) gana.
+        $proveedoresPorMp = [];
+        if (!empty($mpIds)) {
+            $placeholdersI = implode(',', array_fill(0, count($mpIds), '?'));
+            $rows = $this->db->query("
+                SELECT
+                    ip.item_general_id,
+                    ip.id_item_proveedor,
+                    ip.nombre AS ip_nombre,
+                    ip.precio_unitario,
+                    ip.factor_conversion,
+                    ip.proveedor_id,
+                    p.nombre_empresa
+                FROM item_proveedor ip
+                INNER JOIN proveedor p ON p.id_proveedor = ip.proveedor_id
+                WHERE ip.disponible = 1
+                  AND ip.deleted_at IS NULL
+                  AND p.deleted_at IS NULL
+                  AND (ip.item_general_id IN ($placeholdersI) OR ip.item_general_id IS NULL)
+            ", $mpIds)->getResultArray();
+
+            foreach ($rows as $r) {
+                $factor   = max((float) ($r['factor_conversion'] ?: 1), 0.001);
+                $precioKg = round((float) $r['precio_unitario'] / $factor, 4);
+                $r['precio_por_kg'] = $precioKg;
+
+                $ipItemId = $r['item_general_id'] !== null ? (int) $r['item_general_id'] : null;
+
+                // Priority 1: link directo por item_general_id
+                if ($ipItemId !== null && isset($mpsPorId[$ipItemId])) {
+                    $r['match_tipo']  = 1;
+                    $proveedoresPorMp[$ipItemId][] = $r;
+                    continue;
+                }
+
+                // Priority 2/3: match por nombre contra cualquier MP de las fórmulas
+                $ipNombreLimpio = $this->limpiarNombreProveedor((string) $r['ip_nombre']);
+                foreach ($mpsPorId as $mpId => $mp) {
+                    $score = $this->matchNombre($mp['nombre'], (string) $r['ip_nombre']);
+                    if ($score > 0) {
+                        $r['match_tipo'] = $score + 1; // 2 o 3
+                        $proveedoresPorMp[$mpId][] = $r;
+                    }
+                }
+            }
+
+            // Ordenar opciones por priority + precio_por_kg ASC dentro de cada MP
+            // (un match priority-1 pisa al 2 aún si es más caro; entre la misma prioridad, gana el barato)
+            foreach ($proveedoresPorMp as &$opts) {
+                usort($opts, function ($a, $b) {
+                    $cmp = ($a['match_tipo'] <=> $b['match_tipo']);
+                    if ($cmp !== 0) return $cmp;
+                    return $a['precio_por_kg'] <=> $b['precio_por_kg'];
+                });
+            }
+            unset($opts);
+        }
+
+        // 4. Agrupar ingredientes por formulación
+        $ingredientesPorForm = [];
+        foreach ($ingredientes as $i) {
+            $ingredientesPorForm[(int) $i['formulaciones_id']][] = $i;
+        }
+
+        // 5. Calcular para cada producto
+        $resultado = [];
+        foreach ($productos as $p) {
+            $formId = (int) $p['id_formulaciones'];
+            $mps    = $ingredientesPorForm[$formId] ?? [];
+
+            $faltantes = [];
+            $proveedoresUsados = [];   // id_proveedor => [nombre, items_count]
+            $costoMpTotal = 0.0;
+
+            // Para calcular cuántas tandas se pueden producir con stock actual.
+            // Cuello de botella = MP cuya razón stock/cantidad sea mínima.
+            $tandasMin = INF;
+            $cuello = null;
+
+            foreach ($mps as $mp) {
+                $mpId = (int) $mp['mp_id'];
+                $cantidad = (float) $mp['cantidad'];
+
+                // Tandas con stock actual para esta MP (independiente de proveedor)
+                if ($cantidad > 0) {
+                    $stockMp = $stockPorMp[$mpId] ?? 0.0;
+                    $tandasMp = $stockMp / $cantidad;
+                    if ($tandasMp < $tandasMin) {
+                        $tandasMin = $tandasMp;
+                        $cuello = [
+                            'mp_id'      => $mpId,
+                            'nombre'     => $mp['mp_nombre'],
+                            'codigo'     => $mp['mp_codigo'],
+                            'stock_kg'   => round($stockMp, 4),
+                            'requerido_por_tanda_kg' => round($cantidad, 4),
+                            'tandas'     => round($tandasMp, 3),
+                        ];
+                    }
+                }
+
+                // Item archivado o sin proveedor priority-1 → faltante
+                if (!empty($mp['mp_deleted']) || empty($proveedoresPorMp[$mpId])) {
+                    $faltantes[] = [
+                        'id'      => $mpId,
+                        'nombre'  => $mp['mp_nombre'],
+                        'codigo'  => $mp['mp_codigo'],
+                        'motivo'  => !empty($mp['mp_deleted']) ? 'archivado' : 'sin_proveedor',
+                    ];
+                    continue;
+                }
+
+                $opcion = $proveedoresPorMp[$mpId][0]; // ya ordenado ASC
+                $subtotal = $cantidad * (float) $opcion['precio_por_kg'];
+                $costoMpTotal += $subtotal;
+
+                $pid = (int) $opcion['proveedor_id'];
+                if (!isset($proveedoresUsados[$pid])) {
+                    $proveedoresUsados[$pid] = [
+                        'id_proveedor'   => $pid,
+                        'nombre_empresa' => $opcion['nombre_empresa'],
+                        'items'          => 0,
+                    ];
+                }
+                $proveedoresUsados[$pid]['items']++;
+            }
+
+            $estado     = empty($faltantes) ? 'completo' : 'incompleto';
+            $vol        = (float) $p['volumen_base'];
+            // "Empaque y Mano de Obra" — suma envase + etiqueta + bandeja + plástico + costo_mod
+            $empaqueMod = (float) $p['envase'] + (float) $p['etiqueta'] + (float) $p['bandeja']
+                        + (float) $p['plastico'] + (float) $p['costo_mod'];
+
+            $costoMpPorUnidad = $vol > 0 ? $costoMpTotal / $vol : $costoMpTotal;
+            $costoTotal       = $estado === 'completo' ? ($costoMpPorUnidad + $empaqueMod) : null;
+
+            $margen = (float) $p['porcentaje_utilidad'];
+            $precioVentaCalc = $costoTotal !== null && $margen > 0
+                ? round($costoTotal * (1 + $margen / 100), 2)
+                : ($costoTotal !== null ? round($costoTotal, 2) : null);
+
+            // Tandas finales: floor (no contás tandas parciales) y galones rendibles.
+            $tandasPosibles = $tandasMin === INF ? 0 : floor($tandasMin);
+            $galonesPosibles = $tandasPosibles * $vol;
+
+            $resultado[] = [
+                'id_item_general'      => (int) $p['id_item_general'],
+                'nombre'               => $p['nombre'],
+                'codigo'               => $p['codigo'],
+                'categoria_nombre'     => $p['categoria_nombre'],
+                'volumen_base'         => $vol,
+                'estado'               => $estado,
+                'mps_total'            => count($mps),
+                'mps_faltantes'        => $faltantes,
+                // Capacidad de producción con stock actual
+                'tandas_posibles'      => (int) $tandasPosibles,
+                'galones_posibles'     => $galonesPosibles,
+                'cuello_botella'       => $cuello,
+                'costo_mp_total'       => $estado === 'completo' ? round($costoMpTotal, 2) : null,
+                'costo_mp_por_unidad'  => $estado === 'completo' ? round($costoMpPorUnidad, 2) : null,
+                'costo_empaque_mod'    => round($empaqueMod, 2),
+                // Desglose de empaque y mano de obra (los 5 componentes de costos_item)
+                'empaque_mod_detalle'  => [
+                    'envase'    => round((float) $p['envase'], 2),
+                    'etiqueta'  => round((float) $p['etiqueta'], 2),
+                    'bandeja'   => round((float) $p['bandeja'], 2),
+                    'plastico'  => round((float) $p['plastico'], 2),
+                    'costo_mod' => round((float) $p['costo_mod'], 2),
+                ],
+                'costo_total'          => $costoTotal !== null ? round($costoTotal, 2) : null,
+                'porcentaje_utilidad'  => $margen,
+                'precio_venta_calc'    => $precioVentaCalc,
+                'precio_venta_manual'  => $p['precio_venta_manual'] !== null ? (float) $p['precio_venta_manual'] : null,
+                'precio_manual_activo' => (int) ($p['precio_manual_activo'] ?? 0),
+                'proveedores_usados'   => array_values($proveedoresUsados),
+            ];
+        }
+
+        // Cobertura global de MPs: para onboarding/diagnóstico del usuario.
+        $totalMps     = count($mpIds);
+        $cubiertasMps = 0;
+        foreach ($mpIds as $mid) {
+            if (!empty($proveedoresPorMp[$mid])) $cubiertasMps++;
+        }
+
+        return [
+            'productos' => $resultado,
+            'cobertura' => [
+                'mps_totales'       => $totalMps,
+                'mps_cubiertas'     => $cubiertasMps,
+                'mps_sin_proveedor' => $totalMps - $cubiertasMps,
+                'pct'               => $totalMps > 0 ? round(($cubiertasMps / $totalMps) * 100, 1) : 0,
+            ],
+        ];
+    }
+
+    /**
+     * Versión detallada de un solo producto: incluye breakdown línea por línea
+     * con proveedor seleccionado, cantidad, precio/kg y subtotal.
+     *
+     * Usa la misma lógica de matching que get_costos_produccion_batch
+     * (priority 1 link + priority 2/3 por nombre, gana el más barato).
+     */
+    public function get_costo_produccion_detalle(int $itemId): ?array
+    {
+        $batch = $this->get_costos_produccion_batch();
+        $producto = null;
+        foreach (($batch['productos'] ?? []) as $p) {
+            if ($p['id_item_general'] === $itemId) {
+                $producto = $p;
+                break;
+            }
+        }
+        if (!$producto) return null;
+
+        // Re-fetch ingredients with provider detail
+        $formulacion = $this->db->query(
+            'SELECT id_formulaciones FROM formulaciones WHERE item_general_id = ? AND estado = 1 LIMIT 1',
+            [$itemId]
+        )->getRowArray();
+        if (!$formulacion) return $producto;
+
+        $ingredientes = $this->db->query('
+            SELECT
+                igf.item_general_id AS mp_id,
+                igf.cantidad,
+                igf.porcentaje,
+                ig.nombre AS mp_nombre,
+                ig.codigo AS mp_codigo,
+                ig.deleted_at AS mp_deleted
+            FROM item_general_formulaciones igf
+            INNER JOIN item_general ig ON ig.id_item_general = igf.item_general_id
+            WHERE igf.formulaciones_id = ?
+            ORDER BY ig.nombre ASC
+        ', [$formulacion['id_formulaciones']])->getResultArray();
+
+        $mpIds = array_column($ingredientes, 'mp_id');
+        $mpsPorId = [];
+        foreach ($ingredientes as $i) {
+            $mpsPorId[(int) $i['mp_id']] = ['nombre' => $i['mp_nombre']];
+        }
+
+        $proveedoresPorMp = [];
+        if (!empty($mpIds)) {
+            $placeholders = implode(',', array_fill(0, count($mpIds), '?'));
+            $rows = $this->db->query("
+                SELECT
+                    ip.item_general_id,
+                    ip.id_item_proveedor,
+                    ip.precio_unitario,
+                    ip.factor_conversion,
+                    ip.proveedor_id,
+                    ip.nombre AS item_proveedor_nombre,
+                    p.nombre_empresa,
+                    uc.nombre AS unidad_compra
+                FROM item_proveedor ip
+                INNER JOIN proveedor p ON p.id_proveedor = ip.proveedor_id
+                LEFT JOIN unidad   uc ON uc.id_unidad   = ip.unidad_compra_id
+                WHERE ip.disponible = 1
+                  AND ip.deleted_at IS NULL
+                  AND p.deleted_at IS NULL
+                  AND (ip.item_general_id IN ($placeholders) OR ip.item_general_id IS NULL)
+            ", $mpIds)->getResultArray();
+
+            foreach ($rows as $r) {
+                $factor = max((float) ($r['factor_conversion'] ?: 1), 0.001);
+                $r['precio_por_kg'] = round((float) $r['precio_unitario'] / $factor, 4);
+
+                $ipItemId = $r['item_general_id'] !== null ? (int) $r['item_general_id'] : null;
+
+                // Priority 1: link directo
+                if ($ipItemId !== null && isset($mpsPorId[$ipItemId])) {
+                    $r['match_tipo'] = 1;
+                    $proveedoresPorMp[$ipItemId][] = $r;
+                    continue;
+                }
+                // Priority 2/3: match por nombre
+                foreach ($mpsPorId as $mpId => $mp) {
+                    $score = $this->matchNombre($mp['nombre'], (string) $r['item_proveedor_nombre']);
+                    if ($score > 0) {
+                        $r['match_tipo'] = $score + 1;
+                        $proveedoresPorMp[$mpId][] = $r;
+                    }
+                }
+            }
+            foreach ($proveedoresPorMp as &$opts) {
+                usort($opts, function ($a, $b) {
+                    $cmp = ($a['match_tipo'] <=> $b['match_tipo']);
+                    if ($cmp !== 0) return $cmp;
+                    return $a['precio_por_kg'] <=> $b['precio_por_kg'];
+                });
+            }
+            unset($opts);
+        }
+
+        $detalle = [];
+        foreach ($ingredientes as $mp) {
+            $mpId = (int) $mp['mp_id'];
+            $cantidad = (float) $mp['cantidad'];
+            $opciones = $proveedoresPorMp[$mpId] ?? [];
+            $mejor    = $opciones[0] ?? null;
+
+            $detalle[] = [
+                'mp_id'               => $mpId,
+                'nombre'              => $mp['mp_nombre'],
+                'codigo'              => $mp['mp_codigo'],
+                'archivado'           => !empty($mp['mp_deleted']),
+                'cantidad_kg'         => $cantidad,
+                'porcentaje'          => (float) ($mp['porcentaje'] ?? 0),
+                'proveedor_id'        => $mejor['proveedor_id']     ?? null,
+                'proveedor_nombre'    => $mejor['nombre_empresa']   ?? null,
+                'item_proveedor_id'   => $mejor['id_item_proveedor']?? null,
+                'item_proveedor_nombre' => $mejor['item_proveedor_nombre'] ?? null,
+                'unidad_compra'       => $mejor['unidad_compra']    ?? null,
+                'factor_conversion'   => isset($mejor['factor_conversion']) ? (float) $mejor['factor_conversion'] : null,
+                'precio_unitario'     => isset($mejor['precio_unitario'])   ? (float) $mejor['precio_unitario']   : null,
+                'precio_por_kg'       => $mejor['precio_por_kg']    ?? null,
+                'subtotal'            => $mejor ? round($cantidad * (float) $mejor['precio_por_kg'], 2) : null,
+                'total_opciones'      => count($opciones),
+            ];
+        }
+
+        $producto['detalle_ingredientes'] = $detalle;
+        return $producto;
+    }
 }

@@ -23,7 +23,7 @@ class AuditoriaController extends ResourceController
      */
     public function loginAttempts()
     {
-        if (!$this->userHasRole('admin')) {
+        if (!$this->userHasAdminAccess()) {
             return $this->failForbidden('Solo administradores pueden ver el log de auditoría.');
         }
 
@@ -59,7 +59,7 @@ class AuditoriaController extends ResourceController
      */
     public function movimientos()
     {
-        if (!$this->userHasRole('admin')) {
+        if (!$this->userHasAdminAccess()) {
             return $this->failForbidden('Solo administradores pueden ver el log de auditoría.');
         }
 

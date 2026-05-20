@@ -43,7 +43,7 @@ class ConfiguracionController extends ResourceController
     /** PUT /api/configuracion/:clave  body: { valor: ... } */
     public function update($clave = null)
     {
-        if (!$this->userHasRole('admin')) {
+        if (!$this->userHasAdminAccess()) {
             return $this->failForbidden('Solo administradores pueden modificar la configuración.');
         }
 
@@ -93,7 +93,7 @@ class ConfiguracionController extends ResourceController
     /** PUT /api/configuracion/bulk  body: { configs: { clave: valor, … } } */
     public function bulkUpdate()
     {
-        if (!$this->userHasRole('admin')) {
+        if (!$this->userHasAdminAccess()) {
             return $this->failForbidden('Solo administradores pueden modificar la configuración.');
         }
 

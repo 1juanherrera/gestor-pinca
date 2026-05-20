@@ -24,7 +24,7 @@ class EmpresaController extends ResourceController
     /** PUT /api/empresa — actualiza la empresa (solo admin) */
     public function update($id = null)
     {
-        if (!$this->userHasRole('admin')) {
+        if (!$this->userHasAdminAccess()) {
             return $this->failForbidden('Solo administradores pueden modificar la empresa.');
         }
 
@@ -56,7 +56,7 @@ class EmpresaController extends ResourceController
      */
     public function uploadLogo()
     {
-        if (!$this->userHasRole('admin')) {
+        if (!$this->userHasAdminAccess()) {
             return $this->failForbidden('Solo administradores pueden cambiar el logo.');
         }
 
@@ -131,7 +131,7 @@ class EmpresaController extends ResourceController
     /** DELETE /api/empresa/logo — quita el logo actual (solo admin). */
     public function deleteLogo()
     {
-        if (!$this->userHasRole('admin')) {
+        if (!$this->userHasAdminAccess()) {
             return $this->failForbidden('Solo administradores pueden eliminar el logo.');
         }
 

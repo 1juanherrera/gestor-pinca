@@ -86,6 +86,14 @@ $routes->group('api', function ($routes) {
     $routes->post('formulaciones/clonar', 'FormulacionesController::clonar');
     $routes->put('formulaciones/(:num)',  'FormulacionesController::update/$1');
 
+    // COSTOS DE PRODUCCIÓN — vista agregada de costos finales por producto
+    $routes->get('costos-produccion',           'CostosProduccionController::index');
+    $routes->get('costos-produccion/(:num)',    'CostosProduccionController::show/$1');
+    $routes->get('costos-produccion/(:num)/historia', 'CostosProduccionController::historia/$1');
+
+    // SALUD DEL SISTEMA — dashboard de calidad de datos
+    $routes->get('salud-sistema',               'SaludSistemaController::index');
+
     // PROVEEDORES
     $routes->get('proveedores', 'ProveedorController::proveedores');
     $routes->get('proveedor_items', 'ProveedorController::get_item_proveedores');

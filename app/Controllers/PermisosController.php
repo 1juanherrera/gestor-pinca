@@ -6,10 +6,14 @@ use CodeIgniter\HTTP\ResponseInterface;
 
 class PermisosController extends BaseController
 {
-    private function requireAdmin(): bool
+    /**
+     * Solo superadmin puede mutar la gestión de roles.
+     * (admin sigue viendo todo pero ya no puede tocar permisos_rol_modulo.)
+     */
+    private function requireSuperadmin(): bool
     {
         return isset($this->request->usuario->rol)
-            && $this->request->usuario->rol === 'admin';
+            && $this->request->usuario->rol === 'superadmin';
     }
 
     /**
@@ -24,7 +28,7 @@ class PermisosController extends BaseController
             ->orderBy('rol')
             ->get()->getResultArray();
 
-        $result = ['admin' => [], 'operador' => [], 'visor' => []];
+        $result = ['superadmin' => [], 'admin' => [], 'operador' => [], 'visor' => []];
         foreach ($rows as $row) {
             if (isset($result[$row['rol']])) {
                 $result[$row['rol']][] = $row['modulo'];
@@ -40,7 +44,7 @@ class PermisosController extends BaseController
      */
     public function show(string $rol): ResponseInterface
     {
-        $validRoles = ['admin', 'operador', 'visor'];
+        $validRoles = ['superadmin', 'admin', 'operador', 'visor'];
         if (!in_array($rol, $validRoles)) {
             return $this->error('Rol inválido.', 400);
         }
@@ -61,11 +65,11 @@ class PermisosController extends BaseController
      */
     public function update(string $rol): ResponseInterface
     {
-        if (!$this->requireAdmin()) {
-            return $this->error('Acceso denegado. Se requiere rol administrador.', 403);
+        if (!$this->requireSuperadmin()) {
+            return $this->error('Acceso denegado. Solo el superadmin puede gestionar permisos.', 403);
         }
 
-        $validRoles = ['admin', 'operador', 'visor'];
+        $validRoles = ['superadmin', 'admin', 'operador', 'visor'];
         if (!in_array($rol, $validRoles)) {
             return $this->error('Rol inválido.', 400);
         }
@@ -107,7 +111,7 @@ class PermisosController extends BaseController
      */
     public function listarUsuarios(): ResponseInterface
     {
-        if (!$this->requireAdmin()) {
+        if (!$this->requireSuperadmin()) {
             return $this->error('Acceso denegado.', 403);
         }
 
@@ -125,16 +129,16 @@ class PermisosController extends BaseController
      */
     public function cambiarRol(int $userId): ResponseInterface
     {
-        if (!$this->requireAdmin()) {
+        if (!$this->requireSuperadmin()) {
             return $this->error('Acceso denegado.', 403);
         }
 
         $body = $this->request->getJSON(true);
         $nuevoRol = $body['rol'] ?? '';
-        $validRoles = ['admin', 'operador', 'visor'];
+        $validRoles = ['superadmin', 'admin', 'operador', 'visor'];
 
         if (!in_array($nuevoRol, $validRoles)) {
-            return $this->error('Rol inválido. Debe ser: admin, operador o visor.', 400);
+            return $this->error('Rol inválido. Debe ser: superadmin, admin, operador o visor.', 400);
         }
 
         $db = \Config\Database::connect();

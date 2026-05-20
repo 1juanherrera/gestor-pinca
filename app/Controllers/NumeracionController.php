@@ -37,7 +37,7 @@ class NumeracionController extends ResourceController
     /** PUT /api/numeracion/:id — admin edita una serie */
     public function update($id = null)
     {
-        if (!$this->userHasRole('admin')) {
+        if (!$this->userHasAdminAccess()) {
             return $this->failForbidden('Solo administradores pueden modificar la numeración.');
         }
 
@@ -84,7 +84,7 @@ class NumeracionController extends ResourceController
     /** POST /api/numeracion — admin crea nueva serie (típicamente nueva resolución DIAN) */
     public function create()
     {
-        if (!$this->userHasRole('admin')) {
+        if (!$this->userHasAdminAccess()) {
             return $this->failForbidden('Solo administradores pueden crear series.');
         }
 

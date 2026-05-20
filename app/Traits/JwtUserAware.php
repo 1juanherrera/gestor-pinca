@@ -84,8 +84,25 @@ trait JwtUserAware
      */
     protected function userHasModule(string $modulo): bool
     {
-        // Admin tiene acceso a todo
-        if ($this->getUserRol() === 'admin') return true;
+        // Admin y superadmin tienen acceso a todo
+        if (in_array($this->getUserRol(), ['admin', 'superadmin'], true)) return true;
         return in_array($modulo, $this->getUserModulos(), true);
+    }
+
+    /**
+     * El usuario es superadmin — único rol con permiso para mutar permisos_rol_modulo.
+     */
+    protected function userIsSuperadmin(): bool
+    {
+        return $this->getUserRol() === 'superadmin';
+    }
+
+    /**
+     * El usuario tiene acceso administrativo (configuración, empresa, numeración, etc.).
+     * superadmin ⊇ admin: ambos pasan.
+     */
+    protected function userHasAdminAccess(): bool
+    {
+        return in_array($this->getUserRol(), ['admin', 'superadmin'], true);
     }
 }

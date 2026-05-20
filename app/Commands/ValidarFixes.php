@@ -69,6 +69,10 @@ class ValidarFixes extends BaseCommand
         $this->test28_remisionesUsaCfg();
 
         CLI::newLine();
+        CLI::write('── Costos de Producción ──', 'cyan');
+        $this->test29_costosProduccionBatch();
+
+        CLI::newLine();
         CLI::write("═══ Resumen ═══", 'cyan');
         CLI::write("PASS: {$this->pass}   FAIL: {$this->fail}", $this->fail === 0 ? 'green' : 'red');
 
@@ -760,6 +764,93 @@ class ValidarFixes extends BaseCommand
             $this->pass('IVA.i convertir() lee iva_default de Cfg');
         } else {
             $this->fail('IVA.i', "sinHardcode={$sinHardcode}, usaCfg={$usaCfg}");
+        }
+    }
+
+    // ── Costos de Producción ──────────────────────────────────────────────
+    private function test29_costosProduccionBatch(): void
+    {
+        CLI::write('CostosProduccion endpoint + batch sin N+1', 'cyan');
+
+        $model = new \App\Models\FormulacionesModel();
+        if (!method_exists($model, 'get_costos_produccion_batch')) {
+            $this->fail('CP.a método existe', 'get_costos_produccion_batch no definido');
+            return;
+        }
+        $this->pass('CP.a método get_costos_produccion_batch existe');
+
+        $batch = $model->get_costos_produccion_batch();
+        if (!is_array($batch) || !isset($batch['productos']) || !isset($batch['cobertura'])) {
+            $this->fail('CP.b retorno', 'shape inválido — esperaba { productos, cobertura }');
+            return;
+        }
+        $rows = $batch['productos'];
+        $cobertura = $batch['cobertura'];
+        $this->pass('CP.b devuelve { productos, cobertura }', count($rows) . ' productos · cobertura ' . $cobertura['pct'] . '%');
+
+        if (empty($rows)) {
+            CLI::write('  (sin productos con fórmula activa — resto se salta)', 'yellow');
+            return;
+        }
+
+        $p = $rows[0];
+        $camposObligatorios = [
+            'id_item_general', 'nombre', 'estado', 'mps_total', 'mps_faltantes',
+            'costo_empaque_mod', 'porcentaje_utilidad', 'proveedores_usados',
+        ];
+        $faltantes = array_filter($camposObligatorios, fn($k) => !array_key_exists($k, $p));
+        if (empty($faltantes)) {
+            $this->pass('CP.c shape correcto en cada producto');
+        } else {
+            $this->fail('CP.c shape', 'faltan campos: ' . implode(', ', $faltantes));
+        }
+
+        // Estado correcto: completos no tienen mps_faltantes, incompletos sí
+        $coherente = true;
+        foreach ($rows as $r) {
+            if ($r['estado'] === 'completo' && !empty($r['mps_faltantes'])) { $coherente = false; break; }
+            if ($r['estado'] === 'incompleto' && empty($r['mps_faltantes'])) { $coherente = false; break; }
+            if ($r['estado'] === 'incompleto' && $r['costo_total'] !== null) { $coherente = false; break; }
+        }
+        if ($coherente) {
+            $this->pass('CP.d coherencia estado vs costo_total / mps_faltantes');
+        } else {
+            $this->fail('CP.d coherencia', 'algún producto tiene estado y costos desalineados');
+        }
+
+        // Detalle de un producto: debe traer detalle_ingredientes
+        $detalle = $model->get_costo_produccion_detalle((int) $p['id_item_general']);
+        if ($detalle && isset($detalle['detalle_ingredientes']) && is_array($detalle['detalle_ingredientes'])) {
+            $this->pass('CP.e detalle por id incluye detalle_ingredientes', count($detalle['detalle_ingredientes']) . ' ingredientes');
+        } else {
+            $this->fail('CP.e detalle por id', 'no devuelve detalle_ingredientes');
+        }
+
+        // Ruta registrada
+        $routes = service('routes');
+        $allRoutes = $routes->getRoutes('GET');
+        $tieneRuta = isset($allRoutes['api/costos-produccion'])
+                     || isset($allRoutes['api/costos\\-produccion']);
+        $tieneRutaShow = false;
+        foreach (array_keys($allRoutes) as $r) {
+            if (str_contains($r, 'costos-produccion')) { $tieneRutaShow = true; break; }
+        }
+        if ($tieneRutaShow) {
+            $this->pass('CP.f rutas api/costos-produccion registradas');
+        } else {
+            $this->fail('CP.f rutas', 'no aparecen en el router');
+        }
+
+        // Diagnóstico real: cuántos completos vs incompletos
+        $completos   = count(array_filter($rows, fn($r) => $r['estado'] === 'completo'));
+        $incompletos = count($rows) - $completos;
+        CLI::write("  ℹ {$completos} completos · {$incompletos} incompletos", 'yellow');
+
+        // Diagnóstico extra: tomar el primer incompleto y ver qué MPs le faltan
+        $incompleto = array_values(array_filter($rows, fn($r) => $r['estado'] === 'incompleto'))[0] ?? null;
+        if ($incompleto && !empty($incompleto['mps_faltantes'])) {
+            $nombresFaltantes = array_map(fn($mp) => $mp['nombre'], array_slice($incompleto['mps_faltantes'], 0, 5));
+            CLI::write("  ℹ Sample MP faltantes en '{$incompleto['nombre']}': " . implode(' | ', $nombresFaltantes), 'yellow');
         }
     }
 }

@@ -131,11 +131,12 @@ class UsuarioController extends BaseController
             'msg'     => 'Login exitoso',
             'token'   => $token,
             'usuario' => [
-                'id'       => $usuario['id_usuarios'],
-                'username' => $usuario['username'],
-                'nombre'   => $nombre,
-                'rol'      => $rol,
-                'modulos'  => $modulos,
+                'id'                   => $usuario['id_usuarios'],
+                'username'             => $usuario['username'],
+                'nombre'               => $nombre,
+                'rol'                  => $rol,
+                'modulos'              => $modulos,
+                'password_must_change' => (int) ($usuario['password_must_change'] ?? 0),
             ],
         ]);
     }
@@ -254,7 +255,11 @@ class UsuarioController extends BaseController
                 ->setJSON(['ok' => false, 'msg' => 'La contraseña actual es incorrecta.']);
         }
 
-        $usuarioModel->update($userId, ['password' => $newPassword]);
+        // Al cambiar el password, limpiamos el flag de "debe cambiar" si lo tenía.
+        $usuarioModel->update($userId, [
+            'password'             => $newPassword,
+            'password_must_change' => 0,
+        ]);
 
         log_message('info', "[PASSWORD] Usuario {$this->request->usuario->username} actualizó su contraseña");
 
