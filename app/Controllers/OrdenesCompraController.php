@@ -16,6 +16,46 @@ class OrdenesCompraController extends ResourceController
 
     protected $modelName = OrdenesCompraModel::class;
 
+    /**
+     * Resuelve el código de lote para una recepción de OC.
+     *
+     * - Si el usuario proveyó uno (no vacío), lo respeta.
+     * - Si ya existen capas con `orden_compra_id = $idOrden` y `lote_proveedor`
+     *   no nulo, reusa ese mismo código → todas las líneas de la OC comparten lote.
+     * - Si no existe ninguno, genera `LOT-OC{idOrden}-{Ymd}`.
+     */
+    private function resolverLoteProveedor(int $idOrden, ?string $loteInput): string
+    {
+        $manual = trim((string) ($loteInput ?? ''));
+        if ($manual !== '') return $manual;
+
+        $db = \Config\Database::connect();
+        $existente = $db->table('inventario_capas')
+            ->select('lote_proveedor')
+            ->where('orden_compra_id', $idOrden)
+            ->where('lote_proveedor IS NOT NULL')
+            ->where("TRIM(lote_proveedor) != ''", null, false)
+            ->orderBy('fecha_ingreso', 'ASC')
+            ->limit(1)
+            ->get()->getRowArray();
+
+        if ($existente && !empty($existente['lote_proveedor'])) {
+            return $existente['lote_proveedor'];
+        }
+
+        return 'LOT-OC' . $idOrden . '-' . date('Ymd');
+    }
+
+    // GET api/ordenes_compra/{id}/lote-sugerido
+    // Devuelve el código de lote que se usará al recibir mercancía de esta OC.
+    // El frontend lo muestra en el input antes de confirmar.
+    public function loteSugerido($idOrden = null)
+    {
+        if (!$idOrden) return $this->fail('ID no proporcionado', 400);
+        $lote = $this->resolverLoteProveedor((int) $idOrden, null);
+        return $this->respond(['lote' => $lote]);
+    }
+
     // GET api/ordenes_compra
     public function index()
     {
@@ -319,6 +359,10 @@ class OrdenesCompraController extends ResourceController
                 $cantidadBase     = $cantidadRecibida * $factorConversion;
                 $costoUnitarioKg  = (float) $linea['precio_unit'] / $factorConversion;
 
+                // Lote: el helper reusa el código si ya hay capas de esta misma
+                // OC, o genera uno nuevo si esta es la primera línea recibida.
+                $loteProveedor = $this->resolverLoteProveedor((int) $idOrden, $data['lote_proveedor'] ?? null);
+
                 // Crear capa de inventario
                 $capasModel = new InventarioCapasModel();
                 $capasModel->crearCapa([
@@ -333,7 +377,7 @@ class OrdenesCompraController extends ResourceController
                     'unidad_compra_id'    => $itemProv?->unidad_compra_id ?? null,
                     'factor_conversion'   => $factorConversion,
                     'precio_compra'       => (float) $linea['precio_unit'],
-                    'lote_proveedor'      => $data['lote_proveedor'] ?? null,
+                    'lote_proveedor'      => $loteProveedor,
                 ]);
 
                 // Inventario agregado (compatibilidad)
@@ -372,7 +416,7 @@ class OrdenesCompraController extends ResourceController
                         'unidad_compra'       => $itemProv?->unidad_compra_id ?? null,
                         'factor_conversion'   => $factorConversion,
                         'precio_unit_compra'  => (float) $linea['precio_unit'],
-                        'lote_proveedor'      => $data['lote_proveedor'] ?? null,
+                        'lote_proveedor'      => $loteProveedor,
                     ],
                 ]);
             }
@@ -401,14 +445,248 @@ class OrdenesCompraController extends ResourceController
         }
     }
 
+    // POST api/ordenes_compra/{id}/recibir-prorrateado
+    // Recibe varias líneas en un solo lote con un precio total negociado
+    // (típicamente menor a la suma de precios originales por descuento por volumen).
+    //
+    // Body:
+    //   {
+    //     precio_total_pagado: number,
+    //     lote_proveedor?: string,                // se aplica a todas las capas
+    //     lineas: [
+    //       { id_detalle: int, cantidad_recibida: number }
+    //     ]
+    //   }
+    //
+    // Cálculo:
+    //   valor_lista_total  = Σ (cantidad_recibida × precio_unit_oc)
+    //   factor             = precio_total_pagado / valor_lista_total
+    //   por cada línea:
+    //     precio_unit_real = precio_unit_oc × factor       (en unidad_compra)
+    //     costo_unit_kg    = precio_unit_real / factor_conversion   (en unidad base)
+    //
+    // Todo va en una sola transacción: si una línea falla, ninguna se aplica.
+    public function recibirLoteProrrateado($idOrden = null)
+    {
+        $orden = $this->model->detalle((int) $idOrden);
+        if (!$orden) return $this->failNotFound("Orden con ID $idOrden no encontrada.");
+        if ($orden['estado'] !== 'Enviada') {
+            return $this->fail('Solo se pueden recibir líneas de órdenes Enviadas.', 400);
+        }
+
+        $body            = json_decode($this->request->getBody(), true) ?? [];
+        $precioPagado    = (float) ($body['precio_total_pagado'] ?? 0);
+        $loteProveedor   = $body['lote_proveedor'] ?? null;
+        $lineasPayload   = $body['lineas'] ?? [];
+
+        if ($precioPagado <= 0) {
+            return $this->failValidationErrors('El precio total pagado debe ser mayor a 0.');
+        }
+        if (!is_array($lineasPayload) || count($lineasPayload) < 2) {
+            return $this->failValidationErrors('El prorrateo necesita al menos 2 líneas.');
+        }
+
+        // Mapeo id_detalle → línea original (para validar y calcular).
+        $lineasPorId = [];
+        foreach ($orden['lineas'] as $l) {
+            $lineasPorId[(int) $l['id_detalle']] = $l;
+        }
+
+        // Validar cada línea del payload + calcular valor lista total.
+        $valorListaTotal = 0;
+        $lineasPreparadas = [];
+        foreach ($lineasPayload as $lp) {
+            $idDetalle = (int) ($lp['id_detalle'] ?? 0);
+            $cantRec   = (float) ($lp['cantidad_recibida'] ?? 0);
+            $linea     = $lineasPorId[$idDetalle] ?? null;
+
+            if (!$linea) {
+                return $this->failValidationErrors("Línea {$idDetalle} no pertenece a la OC.");
+            }
+            if ($linea['recibido_en']) {
+                return $this->failValidationErrors("La línea {$idDetalle} ya fue recibida.");
+            }
+            if ($cantRec <= 0) {
+                return $this->failValidationErrors("La cantidad recibida de la línea {$idDetalle} debe ser mayor a 0.");
+            }
+            $pendiente = max(0, (float) $linea['cantidad'] - (float) ($linea['cantidad_recibida'] ?? 0));
+            if ($cantRec > $pendiente + 0.0001) {
+                return $this->failValidationErrors(
+                    "La cantidad recibida de la línea {$idDetalle} ({$cantRec}) supera el pendiente ({$pendiente})."
+                );
+            }
+
+            $valorLista = $cantRec * (float) $linea['precio_unit'];
+            $valorListaTotal += $valorLista;
+
+            $lineasPreparadas[] = [
+                'idDetalle'   => $idDetalle,
+                'linea'       => $linea,
+                'cantRec'     => $cantRec,
+                'valorLista'  => $valorLista,
+            ];
+        }
+
+        if ($valorListaTotal <= 0) {
+            return $this->failValidationErrors('La suma del valor de lista debe ser mayor a 0.');
+        }
+
+        $factor   = $precioPagado / $valorListaTotal;
+        $bodegaId = (int) $orden['bodegas_id'];
+
+        // Resolver código de lote (un único código para todo el lote prorrateado).
+        $loteProveedor = $this->resolverLoteProveedor((int) $idOrden, $loteProveedor);
+
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        try {
+            $capasModel      = new InventarioCapasModel();
+            $inventarioModel = new InventarioModel();
+            $movModel        = new \App\Models\MovimientoInventarioModel();
+            $username        = $this->getUsername();
+
+            foreach ($lineasPreparadas as $lp) {
+                $idDetalle = $lp['idDetalle'];
+                $linea     = $lp['linea'];
+                $cantRec   = $lp['cantRec'];
+
+                // Lock optimista por línea: si dos usuarios procesan el mismo
+                // lote a la vez, el segundo falla aquí con stale read.
+                $lockRow = $db->query(
+                    'SELECT recibido_en, cantidad, cantidad_recibida FROM ordenes_compra_detalle
+                     WHERE id_detalle = ? FOR UPDATE',
+                    [$idDetalle]
+                )->getRow();
+                if (!$lockRow) throw new \Exception("Línea {$idDetalle} desapareció durante la transacción.");
+                if ($lockRow->recibido_en) {
+                    throw new \Exception("Otro usuario recibió la línea {$idDetalle} antes — recargá la orden.");
+                }
+
+                $recibidoActual    = (float) ($lockRow->cantidad_recibida ?? 0);
+                $pedidoActual      = (float) $lockRow->cantidad;
+                $cantidadAcumulada = $recibidoActual + $cantRec;
+                if ($cantidadAcumulada > $pedidoActual + 0.0001) {
+                    throw new \Exception("Línea {$idDetalle}: la cantidad acumulada supera el pedido tras lock.");
+                }
+                $completa = $cantidadAcumulada >= $pedidoActual - 0.0001;
+
+                $db->table('ordenes_compra_detalle')
+                    ->where('id_detalle', $idDetalle)
+                    ->update([
+                        'cantidad_recibida' => $cantidadAcumulada,
+                        'recibido_en'       => $completa ? date('Y-m-d H:i:s') : null,
+                    ]);
+
+                if (!$linea['item_general_id']) continue;
+                $itemGeneralId = (int) $linea['item_general_id'];
+
+                // Item proveedor → factor de conversión a unidad base.
+                $itemProv = $linea['item_proveedor_id']
+                    ? $db->table('item_proveedor')
+                        ->where('id_item_proveedor', $linea['item_proveedor_id'])
+                        ->get()->getRow()
+                    : null;
+
+                $factorConversion = $itemProv ? max((float) ($itemProv->factor_conversion ?: 1), 0.001) : 1;
+                $cantidadBase     = $cantRec * $factorConversion;
+
+                // Precio prorrateado: aplico el factor al precio_unit de la OC.
+                $precioUnitProrrateado = (float) $linea['precio_unit'] * $factor;
+                $costoUnitarioKg       = $precioUnitProrrateado / $factorConversion;
+
+                $capasModel->crearCapa([
+                    'item_general_id'     => $itemGeneralId,
+                    'bodegas_id'          => $bodegaId,
+                    'proveedor_id'        => $orden['proveedor_id'] ? (int) $orden['proveedor_id'] : null,
+                    'item_proveedor_id'   => $linea['item_proveedor_id'] ? (int) $linea['item_proveedor_id'] : null,
+                    'orden_compra_id'     => (int) $idOrden,
+                    'cantidad_original'   => $cantidadBase,
+                    'cantidad_disponible' => $cantidadBase,
+                    'costo_unitario'      => $costoUnitarioKg,
+                    'unidad_compra_id'    => $itemProv?->unidad_compra_id ?? null,
+                    'factor_conversion'   => $factorConversion,
+                    'precio_compra'       => $precioUnitProrrateado,
+                    'lote_proveedor'      => $loteProveedor,
+                ]);
+
+                $ok = $inventarioModel->ingresarABodega($itemGeneralId, $bodegaId, $cantidadBase);
+                if (!$ok) throw new \Exception("Error al ingresar al inventario el item {$itemGeneralId}.");
+
+                $promedio = $capasModel->recalcularPromedioPonderado($itemGeneralId);
+                $db->table('item_general')
+                    ->where('id_item_general', $itemGeneralId)
+                    ->update(['costo_produccion' => $promedio]);
+
+                $movModel->registrar([
+                    'tipo'             => \App\Models\MovimientoInventarioModel::TIPO_ENTRADA,
+                    'item_general_id'  => $itemGeneralId,
+                    'bodega_id'        => $bodegaId,
+                    'cantidad'         => $cantidadBase,
+                    'referencia_tipo'  => \App\Models\MovimientoInventarioModel::REF_OC,
+                    'referencia_id'    => (int) $idOrden,
+                    'descripcion'      => "Recepción lote prorrateado OC #{$orden['numero']} línea {$idDetalle}",
+                    'costo_unitario'   => $costoUnitarioKg,
+                    'responsable'      => $username,
+                    'metadata'         => [
+                        'numero_oc'              => $orden['numero'] ?? null,
+                        'proveedor_id'           => $orden['proveedor_id'] ?? null,
+                        'item_proveedor_id'      => $linea['item_proveedor_id'] ?? null,
+                        'cantidad_recibida'      => $cantRec,
+                        'unidad_compra'          => $itemProv?->unidad_compra_id ?? null,
+                        'factor_conversion'      => $factorConversion,
+                        'precio_unit_original'   => (float) $linea['precio_unit'],
+                        'precio_unit_prorrateado'=> $precioUnitProrrateado,
+                        'factor_prorrateo'       => $factor,
+                        'valor_lista_total_lote' => $valorListaTotal,
+                        'precio_pagado_lote'     => $precioPagado,
+                        'lote_proveedor'         => $loteProveedor,
+                    ],
+                ]);
+            }
+
+            // Marcar OC como Recibida si no quedan líneas pendientes.
+            $pendientes = (int) $db->query(
+                'SELECT COUNT(*) as total FROM ordenes_compra_detalle
+                 WHERE ordenes_compra_id = ? AND recibido_en IS NULL',
+                [$idOrden]
+            )->getRow()->total;
+
+            if ($pendientes === 0) {
+                $db->table('ordenes_compra')
+                    ->where('id_orden', $idOrden)
+                    ->update(['estado' => 'Recibida']);
+            }
+
+            $db->transCommit();
+
+            log_message('info', "[OC_PRORRATEO] id={$idOrden} factor=" . round($factor, 4) . " líneas=" . count($lineasPreparadas) . " por {$username}");
+
+            return $this->respond([
+                'ok'      => true,
+                'mensaje' => 'Lote prorrateado y recibido correctamente.',
+                'factor'  => round($factor, 6),
+                'lineas'  => count($lineasPreparadas),
+            ]);
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            return $this->fail($e->getMessage(), 400);
+        }
+    }
+
     // DELETE api/ordenes_compra/{id} — solo Borrador
     public function delete($id = null)
     {
+        if (!$this->userHasAdminAccess()) {
+            return $this->failForbidden('Solo administradores pueden eliminar órdenes de compra.');
+        }
         $orden = $this->model->detalle((int) $id);
         if (!$orden) return $this->failNotFound("Orden con ID $id no encontrada.");
         if ($orden['estado'] !== 'Borrador') {
             return $this->fail('Solo se pueden eliminar órdenes en estado Borrador.', 400);
         }
+        log_message('info', "[OC_DELETE] id={$id} por {$this->getUsername()}");
 
         $db = \Config\Database::connect();
         $db->transStart();

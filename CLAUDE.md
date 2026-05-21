@@ -958,3 +958,115 @@ El frontend depende de que:
 
 > **Snapshot al cierre 2026-05-20**: Backend con dos features nuevas (Costos de Producción + Salud del Sistema), rol superadmin para gestión exclusiva de permisos, y backup automatizado funcional. La gestión de roles ya no es accesible para admin — solo para el `superadmin` (usuario Juan Herrera). El `admin` mantiene acceso operativo a todo lo demás. Snapshot mensual de costos via `php spark snapshot:costos` (correr 1×/mes para alimentar el gráfico de evolución).
 
+---
+
+## Sesión 2026-05-21 — Hardening + Prorrateo de OC + Token versioning
+
+Sesión grande coordinada con frontend. Auditoría de 5 agentes → plan en 3 fases → ejecución completa. Ver `PENDIENTES.md` en la raíz del backend para el backlog (Swagger, tests, deploy hardening, etc.).
+
+### Migración nueva
+
+```
+2026-05-21-000001 AddTokenVersionToUsuarios
+```
+
+Agrega `usuarios.token_version INT UNSIGNED NOT NULL DEFAULT 1` (after `password_must_change`). Cada JWT incluye el token_version del usuario en su payload; el filtro lo valida contra la BD en cada request. Cuando se cambia el rol de un usuario o el usuario cambia su password, el contador se incrementa → cualquier JWT viejo deja de validar.
+
+### Endpoints nuevos
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/api/auth/me` | Devuelve usuario fresco de BD (rol, módulos actualizados, password_must_change). El frontend lo consulta antes de renderizar rutas protegidas — resuelve el flash del panel cuando hay JWT expirado en localStorage. |
+| `POST` | `/api/ordenes_compra/:id/recibir-prorrateado` | Recibe varias líneas en un solo lote con precio total negociado. Reparte el factor proporcional al valor de cada línea y crea capas con costo prorrateado. Todo en una transacción con `FOR UPDATE` por línea. |
+| `GET` | `/api/ordenes_compra/:id/lote-sugerido` | Devuelve `{lote: "..."}` — el código de lote que se usará al recibir mercancía de esta OC. Reusa el existente si ya hay capas con lote para esta OC, o genera `LOT-OC{id}-{Ymd}`. El frontend lo consume para pre-rellenar el input. |
+
+### Helper `resolverLoteProveedor` en `OrdenesCompraController`
+
+Centraliza la lógica del código de lote. Es llamado por `recibirLinea`, `recibirLoteProrrateado`, y `loteSugerido`. Garantiza que todas las recepciones de una misma OC compartan el mismo lote (a menos que el usuario lo override manualmente).
+
+Reglas:
+1. Si el payload trae `lote_proveedor` no vacío → respetar (override manual).
+2. Sino, si ya existen capas con `orden_compra_id=$id` y `lote_proveedor` no nulo → reusar ese código.
+3. Sino, generar `LOT-OC{idOrden}-{Ymd}`.
+
+### Modificaciones en `JwtFilter::before`
+
+Después de decodificar el JWT, ahora valida `token_version` contra la BD:
+
+```php
+$tokenVersion = (int) ($decoded->data->token_version ?? 1);
+$userId       = (int) ($decoded->data->id ?? 0);
+$row = $db->table('usuarios')->select('token_version')->where('id_usuarios', $userId)->get()->getRowArray();
+if ($row && (int) $row['token_version'] !== $tokenVersion) {
+    return Services::response()->setJSON(['ok' => false, 'msg' => 'Sesión invalidada...'])->setStatusCode(401);
+}
+```
+
+Tokens emitidos antes de esta feature (sin `token_version` en payload) se asumen v1.
+
+### `cambiarPassword` ahora devuelve `token`
+
+Para no patear al usuario que acaba de cambiar su password (porque el token actual sería invalidado por el bump de `token_version`), el endpoint devuelve un JWT fresco con el nuevo `token_version`. El frontend lo usa para mantener viva la sesión.
+
+### `cambiarRol` (PermisosController) bumpea `token_version`
+
+Ahora hace `set('token_version', 'token_version + 1', false)` además del UPDATE de rol → cualquier sesión del usuario afectado se invalida en el siguiente request.
+
+### Fixes de integridad (Fase 1)
+
+| # | Cambio | Archivo |
+|---|---|---|
+| F1.1 | `FacturasController::cambiarEstado` rewriteado: `transBegin` + `SELECT ... FOR UPDATE` + bloqueo de transición desde `Anulada` (terminal). Al anular: borra pagos_cliente asociados, marca notas_credito como Anulada, loguea con username. | `FacturasController.php` |
+| F1.2 | `FacturasController::create` valida que `cliente_id` exista y `deleted_at IS NULL` antes del INSERT. | `FacturasController.php` |
+| F1.3 | `CotizacionesController::create` y `::convertir`: misma validación FK de cliente. | `CotizacionesController.php` |
+| F1.4 | Race condition en consumo de capas: `InventarioCapasModel::consumirCapasFIFO/PorProveedor/Manual` ahora usan `SELECT ... FOR UPDATE`. Método privado `_obtenerCapasParaConsumo` con raw query + `FOR UPDATE`. `obtenerCapas` (display) queda intacto. | `InventarioCapasModel.php` |
+
+### Fixes de autorización (Fase 2)
+
+DELETEs de Facturas, Clientes, Órdenes de Compra y Cotizaciones ahora chequean `userHasAdminAccess()` y loguean la acción. Trait `JwtUserAware` agregado a `ClientesController`, `CotizacionesController` y `FacturasController` (ya estaba en OrdenesCompraController).
+
+`UsuarioModel::allowedFields` ahora incluye `password_must_change` — sin esto, CI4 silenciaba el flag al limpiarlo en `cambiarPassword`, causando que el modal forzado apareciera en cada login.
+
+### Validación con `ValidatesJson` (Fase 2)
+
+- `FormulacionesController::create/update`: nuevas reglas `RULES_FORMULACION` con cantidades > 0, porcentajes [0, 100], item_general_id > 0.
+- `ItemProveedorController::vincular`: validación de `unidad_compra_id`, `factor_conversion`, `crear`, `tipo`. Complementa el `validarFactorConversion` existente.
+
+### `ApiResponse` trait (pilot, Fase 3)
+
+Archivo nuevo `app/Traits/ApiResponse.php` con métodos `apiSuccess`, `apiCreated`, `apiFail`, `apiNotFound`, `apiForbidden`, `apiValidationError`. Devuelven shape consistente `{ok, msg, data?, errors?}`. **No se migró ningún controller existente** para no romper consumidores frontend; está disponible para nuevos endpoints.
+
+### Paginación capped
+
+`MovimientoInventarioController::index` ahora lee `Cfg::n('page_size_default', 50)` y `Cfg::n('max_per_page', 200)` en lugar de hardcodear `min(..., 200)`. Otros controllers con `?limit=` ya estaban cappeados (Item, Preparaciones, Search, NotificacionModel).
+
+### Modificación en `OrdenesCompraModel::detalle`
+
+Se agregó temporalmente `ip.precio_unitario AS precio_lista_actual` para el componente AnalisisAhorroOC del frontend. **Después se revirtió** (componente borrado). El JOIN ahora vuelve al original sin esa columna.
+
+### Módulos eliminados
+
+- **Tambores**: `TamborController.php`, `TamborModel.php`, 6 rutas en `Routes.php`, registros `modulo='tambores'` en `permisos_rol_modulo`. La migración que creó la tabla queda en historial (no se rolea). Frontend también borrado completo.
+- **Prorrateo** (frontend standalone): el endpoint `/ordenes_compra/:id/recibir-prorrateado` y la lógica backend **se mantienen** — son la pieza central del flujo prorrateado vía OrdenDrawer.
+
+### Validador automatizado (sigue disponible)
+
+`php spark validar:fixes` ejecuta los 47 tests de regresión existentes contra la BD real. Útil correr antes de un commit grande.
+
+### Coupling con frontend (cosas para no romper)
+
+- `POST /login` debe incluir `token_version` en el `data` del JWT, y `password_must_change` en `usuario` del response.
+- `PATCH /usuarios/mi-password` debe devolver `{ok, msg, token}` — sin `token`, el frontend caería al login tras cambiar password.
+- `GET /auth/me` debe devolver `{ok, usuario: {id, username, nombre, rol, modulos, password_must_change}}`. Si cambia el shape, Layout.jsx deja de funcionar.
+- `POST /ordenes_compra/:id/recibir-prorrateado` shape: `{precio_total_pagado, lote_proveedor?, lineas: [{id_detalle, cantidad_recibida}]}`. El modal RecibirProrrateoModal envía exactamente esto.
+- `GET /ordenes_compra/:id/lote-sugerido` debe devolver `{lote: "string"}`. El modal lo consume al montarse.
+- Detalle de OC ya **no** trae `precio_lista_actual` (se eliminó al borrar AnalisisAhorroOC en frontend).
+
+### Backup creado en esta sesión
+
+`pinca_backend/backups/gestorpincadb_backup_2026-05-21_post-refactor-fase3.sql` (322 KB) — snapshot completo de la BD al cierre de la sesión.
+
+---
+
+> **Snapshot al cierre 2026-05-21**: Backend hardened con token_version en JWT (invalidación instantánea al cambiar rol/password), prorrateo de OC con auto-generación de código de lote y atomicidad transaccional, FacturasController::cambiarEstado atómico con reverso de pagos en anulación, InventarioCapasModel con `FOR UPDATE` cerrando race condition de consumo concurrente. Auditoría de 23 fixes anteriores + 6 nuevos críticos + 6 importantes ejecutados. Backlog en `PENDIENTES.md`. Próximo gran trabajo: deploy hardening (HTTPS, security headers, CORS prod, credenciales) cuando se decida desplegar.
+

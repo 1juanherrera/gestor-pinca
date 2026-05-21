@@ -11,6 +11,7 @@ class UsuarioModel extends BaseModel
         'nombre',
         'password',
         'rol',
+        'password_must_change',
     ];
 
     protected $beforeInsert = ['hashPassword'];

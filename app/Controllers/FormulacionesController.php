@@ -9,6 +9,20 @@ use Exception;
 class FormulacionesController extends ResourceController
 {
     use \App\Traits\JwtUserAware;
+    use \App\Traits\ValidatesJson;
+
+    // Reglas reusables para create + update. En update se hacen permit_empty
+    // los campos que pueden venir parciales — pero materias_primas siempre se
+    // valida si viene presente.
+    private const RULES_FORMULACION = [
+        'item_general_id'                  => 'required|integer|greater_than[0]',
+        'nombre'                           => 'permit_empty|max_length[100]',
+        'descripcion'                      => 'permit_empty|max_length[500]',
+        'materias_primas'                  => 'required',
+        'materias_primas.*.materia_prima_id' => 'required|integer|greater_than[0]',
+        'materias_primas.*.cantidad'       => 'required|decimal|greater_than[0]',
+        'materias_primas.*.porcentaje'     => 'permit_empty|decimal|greater_than_equal_to[0]|less_than_equal_to[100]',
+    ];
 
     protected $modelName = FormulacionesModel::class;
 
@@ -82,22 +96,21 @@ class FormulacionesController extends ResourceController
     // POST /api/formulaciones
     public function create()
     {
+        $data = $this->validateJson(self::RULES_FORMULACION);
+        if ($data instanceof \CodeIgniter\HTTP\ResponseInterface) return $data;
+
+        if (!is_array($data['materias_primas']) || empty($data['materias_primas'])) {
+            return $this->failValidationErrors('Debe agregar al menos una materia prima.');
+        }
+
         try {
-            $data = $this->request->getJSON(true);
-
-            if (empty($data)) {
-                return $this->failValidationErrors('No se recibieron datos válidos.');
-            }
-
             // Validar que el item destino exista y no esté archivado.
-            if (!empty($data['item_general_id'])) {
-                $existe = db_connect()->table('item_general')
-                    ->where('id_item_general', (int) $data['item_general_id'])
-                    ->where('deleted_at', null)
-                    ->countAllResults();
-                if ($existe === 0) {
-                    return $this->failValidationErrors("El item #{$data['item_general_id']} no existe o está archivado.");
-                }
+            $existe = db_connect()->table('item_general')
+                ->where('id_item_general', (int) $data['item_general_id'])
+                ->where('deleted_at', null)
+                ->countAllResults();
+            if ($existe === 0) {
+                return $this->failValidationErrors("El item #{$data['item_general_id']} no existe o está archivado.");
             }
 
             // Inyectar responsable real para el snapshot de versión inicial
@@ -193,17 +206,18 @@ class FormulacionesController extends ResourceController
 // PUT /api/formulaciones/:id
     public function update($id = null)
     {
+        if (empty($id)) {
+            return $this->failValidationErrors('El ID es obligatorio.');
+        }
+
+        $data = $this->validateJson(self::RULES_FORMULACION);
+        if ($data instanceof \CodeIgniter\HTTP\ResponseInterface) return $data;
+
+        if (!is_array($data['materias_primas']) || empty($data['materias_primas'])) {
+            return $this->failValidationErrors('Debe agregar al menos una materia prima.');
+        }
+
         try {
-            if (empty($id)) {
-                return $this->failValidationErrors('El ID es obligatorio.');
-            }
-
-            $data = $this->request->getJSON(true);
-
-            if (empty($data)) {
-                return $this->failValidationErrors('No se recibieron datos válidos.');
-            }
-
             // Inyectar responsable real para el snapshot de versión
             if (empty($data['responsable'])) {
                 $data['responsable'] = $this->getUsername();

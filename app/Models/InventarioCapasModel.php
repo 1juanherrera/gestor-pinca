@@ -39,7 +39,7 @@ class InventarioCapasModel extends BaseModel
 
     public function consumirCapasPorProveedor(int $itemGeneralId, float $cantidadRequerida, int $proveedorId, ?int $bodegaId = null): array
     {
-        $capas = $this->obtenerCapas($itemGeneralId, $bodegaId, 'ic.fecha_ingreso ASC', $proveedorId);
+        $capas = $this->_obtenerCapasParaConsumo($itemGeneralId, $bodegaId, $proveedorId);
         return $this->_consumirDeCapas($capas, $cantidadRequerida);
     }
 
@@ -65,8 +65,42 @@ class InventarioCapasModel extends BaseModel
 
     public function consumirCapasFIFO(int $itemGeneralId, float $cantidadRequerida, ?int $bodegaId = null): array
     {
-        $capas = $this->obtenerCapas($itemGeneralId, $bodegaId, 'ic.fecha_ingreso ASC');
+        $capas = $this->_obtenerCapasParaConsumo($itemGeneralId, $bodegaId, null);
         return $this->_consumirDeCapas($capas, $cantidadRequerida);
+    }
+
+    /**
+     * Lectura de capas con SELECT … FOR UPDATE.
+     *
+     * Solo se usa en flujos de consumo (FIFO / por proveedor) para evitar
+     * race conditions entre producciones concurrentes que descontarían las
+     * mismas capas. Devuelve únicamente los campos necesarios para el descuento.
+     *
+     * IMPORTANTE: debe llamarse dentro de una transacción abierta — sin
+     * transacción InnoDB libera el lock inmediatamente y el FOR UPDATE no sirve.
+     */
+    private function _obtenerCapasParaConsumo(int $itemGeneralId, ?int $bodegaId, ?int $proveedorId): array
+    {
+        $sql = 'SELECT id_capa, item_general_id, proveedor_id, bodegas_id,
+                       cantidad_disponible, costo_unitario
+                  FROM inventario_capas
+                 WHERE item_general_id = ?
+                   AND estado = 1
+                   AND cantidad_disponible > 0';
+        $params = [$itemGeneralId];
+
+        if ($bodegaId !== null) {
+            $sql .= ' AND bodegas_id = ?';
+            $params[] = $bodegaId;
+        }
+        if ($proveedorId !== null) {
+            $sql .= ' AND proveedor_id = ?';
+            $params[] = $proveedorId;
+        }
+
+        $sql .= ' ORDER BY fecha_ingreso ASC FOR UPDATE';
+
+        return $this->db->query($sql, $params)->getResult();
     }
 
     public function consumirCapasManual(array $seleccion, ?int $expectedItemId = null): array
@@ -77,10 +111,16 @@ class InventarioCapasModel extends BaseModel
             $cantidad = (float) $sel['cantidad'];
             if ($cantidad <= 0) continue;
 
-            $capa = $this->db->table('inventario_capas')
-                ->where('id_capa', $capaId)
-                ->where('estado', 1)
-                ->get()->getRow();
+            // SELECT … FOR UPDATE: bloquea esta capa hasta el commit para
+            // evitar consumos concurrentes sobre la misma fila.
+            $capa = $this->db->query(
+                'SELECT id_capa, item_general_id, proveedor_id, bodegas_id,
+                        cantidad_disponible, costo_unitario, estado
+                   FROM inventario_capas
+                  WHERE id_capa = ? AND estado = 1
+                  FOR UPDATE',
+                [$capaId]
+            )->getRow();
 
             if (!$capa) {
                 throw new \Exception("La capa #{$capaId} no existe o está agotada.");

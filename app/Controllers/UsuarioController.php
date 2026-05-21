@@ -114,11 +114,12 @@ class UsuarioController extends BaseController
             'iat' => time(),
             'exp' => time() + $jwtHoras * 3600,
             'data' => [
-                'id'       => $usuario['id_usuarios'],
-                'username' => $usuario['username'],
-                'nombre'   => $nombre,
-                'rol'      => $rol,
-                'modulos'  => $modulos,
+                'id'            => $usuario['id_usuarios'],
+                'username'      => $usuario['username'],
+                'nombre'        => $nombre,
+                'rol'           => $rol,
+                'modulos'       => $modulos,
+                'token_version' => (int) ($usuario['token_version'] ?? 1),
             ],
         ];
 
@@ -134,6 +135,55 @@ class UsuarioController extends BaseController
                 'id'                   => $usuario['id_usuarios'],
                 'username'             => $usuario['username'],
                 'nombre'               => $nombre,
+                'rol'                  => $rol,
+                'modulos'              => $modulos,
+                'password_must_change' => (int) ($usuario['password_must_change'] ?? 0),
+            ],
+        ]);
+    }
+
+    /**
+     * GET /api/auth/me
+     * Devuelve el usuario actual (datos frescos de BD, no del payload del JWT).
+     * El frontend la usa al cargar la app para verificar que el token sigue válido
+     * antes de renderizar rutas protegidas — evita el flash al panel cuando hay
+     * un token expirado.
+     */
+    public function me()
+    {
+        if (!isset($this->request->usuario)) {
+            return $this->response->setStatusCode(401)
+                ->setJSON(['ok' => false, 'msg' => 'No autenticado.']);
+        }
+
+        $userId = $this->request->usuario->id;
+        $db     = \Config\Database::connect();
+
+        $usuario = $db->table('usuarios')
+            ->where('id_usuarios', $userId)
+            ->get()->getRowArray();
+
+        if (!$usuario) {
+            return $this->response->setStatusCode(401)
+                ->setJSON(['ok' => false, 'msg' => 'Usuario inexistente.']);
+        }
+
+        // Recuperar módulos activos del rol actual (puede haber cambiado desde el login).
+        $rol     = $usuario['rol'];
+        $modulos = array_column(
+            $db->table('permisos_rol_modulo')
+                ->where('rol', $rol)
+                ->where('activo', 1)
+                ->get()->getResultArray(),
+            'modulo'
+        );
+
+        return $this->response->setJSON([
+            'ok'      => true,
+            'usuario' => [
+                'id'                   => (int) $usuario['id_usuarios'],
+                'username'             => $usuario['username'],
+                'nombre'               => $usuario['nombre'] ?? null,
                 'rol'                  => $rol,
                 'modulos'              => $modulos,
                 'password_must_change' => (int) ($usuario['password_must_change'] ?? 0),
@@ -261,9 +311,56 @@ class UsuarioController extends BaseController
             'password_must_change' => 0,
         ]);
 
+        // Incrementar token_version: invalida cualquier OTRA sesión activa
+        // del usuario (otras pestañas, otra máquina). Devolvemos un token
+        // nuevo en la respuesta para que esta sesión siga viva sin tener
+        // que volver a loguearse.
+        $db = \Config\Database::connect();
+        $db->table('usuarios')
+            ->where('id_usuarios', $userId)
+            ->set('token_version', 'token_version + 1', false)
+            ->update();
+        $nuevoTokenVersion = (int) $db->table('usuarios')
+            ->select('token_version')
+            ->where('id_usuarios', $userId)
+            ->get()->getRow()->token_version;
+
+        try {
+            $secretKey = $this->getJwtSecret();
+            $jwtHoras  = (int) $this->cfg()->obtener('jwt_expiracion_horas', 8);
+            $modulosRows = $db->table('permisos_rol_modulo')
+                ->select('modulo')
+                ->where('rol', $usuario['rol'])
+                ->where('activo', 1)
+                ->get()->getResultArray();
+            $modulos = array_column($modulosRows, 'modulo');
+
+            $payload = [
+                'iat'  => time(),
+                'exp'  => time() + $jwtHoras * 3600,
+                'data' => [
+                    'id'            => (int) $usuario['id_usuarios'],
+                    'username'      => $usuario['username'],
+                    'nombre'        => $usuario['nombre'] ?? null,
+                    'rol'           => $usuario['rol'],
+                    'modulos'       => $modulos,
+                    'token_version' => $nuevoTokenVersion,
+                ],
+            ];
+            $nuevoToken = JWT::encode($payload, (string) $secretKey, 'HS256');
+        } catch (\Exception $e) {
+            // Si falla la generación del token, igual el password ya cambió.
+            // El usuario verá un 401 en el próximo request y tendrá que loguearse.
+            $nuevoToken = null;
+        }
+
         log_message('info', "[PASSWORD] Usuario {$this->request->usuario->username} actualizó su contraseña");
 
-        return $this->response->setJSON(['ok' => true, 'msg' => 'Contraseña actualizada correctamente.']);
+        return $this->response->setJSON([
+            'ok'    => true,
+            'msg'   => 'Contraseña actualizada correctamente.',
+            'token' => $nuevoToken,
+        ]);
     }
 
     public function crear()

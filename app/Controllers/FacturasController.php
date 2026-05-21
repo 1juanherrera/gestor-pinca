@@ -9,6 +9,7 @@ use App\Models\NumeracionModel;
 class FacturasController extends ResourceController
 {
     use \App\Traits\ValidatesJson;
+    use \App\Traits\JwtUserAware;
 
     protected $modelName = FacturasModel::class;
     protected $request;
@@ -125,6 +126,17 @@ class FacturasController extends ResourceController
         $db->transStart();
 
         try {
+            // Validar que el cliente exista y no esté soft-deleted antes de
+            // crear la factura — el FK constraint solo rechazaría un id
+            // inexistente, no uno soft-deleted.
+            $clienteExiste = $db->table('clientes')
+                ->where('id_clientes', $data['cliente_id'])
+                ->where('deleted_at', null)
+                ->countAllResults();
+            if (!$clienteExiste) {
+                throw new \Exception('El cliente seleccionado no existe o fue eliminado.');
+            }
+
             $items = $data['items'] ?? [];
             unset($data['items']);
 
@@ -181,9 +193,14 @@ class FacturasController extends ResourceController
     }
 
     // ── PATCH /facturas/:id/estado ────────────────────────────────────────
-    // CAMBIO: al marcar como Pagada usa recalcularSaldo en lugar de
-    // poner saldo_pendiente = 0 a mano, así es consistente con los pagos
     // Body: { "estado": "Pagada" | "Pendiente" | "Parcial" | "Vencida" | "Anulada" }
+    //
+    // Atomicidad: la lectura del estado actual + validación + UPDATE va dentro
+    // de transBegin + SELECT … FOR UPDATE para evitar transiciones concurrentes
+    // contradictorias (ej: dos requests intentando Pagada y Anulada a la vez).
+    //
+    // Anular además revierte pagos_cliente (delete) y notas_credito asociadas
+    // (estado='Anulada') para que cartera quede consistente.
     public function cambiarEstado($id = null)
     {
         if (!$id) return $this->fail('ID no proporcionado', 400);
@@ -192,24 +209,77 @@ class FacturasController extends ResourceController
         $estado     = $data['estado'] ?? null;
         $permitidos = ['Pendiente', 'Pagada', 'Parcial', 'Vencida', 'Anulada'];
 
-        if (!$estado || !in_array($estado, $permitidos)) {
+        if (!$estado || !in_array($estado, $permitidos, true)) {
             return $this->fail('Estado no válido. Permitidos: ' . implode(', ', $permitidos), 400);
         }
 
-        if (!$this->model->find($id)) return $this->failNotFound("Factura con ID $id no encontrada.");
+        $db = \Config\Database::connect();
+        $db->transBegin();
 
         try {
-            if ($estado === 'Pagada') {
-                // Recalcula primero para verificar que realmente está pagada,
-                // luego fuerza el estado por si hay diferencia de centavos
-                $this->model->recalcularSaldo((int) $id);
-                $this->model->update_table($id, [
-                    'estado'          => 'Pagada',
-                    'saldo_pendiente' => 0,
-                ], 'facturas');
-            } else {
-                $this->model->update_table($id, ['estado' => $estado], 'facturas');
+            // Lock pesimista sobre la factura. FOR UPDATE garantiza que ninguna
+            // otra transacción pueda leer/escribir este registro hasta el commit.
+            $factura = $db->query(
+                'SELECT id_facturas, estado, total FROM facturas
+                 WHERE id_facturas = ? AND deleted_at IS NULL
+                 FOR UPDATE',
+                [$id]
+            )->getRowArray();
+
+            if (!$factura) {
+                $db->transRollback();
+                return $this->failNotFound("Factura con ID $id no encontrada.");
             }
+
+            $estadoActual = $factura['estado'];
+
+            // Anulada es terminal. No se puede salir de ahí.
+            if ($estadoActual === 'Anulada' && $estado !== 'Anulada') {
+                $db->transRollback();
+                return $this->fail('La factura ya está anulada. No se puede cambiar a otro estado.', 409);
+            }
+
+            if ($estado === 'Anulada') {
+                // Revertir pagos y NC para que cartera no quede inconsistente.
+                $pagosBorrados = $db->table('pagos_cliente')
+                    ->where('facturas_id', $id)
+                    ->countAllResults(false);
+                $db->table('pagos_cliente')->where('facturas_id', $id)->delete();
+
+                $ncAnuladas = $db->table('notas_credito')
+                    ->where('facturas_id', $id)
+                    ->where('estado', 'Activa')
+                    ->countAllResults(false);
+                $db->table('notas_credito')
+                    ->where('facturas_id', $id)
+                    ->where('estado', 'Activa')
+                    ->update(['estado' => 'Anulada']);
+
+                $db->table('facturas')
+                    ->where('id_facturas', $id)
+                    ->update([
+                        'estado'          => 'Anulada',
+                        'saldo_pendiente' => $factura['total'],
+                    ]);
+
+                $username = $this->request->usuario->username ?? 'sistema';
+                log_message('info', "[FACTURA_ANULADA] id={$id} por {$username} — pagos revertidos={$pagosBorrados}, NC anuladas={$ncAnuladas}");
+
+            } elseif ($estado === 'Pagada') {
+                // Recalcula primero para verificar que realmente está pagada;
+                // recalcularSaldo respeta el lock vigente.
+                $this->model->recalcularSaldo((int) $id);
+                $db->table('facturas')
+                    ->where('id_facturas', $id)
+                    ->update(['estado' => 'Pagada', 'saldo_pendiente' => 0]);
+
+            } else {
+                $db->table('facturas')
+                    ->where('id_facturas', $id)
+                    ->update(['estado' => $estado]);
+            }
+
+            $db->transCommit();
 
             return $this->respond([
                 'status'  => 200,
@@ -218,17 +288,21 @@ class FacturasController extends ResourceController
             ]);
 
         } catch (\Exception $e) {
+            $db->transRollback();
             return $this->fail($e->getMessage(), 400);
         }
     }
 
     // ── DELETE /facturas/:id ──────────────────────────────────────────────
-    // Sin cambios
     public function delete($id = null)
     {
+        if (!$this->userHasAdminAccess()) {
+            return $this->failForbidden('Solo administradores pueden eliminar facturas.');
+        }
         if (!$this->model->find($id)) return $this->failNotFound("Factura con ID $id no encontrada.");
 
         $this->model->delete_table($id, 'facturas');
+        log_message('info', "[FACTURA_DELETE] id={$id} por {$this->getUsername()}");
 
         return $this->respondDeleted(['message' => "Factura $id eliminada"]);
     }

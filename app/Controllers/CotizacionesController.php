@@ -10,6 +10,8 @@ use App\Models\ConfiguracionModel;
 
 class CotizacionesController extends ResourceController
 {
+    use \App\Traits\JwtUserAware;
+
     protected $modelName = CotizacionesModel::class;
     protected $request;
 
@@ -68,6 +70,18 @@ class CotizacionesController extends ResourceController
         $db = \Config\Database::connect();
         $db->transBegin();
         try {
+            // Validar cliente existe y no está soft-deleted (FK solo cubre IDs inexistentes).
+            if (empty($data['cliente_id'])) {
+                throw new \Exception('cliente_id es obligatorio');
+            }
+            $clienteExiste = $db->table('clientes')
+                ->where('id_clientes', $data['cliente_id'])
+                ->where('deleted_at', null)
+                ->countAllResults();
+            if (!$clienteExiste) {
+                throw new \Exception('El cliente seleccionado no existe o fue eliminado.');
+            }
+
             $items = $data['items'] ?? [];
             unset($data['items'], $data['cliente_libre']);
 
@@ -196,6 +210,16 @@ class CotizacionesController extends ResourceController
                 throw new \Exception('Solo se pueden convertir cotizaciones en estado Aceptada o Enviada');
             }
 
+            // Verificar que el cliente sigue vigente: pudo eliminarse entre
+            // la creación de la cotización y la conversión.
+            $clienteExiste = $db->table('clientes')
+                ->where('id_clientes', $cotizacion['cliente_id'])
+                ->where('deleted_at', null)
+                ->countAllResults();
+            if (!$clienteExiste) {
+                throw new \Exception('El cliente de la cotización fue eliminado. No se puede generar la factura.');
+            }
+
             $facturaModel = new FacturasModel();
             $numeroFac    = (new NumeracionModel())->reservar('factura');
 
@@ -259,6 +283,9 @@ class CotizacionesController extends ResourceController
     // ── DELETE /cotizaciones/:id ──────────────────────────────────────────
     public function delete($id = null)
     {
+        if (!$this->userHasAdminAccess()) {
+            return $this->failForbidden('Solo administradores pueden eliminar cotizaciones.');
+        }
         $existing = $this->model->find($id);
         if (!$existing) return $this->failNotFound("Cotización con ID $id no encontrada.");
 
@@ -267,6 +294,7 @@ class CotizacionesController extends ResourceController
                 throw new \Exception('No se puede eliminar una cotización ya convertida a factura');
             }
             $this->model->delete_table($id, 'cotizaciones');
+            log_message('info', "[COTIZACION_DELETE] id={$id} por {$this->getUsername()}");
             return $this->respondDeleted(['message' => "Cotización $id eliminada"]);
         } catch (\Exception $e) {
             return $this->fail($e->getMessage(), 400);

@@ -27,7 +27,27 @@ class JwtFilter implements FilterInterface
 
         try {
             $decoded = JWT::decode($token, new Key($secretKey, 'HS256'));
-            // Puedes guardar los datos del usuario para usarlos en tu controlador
+
+            // Validar token_version contra la BD — invalida tokens viejos cuando
+            // se cambia el rol o el password del usuario. Si el token no trae
+            // el campo (tokens emitidos antes de esta feature), se asume v1.
+            $tokenVersion = (int) ($decoded->data->token_version ?? 1);
+            $userId       = (int) ($decoded->data->id ?? 0);
+            if ($userId > 0) {
+                $row = \Config\Database::connect()
+                    ->table('usuarios')
+                    ->select('token_version')
+                    ->where('id_usuarios', $userId)
+                    ->get()->getRowArray();
+
+                if ($row && (int) $row['token_version'] !== $tokenVersion) {
+                    return Services::response()
+                        ->setJSON(['ok' => false, 'msg' => 'Sesión invalidada. Iniciá sesión de nuevo.'])
+                        ->setStatusCode(401);
+                }
+            }
+
+            // Datos del usuario disponibles en el controlador como $request->usuario
             $request->usuario = $decoded->data;
         } catch (\Firebase\JWT\ExpiredException $e) {
             return Services::response()

@@ -148,7 +148,13 @@ class PermisosController extends BaseController
             return $this->error('Usuario no encontrado.', 404);
         }
 
-        $db->table('usuarios')->where('id_usuarios', $userId)->update(['rol' => $nuevoRol]);
+        // Incrementar token_version: invalida cualquier JWT existente del usuario.
+        // Sin esto, un visor recién degradado seguiría operando como admin hasta
+        // que el token expire (hasta 8h).
+        $db->table('usuarios')
+            ->where('id_usuarios', $userId)
+            ->set('token_version', 'token_version + 1', false)
+            ->update(['rol' => $nuevoRol]);
 
         log_message('info', "[ROLES] Usuario $userId ({$usuario['username']}) cambió de {$usuario['rol']} a $nuevoRol por {$this->request->usuario->username}");
 

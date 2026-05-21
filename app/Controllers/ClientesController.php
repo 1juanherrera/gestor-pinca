@@ -9,6 +9,7 @@ use App\Models\ClientesModel;
 class ClientesController extends ResourceController
 {
     use \App\Traits\ValidatesJson;
+    use \App\Traits\JwtUserAware;
 
     protected $modelName = ClientesModel::class;
 
@@ -98,12 +99,16 @@ class ClientesController extends ResourceController
 
     public function delete($id = null)
     {
+        if (!$this->userHasAdminAccess()) {
+            return $this->failForbidden('Solo administradores pueden eliminar clientes.');
+        }
         if ($id === null) {
             return $this->failValidationErrors('No se proporcionó un ID válido.');
         }
         if (!$this->model->get($id, 'clientes')) {
             return $this->failNotFound("Cliente con ID $id no encontrado.");
         }
+        log_message('info', "[CLIENTE_DELETE] id={$id} por {$this->getUsername()}");
         $deleted = $this->model->delete_table($id, 'clientes');
         if ($deleted === false || (is_array($deleted) && isset($deleted['error']))) {
             return $this->fail("No se pudo eliminar el cliente con ID $id.");

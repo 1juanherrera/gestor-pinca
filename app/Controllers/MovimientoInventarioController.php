@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\MovimientoInventarioModel;
+use App\Helpers\Cfg;
 
 class MovimientoInventarioController extends ResourceController
 {
@@ -11,8 +12,10 @@ class MovimientoInventarioController extends ResourceController
 
     public function index()
     {
-        $page = (int) $this->request->getGet('page') ?: 1;
-        $limit = min((int) $this->request->getGet('limit') ?: 50, 200);
+        $page    = (int) $this->request->getGet('page') ?: 1;
+        $default = Cfg::n('page_size_default', 50);
+        $max     = Cfg::n('max_per_page',      200);
+        $limit   = min((int) $this->request->getGet('limit') ?: $default, $max);
 
         $filtros = [
             'item_general_id' => $this->request->getGet('item_general_id'),

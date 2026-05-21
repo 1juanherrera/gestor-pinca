@@ -8,6 +8,8 @@ use App\Models\BaseModel;
 
 class ItemProveedorController extends ResourceController
 {
+    use \App\Traits\ValidatesJson;
+
     protected $modelName = ItemProveedorModel::class;
 
     /**
@@ -128,11 +130,19 @@ class ItemProveedorController extends ResourceController
     //   + { bodegas_id, cantidad } en cualquier caso → ingresa al inventario
     public function vincular($id = null)
     {
-        $data = json_decode($this->request->getBody(), true);
-
-        if (!$data) {
-            return $this->failValidationErrors('No se recibieron datos válidos.');
-        }
+        // item_general_id puede venir null (desvincular) — por eso es permit_empty.
+        // Solo validamos forma cuando vienen los campos; los defaults los pone
+        // el resto del método.
+        $data = $this->validateJson([
+            'item_general_id'   => 'permit_empty|integer|greater_than[0]',
+            'unidad_compra_id'  => 'permit_empty|integer|greater_than[0]',
+            'factor_conversion' => 'permit_empty|decimal|greater_than[0]',
+            'crear'             => 'permit_empty|in_list[0,1,true,false]',
+            'nombre'            => 'permit_empty|max_length[100]',
+            'codigo'            => 'permit_empty|max_length[50]',
+            'tipo'              => 'permit_empty|integer|in_list[0,1,2]',
+        ]);
+        if ($data instanceof \CodeIgniter\HTTP\ResponseInterface) return $data;
 
         $itemProveedor = $this->model->get($id, 'item_proveedor');
         if (!$itemProveedor) {

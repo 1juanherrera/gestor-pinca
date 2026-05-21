@@ -17,6 +17,7 @@ $routes->group('api', function ($routes) {
     // USUARIOS
     $routes->post('login',                  'UsuarioController::login');
     $routes->post('crear',                  'UsuarioController::crear');
+    $routes->get('auth/me',                  'UsuarioController::me');
     $routes->patch('usuarios/mi-password',   'UsuarioController::cambiarPassword');
     $routes->patch('usuarios/mi-perfil',     'UsuarioController::actualizarPerfil');
     $routes->get('usuarios/mi-actividad',    'UsuarioController::miActividad');
@@ -243,14 +244,6 @@ $routes->group('api', function ($routes) {
     // MOVIMIENTOS DE INVENTARIO
     $routes->get('movimientos', 'MovimientoInventarioController::index');
 
-    // TAMBORES
-    $routes->get('tambores/disponibles',        'TamborController::disponibles');
-    $routes->get('tambores/(:num)',              'TamborController::show/$1');
-    $routes->get('tambores',                     'TamborController::index');
-    $routes->post('tambores',                    'TamborController::create');
-    $routes->put('tambores/(:num)',              'TamborController::update/$1');
-    $routes->post('tambores/(:num)/consumir',   'TamborController::consumir/$1');
-
     // PANEL PRINCIPAL — KPIs consolidados
     $routes->get('dashboard', 'DashboardController::index');
 
@@ -299,7 +292,9 @@ $routes->group('api', function ($routes) {
     // ✅ Específicas PRIMERO
     $routes->get('ordenes_compra/(:num)/detalle',         'OrdenesCompraController::detalle/$1');
     $routes->patch('ordenes_compra/(:num)/estado',        'OrdenesCompraController::cambiarEstado/$1');
-    $routes->post('ordenes_compra/(:num)/recibir/(:num)', 'OrdenesCompraController::recibirLinea/$1/$2');
+    $routes->get('ordenes_compra/(:num)/lote-sugerido',            'OrdenesCompraController::loteSugerido/$1');
+    $routes->post('ordenes_compra/(:num)/recibir/(:num)',          'OrdenesCompraController::recibirLinea/$1/$2');
+    $routes->post('ordenes_compra/(:num)/recibir-prorrateado',     'OrdenesCompraController::recibirLoteProrrateado/$1');
     // ✅ Genéricas DESPUÉS
     $routes->get('ordenes_compra/(:num)',                 'OrdenesCompraController::show/$1');
     $routes->post('ordenes_compra',                       'OrdenesCompraController::create');
