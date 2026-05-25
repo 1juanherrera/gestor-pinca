@@ -10,6 +10,8 @@ use Firebase\JWT\Key;
 
 class UsuarioController extends BaseController
 {
+    use \App\Traits\ApiResponse;
+
     /**
      * Lee el secret JWT del .env. Sin fallback inseguro:
      * si TOKEN_SECRET no está definido o está vacío lanza InvalidArgumentException.
@@ -36,12 +38,10 @@ class UsuarioController extends BaseController
 
         // Validación básica
         if ($username === '') {
-            return $this->response->setStatusCode(400)
-                ->setJSON(['ok' => false, 'msg' => 'El campo username es requerido.']);
+            return $this->apiFail('El campo username es requerido.', 400);
         }
         if ($password === '') {
-            return $this->response->setStatusCode(400)
-                ->setJSON(['ok' => false, 'msg' => 'El campo password es requerido.']);
+            return $this->apiFail('El campo password es requerido.', 400);
         }
 
         $ip  = $this->request->getIPAddress();
@@ -60,8 +60,7 @@ class UsuarioController extends BaseController
         if ($attempts >= $maxIntentos) {
             $minutos = (int) ceil($ventanaSeg / 60);
             log_message('warning', "[LOGIN] IP $ip bloqueada por exceso de intentos (usuario: $username)");
-            return $this->response->setStatusCode(429)
-                ->setJSON(['ok' => false, 'msg' => "Demasiados intentos fallidos. Espera {$minutos} minutos."]);
+            return $this->apiFail("Demasiados intentos fallidos. Espera {$minutos} minutos.", 429);
         }
 
         $usuarioModel = new UsuarioModel();
@@ -77,13 +76,13 @@ class UsuarioController extends BaseController
         if (!$usuario) {
             $registrarFallo();
             log_message('warning', "[LOGIN_FAIL] Usuario no encontrado: $username | IP: $ip");
-            return $this->response->setJSON(['ok' => false, 'msg' => 'Usuario o contraseña incorrectos.']);
+            return $this->apiFail('Usuario o contraseña incorrectos.', 200);
         }
 
         if (!password_verify($password, $usuario['password'])) {
             $registrarFallo();
             log_message('warning', "[LOGIN_FAIL] Contraseña incorrecta para: $username | IP: $ip");
-            return $this->response->setJSON(['ok' => false, 'msg' => 'Usuario o contraseña incorrectos.']);
+            return $this->apiFail('Usuario o contraseña incorrectos.', 200);
         }
 
         // Login exitoso → limpiar intentos previos de esta IP para no
@@ -103,8 +102,7 @@ class UsuarioController extends BaseController
         try {
             $secretKey = $this->getJwtSecret();
         } catch (\InvalidArgumentException $e) {
-            return $this->response->setStatusCode(500)
-                ->setJSON(['ok' => false, 'msg' => 'Error de configuración del servidor.']);
+            return $this->apiFail('Error de configuración del servidor.', 500);
         }
         $jwtHoras = (int) $this->cfg()->obtener('jwt_expiracion_horas', 8);
 
@@ -152,8 +150,7 @@ class UsuarioController extends BaseController
     public function me()
     {
         if (!isset($this->request->usuario)) {
-            return $this->response->setStatusCode(401)
-                ->setJSON(['ok' => false, 'msg' => 'No autenticado.']);
+            return $this->apiFail('No autenticado.', 401);
         }
 
         $userId = $this->request->usuario->id;
@@ -164,8 +161,7 @@ class UsuarioController extends BaseController
             ->get()->getRowArray();
 
         if (!$usuario) {
-            return $this->response->setStatusCode(401)
-                ->setJSON(['ok' => false, 'msg' => 'Usuario inexistente.']);
+            return $this->apiFail('Usuario inexistente.', 401);
         }
 
         // Recuperar módulos activos del rol actual (puede haber cambiado desde el login).
@@ -282,8 +278,7 @@ class UsuarioController extends BaseController
     public function cambiarPassword()
     {
         if (!isset($this->request->usuario)) {
-            return $this->response->setStatusCode(401)
-                ->setJSON(['ok' => false, 'msg' => 'No autenticado.']);
+            return $this->apiFail('No autenticado.', 401);
         }
 
         $body            = $this->request->getJSON(true) ?? [];
@@ -292,8 +287,7 @@ class UsuarioController extends BaseController
 
         $minPwd = (int) $this->cfg()->obtener('password_min_caracteres', 8);
         if (strlen($newPassword) < $minPwd) {
-            return $this->response->setStatusCode(400)
-                ->setJSON(['ok' => false, 'msg' => "La nueva contraseña debe tener al menos {$minPwd} caracteres."]);
+            return $this->apiFail("La nueva contraseña debe tener al menos {$minPwd} caracteres.", 400);
         }
 
         $usuarioModel = new UsuarioModel();
@@ -301,8 +295,7 @@ class UsuarioController extends BaseController
         $usuario = $usuarioModel->find($userId);
 
         if (!$usuario || !password_verify($currentPassword, $usuario['password'])) {
-            return $this->response->setStatusCode(400)
-                ->setJSON(['ok' => false, 'msg' => 'La contraseña actual es incorrecta.']);
+            return $this->apiFail('La contraseña actual es incorrecta.', 400);
         }
 
         // Al cambiar el password, limpiamos el flag de "debe cambiar" si lo tenía.
@@ -363,40 +356,61 @@ class UsuarioController extends BaseController
         ]);
     }
 
+    /**
+     * POST /api/auth/logout
+     * Cierra la sesión del usuario actual incrementando `usuarios.token_version`.
+     * Esto invalida cualquier JWT vigente (incluido el que vino en este request)
+     * en su próximo uso, gracias al chequeo de `JwtFilter::before`.
+     * El cliente debe descartar el token de su almacenamiento local.
+     */
+    public function logout()
+    {
+        if (!isset($this->request->usuario)) {
+            return $this->apiFail('No autenticado.', 401);
+        }
+
+        $userId   = (int) $this->request->usuario->id;
+        $username = $this->request->usuario->username ?? 'desconocido';
+
+        $db = \Config\Database::connect();
+        $db->table('usuarios')
+            ->where('id_usuarios', $userId)
+            ->set('token_version', 'token_version + 1', false)
+            ->update();
+
+        log_message('info', "[LOGOUT] Usuario: {$username} | id={$userId}");
+
+        return $this->apiSuccess(null, 'Sesión cerrada correctamente');
+    }
+
     public function crear()
     {
         // Solo admins pueden crear usuarios vía API
         if (!isset($this->request->usuario) || $this->request->usuario->rol !== 'admin') {
-            return $this->response->setStatusCode(403)
-                ->setJSON(['ok' => false, 'msg' => 'Solo administradores pueden crear usuarios.']);
+            return $this->apiForbidden('Solo administradores pueden crear usuarios.');
+        }
+
+        // Validación con CI4 nativo — payload puede venir como POST (form) o JSON.
+        $rules = [
+            'username' => 'required|min_length[3]|max_length[50]',
+            'password' => 'required|min_length[' . (int) $this->cfg()->obtener('password_min_caracteres', 8) . ']',
+            'nombre'   => 'required|max_length[100]',
+            'rol'      => 'permit_empty|in_list[admin,operador,visor]',
+        ];
+        if (!$this->validate($rules)) {
+            return $this->apiValidationError($this->validator->getErrors());
         }
 
         $username = trim($this->request->getPost('username') ?? '');
         $password = $this->request->getPost('password') ?? '';
-        $rol      = trim($this->request->getPost('rol') ?? 'operador');
+        $rol      = trim($this->request->getPost('rol') ?? 'operador') ?: 'operador';
         $nombre   = trim($this->request->getPost('nombre') ?? '') ?: null;
-
-        // Validación
-        if (strlen($username) < 3 || strlen($username) > 50) {
-            return $this->response->setStatusCode(400)
-                ->setJSON(['ok' => false, 'msg' => 'El username debe tener entre 3 y 50 caracteres.']);
-        }
-        $minPwd = (int) $this->cfg()->obtener('password_min_caracteres', 8);
-        if (strlen($password) < $minPwd) {
-            return $this->response->setStatusCode(400)
-                ->setJSON(['ok' => false, 'msg' => "La contraseña debe tener al menos {$minPwd} caracteres."]);
-        }
-        if (!in_array($rol, ['admin', 'operador', 'visor'], true)) {
-            return $this->response->setStatusCode(400)
-                ->setJSON(['ok' => false, 'msg' => 'El rol debe ser: admin, operador o visor.']);
-        }
 
         $usuarioModel = new UsuarioModel();
 
         $existing = $usuarioModel->where('username', $username)->first();
         if ($existing) {
-            return $this->response->setStatusCode(409)
-                ->setJSON(['ok' => false, 'msg' => 'El username ya existe.']);
+            return $this->apiFail('El username ya existe.', 409);
         }
 
         $usuarioModel->save([
@@ -408,6 +422,7 @@ class UsuarioController extends BaseController
 
         log_message('info', "[USUARIO_CREADO] $username (rol: $rol) por {$this->request->usuario->username}");
 
+        // Mantener shape original `{ok, msg}` para no romper consumidores.
         return $this->response->setJSON([
             'ok'  => true,
             'msg' => 'Usuario creado correctamente',

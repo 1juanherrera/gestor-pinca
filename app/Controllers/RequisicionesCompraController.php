@@ -161,6 +161,43 @@ class RequisicionesCompraController extends BaseController
             ]);
         }
 
+        // Validar FKs antes de tocar la BD: cada item_general_id del batch debe existir
+        // y no estar soft-deleted. Si alguno falla, rechazamos TODO el batch.
+        // También validamos cantidad (decimal > 0) por requisición.
+        $db = \Config\Database::connect();
+        $idsRequeridos = [];
+        foreach ($items as $idx => $req) {
+            $itemId = isset($req['item_general_id']) ? (int) $req['item_general_id'] : 0;
+            if ($itemId <= 0) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'success' => false,
+                    'message' => "Requisición #{$idx}: item_general_id es requerido y debe ser > 0.",
+                ]);
+            }
+            if (!isset($req['cantidad']) || !is_numeric($req['cantidad']) || (float) $req['cantidad'] <= 0) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'success' => false,
+                    'message' => "Requisición #{$idx}: cantidad es requerida y debe ser numérica > 0.",
+                ]);
+            }
+            $idsRequeridos[$itemId] = true;
+        }
+        if (!empty($idsRequeridos)) {
+            $existentesRows = $db->table('item_general')
+                ->select('id_item_general')
+                ->whereIn('id_item_general', array_keys($idsRequeridos))
+                ->where('deleted_at', null)
+                ->get()->getResultArray();
+            $existentes = array_column($existentesRows, 'id_item_general');
+            $faltantes  = array_diff(array_keys($idsRequeridos), array_map('intval', $existentes));
+            if (!empty($faltantes)) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'success' => false,
+                    'message' => 'Items inexistentes o archivados: ' . implode(', ', $faltantes),
+                ]);
+            }
+        }
+
         try {
             $created = $this->model->crearRequisiciones($items);
 

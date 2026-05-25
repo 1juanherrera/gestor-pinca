@@ -71,7 +71,7 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             'cors',
-            'jwt' => ['except' => ['api/login', 'api/crear']],
+            'jwt' => ['except' => ['api/login', 'api/crear', 'api/health']],
         ],
         'after'  => ['secureheaders'],
     ];

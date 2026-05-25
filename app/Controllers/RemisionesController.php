@@ -16,6 +16,7 @@ class RemisionesController extends ResourceController
 {
     use \App\Traits\JwtUserAware;
     use \App\Traits\ValidatesJson;
+    use \App\Traits\ApiResponse;
 
     protected $modelName = RemisionesModel::class;
     protected $request;
@@ -74,10 +75,20 @@ class RemisionesController extends ResourceController
         if ($data instanceof ResponseInterface) return $data;
 
         if (!is_array($data['items']) || empty($data['items'])) {
-            return $this->failValidationErrors('La remisión debe tener al menos un ítem.');
+            return $this->apiValidationError(['items' => 'La remisión debe tener al menos un ítem.']);
         }
 
         $db = \Config\Database::connect();
+
+        // Validar FK: cliente debe existir y no estar soft-deleted.
+        $clienteExiste = $db->table('clientes')
+            ->where('id_clientes', (int) $data['cliente_id'])
+            ->where('deleted_at', null)
+            ->countAllResults();
+        if (!$clienteExiste) {
+            return $this->apiValidationError(['cliente_id' => "El cliente #{$data['cliente_id']} no existe o está archivado."]);
+        }
+
         $db->transBegin();
         try {
             $items = $data['items'];
@@ -116,7 +127,7 @@ class RemisionesController extends ResourceController
 
         } catch (\Exception $e) {
             $db->transRollback();
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
@@ -354,10 +365,10 @@ class RemisionesController extends ResourceController
     // ── POST /remisiones/:id/convertir ────────────────────────────────────
     public function convertir($id = null)
     {
-        if (!$id) return $this->fail('ID no proporcionado', 400);
+        if (!$id) return $this->apiFail('ID no proporcionado', 400);
 
         $remision = $this->model->find($id);
-        if (!$remision) return $this->failNotFound("Remisión con ID $id no encontrada.");
+        if (!$remision) return $this->apiNotFound("Remisión con ID $id no encontrada.");
 
         $db = \Config\Database::connect();
         $db->transBegin();
@@ -423,7 +434,7 @@ class RemisionesController extends ResourceController
 
         } catch (\Exception $e) {
             $db->transRollback();
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 

@@ -5,8 +5,10 @@ namespace App\Controllers;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\InstalacionesModel;
 
-class InstalacionesController extends ResourceController 
+class InstalacionesController extends ResourceController
 {
+    use \App\Traits\JwtUserAware;
+
     protected $modelName = InstalacionesModel::class;
 
     public function instalaciones()
@@ -86,6 +88,7 @@ class InstalacionesController extends ResourceController
         if ($deleted === false || (is_array($deleted) && isset($deleted['error']))) {
             return $this->fail("No se pudo eliminar la instalación con ID $id.");
         }
+        log_message('info', "[DELETE_INSTALACION] usuario={$this->getUsername()} id={$id}");
         return $this->respondDeleted([
             'mensaje' => "Instalación con ID $id eliminada correctamente"
         ]);

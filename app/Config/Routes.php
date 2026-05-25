@@ -8,6 +8,9 @@ use CodeIgniter\Router\RouteCollection;
 
 $routes->group('api', function ($routes) {
 
+    // HEALTH CHECK (público — excluido del filtro JWT)
+    $routes->get('health', 'HealthController::index');
+
     // EMPRESA
     $routes->get('empresa',                'EmpresaController::empresa');
     $routes->get('empresa/logo-base64',    'EmpresaController::logoBase64');
@@ -18,6 +21,7 @@ $routes->group('api', function ($routes) {
     $routes->post('login',                  'UsuarioController::login');
     $routes->post('crear',                  'UsuarioController::crear');
     $routes->get('auth/me',                  'UsuarioController::me');
+    $routes->post('auth/logout',             'UsuarioController::logout');
     $routes->patch('usuarios/mi-password',   'UsuarioController::cambiarPassword');
     $routes->patch('usuarios/mi-perfil',     'UsuarioController::actualizarPerfil');
     $routes->get('usuarios/mi-actividad',    'UsuarioController::miActividad');

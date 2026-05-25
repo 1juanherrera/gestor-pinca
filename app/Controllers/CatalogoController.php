@@ -9,6 +9,8 @@ use App\Models\CatalogoModel;
 class CatalogoController extends ResourceController
 {
     use \App\Traits\ValidatesJson;
+    use \App\Traits\JwtUserAware;
+    use \App\Traits\ApiResponse;
 
     protected $modelName = CatalogoModel::class;
 
@@ -63,13 +65,13 @@ class CatalogoController extends ResourceController
                 'id'      => $newId,
             ]);
         } catch (\Exception $e) {
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
     public function update($id = null)
     {
-        if (!$id) return $this->fail('ID no proporcionado', 400);
+        if (!$id) return $this->apiFail('ID no proporcionado', 400);
 
         $data = $this->validateJson(self::RULES_BASE);
         if ($data instanceof ResponseInterface) return $data;
@@ -82,17 +84,17 @@ class CatalogoController extends ResourceController
                 'message' => "Ítem {$id} actualizado correctamente",
             ]);
         } catch (\Exception $e) {
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
     public function delete($id = null)
     {
-        if (!$id) return $this->fail('ID no proporcionado', 400);
+        if (!$id) return $this->apiFail('ID no proporcionado', 400);
 
         $item = $this->model->find($id);
         if (!$item) {
-            return $this->failNotFound("Ítem con ID {$id} no encontrado.");
+            return $this->apiNotFound("Ítem con ID {$id} no encontrado.");
         }
 
         // Rechazar si el ítem tiene stock activo: si lo archivamos, los rows
@@ -104,7 +106,7 @@ class CatalogoController extends ResourceController
             ->where('estado', 1)
             ->get()->getRow()->total ?? 0);
         if ($stock > 0.0001) {
-            return $this->fail(
+            return $this->apiFail(
                 "No se puede archivar el ítem #{$id}: tiene {$stock} unidades de stock activo. " .
                 "Ajustá el stock a 0 (Inventario → AjusteManual) o usá Sincronización → Merge.",
                 409
@@ -113,6 +115,7 @@ class CatalogoController extends ResourceController
 
         // useSoftDeletes activo → delete() hace UPDATE deleted_at, no DELETE físico
         $this->model->delete($id);
+        log_message('info', "[DELETE_CATALOGO] usuario={$this->getUsername()} id={$id}");
         return $this->respondDeleted(['message' => "Ítem {$id} archivado del catálogo"]);
     }
 

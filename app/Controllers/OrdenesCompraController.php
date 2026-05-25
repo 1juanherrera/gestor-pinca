@@ -13,6 +13,7 @@ class OrdenesCompraController extends ResourceController
 {
     use \App\Traits\JwtUserAware;
     use \App\Traits\ValidatesJson;
+    use \App\Traits\ApiResponse;
 
     protected $modelName = OrdenesCompraModel::class;
 
@@ -88,7 +89,7 @@ class OrdenesCompraController extends ResourceController
         if ($data instanceof \CodeIgniter\HTTP\ResponseInterface) return $data;
 
         if (!is_array($data['lineas']) || empty($data['lineas'])) {
-            return $this->failValidationErrors('La orden debe tener al menos una línea.');
+            return $this->apiValidationError(['lineas' => 'La orden debe tener al menos una línea.']);
         }
 
         $db = \Config\Database::connect();
@@ -99,7 +100,7 @@ class OrdenesCompraController extends ResourceController
             ->where('deleted_at', null)
             ->countAllResults();
         if ($proveedorActivo === 0) {
-            return $this->failValidationErrors("El proveedor #{$data['proveedor_id']} no existe o está archivado.");
+            return $this->apiValidationError(['proveedor_id' => "El proveedor #{$data['proveedor_id']} no existe o está archivado."]);
         }
 
         $db->transStart();
@@ -153,7 +154,7 @@ class OrdenesCompraController extends ResourceController
 
         } catch (\Exception $e) {
             $db->transRollback();
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
@@ -244,13 +245,13 @@ class OrdenesCompraController extends ResourceController
 
             if (!$orden) {
                 $db->transRollback();
-                return $this->failNotFound("Orden con ID $id no encontrada.");
+                return $this->apiNotFound("Orden con ID $id no encontrada.");
             }
 
             $permitidos = $transiciones[$orden['estado']] ?? [];
             if (!in_array($nuevoEstado, $permitidos)) {
                 $db->transRollback();
-                return $this->fail("No se puede cambiar de {$orden['estado']} a $nuevoEstado.", 400);
+                return $this->apiFail("No se puede cambiar de {$orden['estado']} a $nuevoEstado.", 400);
             }
 
             $db->table('ordenes_compra')
@@ -260,7 +261,7 @@ class OrdenesCompraController extends ResourceController
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
 
         return $this->respond(['mensaje' => "Estado actualizado a $nuevoEstado"]);
@@ -272,9 +273,9 @@ class OrdenesCompraController extends ResourceController
     public function recibirLinea($idOrden = null, $idDetalle = null)
     {
         $orden = $this->model->detalle((int) $idOrden);
-        if (!$orden) return $this->failNotFound("Orden con ID $idOrden no encontrada.");
+        if (!$orden) return $this->apiNotFound("Orden con ID $idOrden no encontrada.");
         if ($orden['estado'] !== 'Enviada') {
-            return $this->fail('Solo se pueden recibir líneas de órdenes Enviadas.', 400);
+            return $this->apiFail('Solo se pueden recibir líneas de órdenes Enviadas.', 400);
         }
 
         // Buscar la línea
@@ -285,10 +286,18 @@ class OrdenesCompraController extends ResourceController
                 break;
             }
         }
-        if (!$linea) return $this->failNotFound("Línea con ID $idDetalle no encontrada.");
-        if ($linea['recibido_en']) return $this->fail('Esta línea ya fue recibida completamente.', 400);
+        if (!$linea) return $this->apiNotFound("Línea con ID $idDetalle no encontrada.");
+        if ($linea['recibido_en']) return $this->apiFail('Esta línea ya fue recibida completamente.', 400);
 
-        $data              = json_decode($this->request->getBody(), true);
+        // Validación del body (cantidad_recibida y lote_proveedor opcional).
+        // Si no se envió body, cantidad_recibida se asume = pendiente (legacy).
+        $validated = $this->validateJson([
+            'cantidad_recibida' => 'permit_empty|decimal|greater_than[0]',
+            'lote_proveedor'    => 'permit_empty|max_length[100]',
+        ]);
+        if ($validated instanceof \CodeIgniter\HTTP\ResponseInterface) return $validated;
+
+        $data              = $validated;
         $cantidadPedida    = (float) $linea['cantidad'];
         $recibidoPrev      = (float) ($linea['cantidad_recibida'] ?? 0);
         $pendiente         = max(0, $cantidadPedida - $recibidoPrev);
@@ -296,12 +305,12 @@ class OrdenesCompraController extends ResourceController
         $bodegaId          = (int) $orden['bodegas_id'];
 
         if ($cantidadRecibida <= 0) {
-            return $this->failValidationErrors('La cantidad recibida debe ser mayor a 0.');
+            return $this->apiValidationError(['cantidad_recibida' => 'La cantidad recibida debe ser mayor a 0.']);
         }
         if ($cantidadRecibida > $pendiente + 0.0001) {
-            return $this->failValidationErrors(
-                "La cantidad recibida ({$cantidadRecibida}) supera el pendiente de la línea ({$pendiente})."
-            );
+            return $this->apiValidationError([
+                'cantidad_recibida' => "La cantidad recibida ({$cantidadRecibida}) supera el pendiente de la línea ({$pendiente}).",
+            ]);
         }
 
         $db = \Config\Database::connect();
@@ -441,7 +450,7 @@ class OrdenesCompraController extends ResourceController
 
         } catch (\Exception $e) {
             $db->transRollback();
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
@@ -469,9 +478,9 @@ class OrdenesCompraController extends ResourceController
     public function recibirLoteProrrateado($idOrden = null)
     {
         $orden = $this->model->detalle((int) $idOrden);
-        if (!$orden) return $this->failNotFound("Orden con ID $idOrden no encontrada.");
+        if (!$orden) return $this->apiNotFound("Orden con ID $idOrden no encontrada.");
         if ($orden['estado'] !== 'Enviada') {
-            return $this->fail('Solo se pueden recibir líneas de órdenes Enviadas.', 400);
+            return $this->apiFail('Solo se pueden recibir líneas de órdenes Enviadas.', 400);
         }
 
         $body            = json_decode($this->request->getBody(), true) ?? [];
@@ -480,10 +489,10 @@ class OrdenesCompraController extends ResourceController
         $lineasPayload   = $body['lineas'] ?? [];
 
         if ($precioPagado <= 0) {
-            return $this->failValidationErrors('El precio total pagado debe ser mayor a 0.');
+            return $this->apiValidationError(['precio_total_pagado' => 'El precio total pagado debe ser mayor a 0.']);
         }
         if (!is_array($lineasPayload) || count($lineasPayload) < 2) {
-            return $this->failValidationErrors('El prorrateo necesita al menos 2 líneas.');
+            return $this->apiValidationError(['lineas' => 'El prorrateo necesita al menos 2 líneas.']);
         }
 
         // Mapeo id_detalle → línea original (para validar y calcular).
@@ -501,19 +510,19 @@ class OrdenesCompraController extends ResourceController
             $linea     = $lineasPorId[$idDetalle] ?? null;
 
             if (!$linea) {
-                return $this->failValidationErrors("Línea {$idDetalle} no pertenece a la OC.");
+                return $this->apiValidationError(['lineas' => "Línea {$idDetalle} no pertenece a la OC."]);
             }
             if ($linea['recibido_en']) {
-                return $this->failValidationErrors("La línea {$idDetalle} ya fue recibida.");
+                return $this->apiValidationError(['lineas' => "La línea {$idDetalle} ya fue recibida."]);
             }
             if ($cantRec <= 0) {
-                return $this->failValidationErrors("La cantidad recibida de la línea {$idDetalle} debe ser mayor a 0.");
+                return $this->apiValidationError(['lineas' => "La cantidad recibida de la línea {$idDetalle} debe ser mayor a 0."]);
             }
             $pendiente = max(0, (float) $linea['cantidad'] - (float) ($linea['cantidad_recibida'] ?? 0));
             if ($cantRec > $pendiente + 0.0001) {
-                return $this->failValidationErrors(
-                    "La cantidad recibida de la línea {$idDetalle} ({$cantRec}) supera el pendiente ({$pendiente})."
-                );
+                return $this->apiValidationError([
+                    'lineas' => "La cantidad recibida de la línea {$idDetalle} ({$cantRec}) supera el pendiente ({$pendiente}).",
+                ]);
             }
 
             $valorLista = $cantRec * (float) $linea['precio_unit'];
@@ -528,7 +537,7 @@ class OrdenesCompraController extends ResourceController
         }
 
         if ($valorListaTotal <= 0) {
-            return $this->failValidationErrors('La suma del valor de lista debe ser mayor a 0.');
+            return $this->apiValidationError(['lineas' => 'La suma del valor de lista debe ser mayor a 0.']);
         }
 
         $factor   = $precioPagado / $valorListaTotal;
@@ -671,7 +680,7 @@ class OrdenesCompraController extends ResourceController
 
         } catch (\Exception $e) {
             $db->transRollback();
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 

@@ -10,6 +10,7 @@ class PreparacionesController extends BaseController
 {
     use \App\Traits\JwtUserAware;
     use \App\Traits\ValidatesJson;
+    use \App\Traits\ApiResponse;
 
     private PreparacionesModel $model;
 
@@ -25,9 +26,11 @@ class PreparacionesController extends BaseController
     public function index(): ResponseInterface
     {
         try {
-            $page  = (int) ($this->request->getGet('page')  ?? 1);
-            $limit = min((int) ($this->request->getGet('limit') ?? 20), 200);
-            $result = $this->model->get_all_preparaciones($page, $limit);
+            $page    = (int) ($this->request->getGet('page')  ?? 1);
+            $default = (int) \App\Helpers\Cfg::n('page_size_default', 50);
+            $max     = (int) \App\Helpers\Cfg::n('max_per_page',     200);
+            $limit   = min((int) ($this->request->getGet('limit') ?? $default), $max);
+            $result  = $this->model->get_all_preparaciones($page, $limit);
             return $this->response->setJSON(['success' => true, 'data' => $result]);
         } catch (Exception $e) {
             return $this->serverError($e);
@@ -66,9 +69,7 @@ class PreparacionesController extends BaseController
                 ->setStatusCode(201)
                 ->setJSON(['success' => true, 'data' => $result]);
         } catch (Exception $e) {
-            return $this->response
-                ->setStatusCode(422)
-                ->setJSON(['success' => false, 'message' => $e->getMessage()]);
+            return $this->apiFail($e->getMessage(), 422);
         }
     }
 

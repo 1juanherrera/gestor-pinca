@@ -10,6 +10,7 @@ class FacturasController extends ResourceController
 {
     use \App\Traits\ValidatesJson;
     use \App\Traits\JwtUserAware;
+    use \App\Traits\ApiResponse;
 
     protected $modelName = FacturasModel::class;
     protected $request;
@@ -119,7 +120,7 @@ class FacturasController extends ResourceController
         if ($data instanceof \CodeIgniter\HTTP\ResponseInterface) return $data;
 
         if (!is_array($data['items']) || empty($data['items'])) {
-            return $this->failValidationErrors('La factura debe tener al menos un ítem.');
+            return $this->apiValidationError(['items' => 'La factura debe tener al menos un ítem.']);
         }
 
         $db = \Config\Database::connect();
@@ -164,7 +165,7 @@ class FacturasController extends ResourceController
 
         } catch (\Exception $e) {
             $db->transRollback();
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
@@ -174,12 +175,19 @@ class FacturasController extends ResourceController
     {
         $data = $this->request->getJSON(true);
 
-        if (!$id)   return $this->fail('ID no proporcionado', 400);
-        if (!$data) return $this->fail('No se recibieron datos o el JSON es inválido', 400);
-        if (!$this->model->find($id)) return $this->failNotFound("Factura con ID $id no encontrada.");
+        if (!$id)   return $this->apiFail('ID no proporcionado', 400);
+        if (!$data) return $this->apiFail('No se recibieron datos o el JSON es inválido', 400);
+        if (!$this->model->find($id)) return $this->apiNotFound("Factura con ID $id no encontrada.");
 
         try {
             $this->model->update_table($id, $data, 'facturas');
+
+            // Si cambió `total`, hay que recalcular saldo para mantener cartera
+            // consistente: total - pagos - NC activas. Mismo principio que en
+            // PagosClienteController/NotasCreditoController.
+            if (array_key_exists('total', $data)) {
+                $this->model->recalcularSaldo((int) $id);
+            }
 
             return $this->respond([
                 'status'  => 200,
@@ -188,7 +196,7 @@ class FacturasController extends ResourceController
             ]);
 
         } catch (\Exception $e) {
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
@@ -203,14 +211,14 @@ class FacturasController extends ResourceController
     // (estado='Anulada') para que cartera quede consistente.
     public function cambiarEstado($id = null)
     {
-        if (!$id) return $this->fail('ID no proporcionado', 400);
+        if (!$id) return $this->apiFail('ID no proporcionado', 400);
 
         $data       = $this->request->getJSON(true);
         $estado     = $data['estado'] ?? null;
         $permitidos = ['Pendiente', 'Pagada', 'Parcial', 'Vencida', 'Anulada'];
 
         if (!$estado || !in_array($estado, $permitidos, true)) {
-            return $this->fail('Estado no válido. Permitidos: ' . implode(', ', $permitidos), 400);
+            return $this->apiFail('Estado no válido. Permitidos: ' . implode(', ', $permitidos), 400);
         }
 
         $db = \Config\Database::connect();
@@ -228,7 +236,7 @@ class FacturasController extends ResourceController
 
             if (!$factura) {
                 $db->transRollback();
-                return $this->failNotFound("Factura con ID $id no encontrada.");
+                return $this->apiNotFound("Factura con ID $id no encontrada.");
             }
 
             $estadoActual = $factura['estado'];
@@ -236,7 +244,7 @@ class FacturasController extends ResourceController
             // Anulada es terminal. No se puede salir de ahí.
             if ($estadoActual === 'Anulada' && $estado !== 'Anulada') {
                 $db->transRollback();
-                return $this->fail('La factura ya está anulada. No se puede cambiar a otro estado.', 409);
+                return $this->apiFail('La factura ya está anulada. No se puede cambiar a otro estado.', 409);
             }
 
             if ($estado === 'Anulada') {
@@ -289,7 +297,7 @@ class FacturasController extends ResourceController
 
         } catch (\Exception $e) {
             $db->transRollback();
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
@@ -297,9 +305,9 @@ class FacturasController extends ResourceController
     public function delete($id = null)
     {
         if (!$this->userHasAdminAccess()) {
-            return $this->failForbidden('Solo administradores pueden eliminar facturas.');
+            return $this->apiForbidden('Solo administradores pueden eliminar facturas.');
         }
-        if (!$this->model->find($id)) return $this->failNotFound("Factura con ID $id no encontrada.");
+        if (!$this->model->find($id)) return $this->apiNotFound("Factura con ID $id no encontrada.");
 
         $this->model->delete_table($id, 'facturas');
         log_message('info', "[FACTURA_DELETE] id={$id} por {$this->getUsername()}");

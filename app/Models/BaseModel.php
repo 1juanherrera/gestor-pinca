@@ -63,11 +63,74 @@ class BaseModel extends Model
         return $this->find($id);
     }
 
+    /**
+     * Devuelve la tabla "natural" del modelo (la declarada como `protected $table`
+     * en la clase hija, antes de cualquier mutación por get_all/get/update_table).
+     */
+    private function naturalTable(): ?string
+    {
+        $defaults = (new \ReflectionClass($this))->getDefaultProperties();
+        return $defaults['table'] ?? null;
+    }
+
+    /**
+     * Devuelve los allowedFields "naturales" declarados por el modelo hijo
+     * (antes de mutaciones), o null si no hay declaración.
+     */
+    private function naturalAllowedFields(): ?array
+    {
+        $defaults = (new \ReflectionClass($this))->getDefaultProperties();
+        $af = $defaults['allowedFields'] ?? null;
+        return is_array($af) && !empty($af) ? $af : null;
+    }
+
     // CREAR
+    //
+    // Cambio 2026-05-25: ya no se auto-genera `allowedFields` desde las columnas
+    // de la tabla (era un riesgo de mass assignment — el cliente podía setear
+    // cualquier columna existente, incluyendo PKs o audit cols).
+    //
+    // Política:
+    //   - Si la tabla destino coincide con la tabla natural del modelo, exigimos
+    //     que el modelo declare `$allowedFields` explícitamente.
+    //   - Si la tabla destino NO coincide (cross-table insert, ej. RemisionesModel
+    //     insertando en `facturas_detalle`), se mantiene comportamiento legacy con
+    //     un warning visible en logs para que se migre a un modelo dedicado.
     public function create_table($data, $table)
     {
-        $this->table = $table;
-        $this->allowedFields = $this->db->getFieldNames($table);
+        $naturalTable    = $this->naturalTable();
+        $naturalAllowed  = $this->naturalAllowedFields();
+        $this->table     = $table;
+
+        $mismaTabla = $naturalTable && $naturalTable === $table;
+
+        if ($mismaTabla) {
+            if (empty($naturalAllowed)) {
+                throw new \RuntimeException(
+                    sprintf(
+                        'Model %s must declare $allowedFields explicitly (table=%s). ' .
+                        'Auto-fill from getFieldNames() was removed to prevent mass assignment.',
+                        static::class,
+                        $table
+                    )
+                );
+            }
+            $this->allowedFields = $naturalAllowed;
+        } else {
+            log_message(
+                'warning',
+                sprintf(
+                    '[BaseModel::create_table] cross-table insert: model=%s, modelTable=%s, targetTable=%s. ' .
+                    'Falling back to getFieldNames(). Considerá crear un modelo dedicado para %s.',
+                    static::class,
+                    $naturalTable ?: '(none)',
+                    $table,
+                    $table
+                )
+            );
+            $this->allowedFields = $this->db->getFieldNames($table);
+        }
+
         $isBatch = isset($data[0]) && is_array($data[0]);
 
         if ($isBatch) {

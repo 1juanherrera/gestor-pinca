@@ -58,6 +58,28 @@ class NotasCreditoController extends ResourceController
 
         if (!$data) return $this->fail('No se recibieron datos o el JSON es inválido', 400);
 
+        // Validación de tipos + reglas mínimas (rechazos 422 explícitos).
+        $errors = [];
+        if (!isset($data['facturas_id']) || !is_numeric($data['facturas_id']) || (int) $data['facturas_id'] <= 0) {
+            $errors['facturas_id'] = 'facturas_id es requerido y debe ser entero > 0';
+        }
+        if (!isset($data['monto']) || !is_numeric($data['monto']) || (float) $data['monto'] <= 0) {
+            $errors['monto'] = 'monto es requerido y debe ser numérico > 0';
+        }
+        $motivo = $data['motivo'] ?? '';
+        if (!is_string($motivo) || trim($motivo) === '') {
+            $errors['motivo'] = 'motivo es requerido (string)';
+        } elseif (strlen($motivo) > 255) {
+            $errors['motivo'] = 'motivo no puede superar 255 caracteres';
+        }
+        if (!empty($errors)) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'ok'     => false,
+                'msg'    => 'Validación',
+                'errors' => $errors,
+            ]);
+        }
+
         foreach (['facturas_id', 'clientes_id', 'fecha', 'monto'] as $campo) {
             if (empty($data[$campo])) {
                 return $this->fail("El campo '$campo' es requerido", 400);

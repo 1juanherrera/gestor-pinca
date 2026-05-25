@@ -43,7 +43,17 @@ class AddSoftDeleteToItemProveedor extends Migration
     public function down()
     {
         if (!$this->db->tableExists($this->tabla)) return;
-        $this->db->query("DROP INDEX IF EXISTS idx_{$this->tabla}_deleted_at ON {$this->tabla}");
+
+        $indexName = "idx_{$this->tabla}_deleted_at";
+        $exists = (int) $this->db->query(
+            "SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.STATISTICS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?",
+            [$this->tabla, $indexName]
+        )->getRow()->c > 0;
+        if ($exists) {
+            $this->db->query("ALTER TABLE {$this->tabla} DROP INDEX {$indexName}");
+        }
+
         if ($this->db->fieldExists('deleted_at', $this->tabla)) {
             $this->forge->dropColumn($this->tabla, 'deleted_at');
         }

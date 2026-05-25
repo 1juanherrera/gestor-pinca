@@ -5,8 +5,10 @@ namespace App\Controllers;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\ItemModel;
 
-class ItemController extends ResourceController 
+class ItemController extends ResourceController
 {
+    use \App\Traits\JwtUserAware;
+
     protected $modelName = ItemModel::class;
     protected $request;
 
@@ -144,6 +146,7 @@ class ItemController extends ResourceController
             return $this->failNotFound("Item con ID $id no encontrado.");
         }
         $this->model->delete($id);
+        log_message('info', "[DELETE_ITEM] usuario={$this->getUsername()} id={$id}");
         return $this->respondDeleted(['mensaje' => "Item $id eliminado"]);
     }
 

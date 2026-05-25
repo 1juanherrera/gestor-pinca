@@ -10,6 +10,7 @@ class FormulacionesController extends ResourceController
 {
     use \App\Traits\JwtUserAware;
     use \App\Traits\ValidatesJson;
+    use \App\Traits\ApiResponse;
 
     // Reglas reusables para create + update. En update se hacen permit_empty
     // los campos que pueden venir parciales — pero materias_primas siempre se
@@ -100,7 +101,7 @@ class FormulacionesController extends ResourceController
         if ($data instanceof \CodeIgniter\HTTP\ResponseInterface) return $data;
 
         if (!is_array($data['materias_primas']) || empty($data['materias_primas'])) {
-            return $this->failValidationErrors('Debe agregar al menos una materia prima.');
+            return $this->apiValidationError(['materias_primas' => 'Debe agregar al menos una materia prima.']);
         }
 
         try {
@@ -110,7 +111,7 @@ class FormulacionesController extends ResourceController
                 ->where('deleted_at', null)
                 ->countAllResults();
             if ($existe === 0) {
-                return $this->failValidationErrors("El item #{$data['item_general_id']} no existe o está archivado.");
+                return $this->apiValidationError(['item_general_id' => "El item #{$data['item_general_id']} no existe o está archivado."]);
             }
 
             // Inyectar responsable real para el snapshot de versión inicial
@@ -128,7 +129,7 @@ class FormulacionesController extends ResourceController
                 'version_num' => $result['version_num'] ?? null,
             ]);
         } catch (Exception $e) {
-            return $this->fail($e->getMessage(), 500);
+            return $this->apiFail($e->getMessage(), 500);
         }
     }
 
@@ -147,7 +148,7 @@ class FormulacionesController extends ResourceController
             $force  = !empty($data['force']);
 
             if ($fromId <= 0 || $toId <= 0) {
-                return $this->failValidationErrors('from_item_id y to_item_id son obligatorios.');
+                return $this->apiValidationError(['from_item_id' => 'from_item_id y to_item_id son obligatorios.']);
             }
 
             $result = $this->model->clonarFormulacion($fromId, $toId, $nombre, $this->getUsername(), $force);
@@ -160,7 +161,7 @@ class FormulacionesController extends ResourceController
                 'version_num' => $result['version_num'] ?? null,
             ]);
         } catch (Exception $e) {
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
@@ -207,14 +208,14 @@ class FormulacionesController extends ResourceController
     public function update($id = null)
     {
         if (empty($id)) {
-            return $this->failValidationErrors('El ID es obligatorio.');
+            return $this->apiValidationError(['id' => 'El ID es obligatorio.']);
         }
 
         $data = $this->validateJson(self::RULES_FORMULACION);
         if ($data instanceof \CodeIgniter\HTTP\ResponseInterface) return $data;
 
         if (!is_array($data['materias_primas']) || empty($data['materias_primas'])) {
-            return $this->failValidationErrors('Debe agregar al menos una materia prima.');
+            return $this->apiValidationError(['materias_primas' => 'Debe agregar al menos una materia prima.']);
         }
 
         try {
@@ -232,7 +233,7 @@ class FormulacionesController extends ResourceController
                 'version_num' => $result['version_num'] ?? null,
             ]);
         } catch (Exception $e) {
-            return $this->fail($e->getMessage(), 500);
+            return $this->apiFail($e->getMessage(), 500);
         }
     }
 

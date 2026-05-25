@@ -8,6 +8,7 @@ use App\Models\InventarioModel;
 class InventarioController extends ResourceController
 {
     use \App\Traits\JwtUserAware;
+    use \App\Traits\ApiResponse;
 
     protected $modelName = InventarioModel::class;
 
@@ -135,7 +136,7 @@ class InventarioController extends ResourceController
         $data = json_decode($json, true);
 
         if (!$data) {
-            return $this->failValidationErrors('No se recibieron datos válidos.');
+            return $this->apiValidationError(['payload' => 'No se recibieron datos válidos.']);
         }
 
         // Adjuntar responsable del JWT (preferido) o body si vino explícito
@@ -149,7 +150,7 @@ class InventarioController extends ResourceController
                 'mensaje' => 'Traspaso realizado correctamente',
             ]);
         }
-        return $this->fail('Error al realizar el traspaso');
+        return $this->apiFail('Error al realizar el traspaso');
     }
 
     // DELETE api/inventario/{item_id}/bodega/{bodega_id}
@@ -188,17 +189,17 @@ class InventarioController extends ResourceController
         $observacion = trim((string) ($data['observacion'] ?? ''));
 
         if ($itemId <= 0 || $bodegaId <= 0) {
-            return $this->failValidationErrors('item_general_id y bodega_id son obligatorios.');
+            return $this->apiValidationError(['ids' => 'item_general_id y bodega_id son obligatorios.']);
         }
         if ($cantidad <= 0) {
-            return $this->failValidationErrors('La cantidad a descontar debe ser mayor a 0.');
+            return $this->apiValidationError(['cantidad' => 'La cantidad a descontar debe ser mayor a 0.']);
         }
         if ($motivo === '') {
-            return $this->failValidationErrors('El motivo del ajuste es obligatorio.');
+            return $this->apiValidationError(['motivo' => 'El motivo del ajuste es obligatorio.']);
         }
         $motivosValidos = ['rotura', 'derrame', 'conteo', 'vencimiento', 'otro'];
         if (!in_array(strtolower($motivo), $motivosValidos, true)) {
-            return $this->failValidationErrors('Motivo inválido. Usar: ' . implode(', ', $motivosValidos));
+            return $this->apiValidationError(['motivo' => 'Motivo inválido. Usar: ' . implode(', ', $motivosValidos)]);
         }
 
         $db = \Config\Database::connect();
@@ -271,7 +272,7 @@ class InventarioController extends ResourceController
             ]);
         } catch (\Exception $e) {
             $db->transRollback();
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 }

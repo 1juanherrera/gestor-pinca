@@ -9,6 +9,7 @@ use App\Models\ProveedorModel;
 class ProveedorController extends ResourceController
 {
     use \App\Traits\ValidatesJson;
+    use \App\Traits\JwtUserAware;
 
     protected $modelName = ProveedorModel::class;
 
@@ -102,6 +103,7 @@ class ProveedorController extends ResourceController
         if ($deleted === false || (is_array($deleted) && isset($deleted['error']))) {
             return $this->fail("No se pudo eliminar la proveedor con ID $id.");
         }
+        log_message('info', "[DELETE_PROVEEDOR] usuario={$this->getUsername()} id={$id}");
         return $this->respondDeleted([
             'mensaje' => "Proveedor con ID $id archivado correctamente"
         ]);

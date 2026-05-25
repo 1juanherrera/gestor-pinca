@@ -9,6 +9,7 @@ use App\Models\BaseModel;
 class ItemProveedorController extends ResourceController
 {
     use \App\Traits\ValidatesJson;
+    use \App\Traits\ApiResponse;
 
     protected $modelName = ItemProveedorModel::class;
 
@@ -55,7 +56,7 @@ class ItemProveedorController extends ResourceController
     {
         $data = json_decode($this->request->getBody(), true);
         if (!$data) {
-            return $this->failValidationErrors('No se recibieron datos válidos.');
+            return $this->apiValidationError(['payload' => 'No se recibieron datos válidos.']);
         }
 
         try {
@@ -64,7 +65,7 @@ class ItemProveedorController extends ResourceController
             $insertId      = $this->model->create_table($data, 'item_proveedor');
 
             if (!$insertId) {
-                return $this->fail('Error al crear el Item Proveedor');
+                return $this->apiFail('Error al crear el Item Proveedor');
             }
 
             return $this->respondCreated([
@@ -73,7 +74,7 @@ class ItemProveedorController extends ResourceController
                 'item_general_id' => $itemGeneralId,
             ]);
         } catch (\Exception $e) {
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
@@ -81,10 +82,10 @@ class ItemProveedorController extends ResourceController
     {
         $data = json_decode($this->request->getBody(), true);
         if (!$data) {
-            return $this->failValidationErrors('No se recibieron datos válidos.');
+            return $this->apiValidationError(['payload' => 'No se recibieron datos válidos.']);
         }
         if (!$this->model->get($id, 'item_proveedor')) {
-            return $this->failNotFound("Item Proveedor con ID $id no encontrado.");
+            return $this->apiNotFound("Item Proveedor con ID $id no encontrado.");
         }
 
         try {
@@ -93,7 +94,7 @@ class ItemProveedorController extends ResourceController
             $updated = $this->model->update_table($id, $data, 'item_proveedor');
 
             if ($updated === false || (is_array($updated) && isset($updated['error']))) {
-                return $this->fail('No se pudo actualizar el Item Proveedor.');
+                return $this->apiFail('No se pudo actualizar el Item Proveedor.');
             }
 
             return $this->respond([
@@ -101,7 +102,7 @@ class ItemProveedorController extends ResourceController
                 'item_general_id' => $data['item_general_id'],
             ]);
         } catch (\Exception $e) {
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
@@ -146,7 +147,7 @@ class ItemProveedorController extends ResourceController
 
         $itemProveedor = $this->model->get($id, 'item_proveedor');
         if (!$itemProveedor) {
-            return $this->failNotFound("Item Proveedor con ID $id no encontrado.");
+            return $this->apiNotFound("Item Proveedor con ID $id no encontrado.");
         }
 
         $db = \Config\Database::connect();
@@ -200,7 +201,7 @@ class ItemProveedorController extends ResourceController
 
         } catch (\Exception $e) {
             $db->transRollback();
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 }

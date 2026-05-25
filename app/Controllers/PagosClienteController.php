@@ -55,6 +55,29 @@ class PagosClienteController extends ResourceController
 
         if (!$data) return $this->fail('No se recibieron datos o el JSON es inválido', 400);
 
+        // Validación de tipos + reglas mínimas (no rompe contrato — agrega rechazos 422 explícitos).
+        $errors = [];
+        $facturaId = $data['facturas_id'] ?? null;
+        if ($facturaId !== null && $facturaId !== '' && (!is_numeric($facturaId) || (int) $facturaId <= 0)) {
+            $errors['facturas_id'] = 'facturas_id debe ser entero > 0';
+        }
+        if (!isset($data['monto']) || !is_numeric($data['monto']) || (float) $data['monto'] <= 0) {
+            $errors['monto'] = 'monto es requerido y debe ser numérico > 0';
+        }
+        if (empty($data['fecha_pago']) || strtotime((string) $data['fecha_pago']) === false) {
+            $errors['fecha_pago'] = 'fecha_pago es requerida y debe ser una fecha válida';
+        }
+        if (empty($data['metodo_pago']) || !is_string($data['metodo_pago'])) {
+            $errors['metodo_pago'] = 'metodo_pago es requerido (string)';
+        }
+        if (!empty($errors)) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'ok'     => false,
+                'msg'    => 'Validación',
+                'errors' => $errors,
+            ]);
+        }
+
         foreach (['fecha_pago', 'monto', 'clientes_id'] as $campo) {
             if (empty($data[$campo])) {
                 return $this->fail("El campo '$campo' es requerido", 400);

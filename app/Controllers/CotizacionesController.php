@@ -11,6 +11,7 @@ use App\Models\ConfiguracionModel;
 class CotizacionesController extends ResourceController
 {
     use \App\Traits\JwtUserAware;
+    use \App\Traits\ApiResponse;
 
     protected $modelName = CotizacionesModel::class;
     protected $request;
@@ -66,6 +67,48 @@ class CotizacionesController extends ResourceController
     {
         $data = $this->request->getJSON(true);
         if (!$data) return $this->fail('No se recibieron datos o el JSON es inválido', 400);
+
+        // Validación de tipos/forma sin romper el contrato actual:
+        // requiere cliente_id O cliente_libre (al menos uno); fecha opcional valid_date;
+        // items requerido (array, min 1); validez_dias opcional entero >= 0.
+        // NOTA: cliente_libre solo cumple el "al menos uno", pero el flujo actual
+        // exige cliente_id real para crear — el bloque interno valida eso luego.
+        $tieneClienteId    = !empty($data['cliente_id']) && (int) $data['cliente_id'] > 0;
+        $tieneClienteLibre = isset($data['cliente_libre']) && trim((string) $data['cliente_libre']) !== '';
+        if (!$tieneClienteId && !$tieneClienteLibre) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'ok'     => false,
+                'msg'    => 'Validación',
+                'errors' => ['cliente_id' => 'Se requiere cliente_id o cliente_libre'],
+            ]);
+        }
+        if (!isset($data['items']) || !is_array($data['items']) || count($data['items']) < 1) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'ok'     => false,
+                'msg'    => 'Validación',
+                'errors' => ['items' => 'Debe enviarse un array de items con al menos 1 elemento'],
+            ]);
+        }
+        if (!empty($data['fecha'])) {
+            $ts = strtotime((string) $data['fecha']);
+            if ($ts === false) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'ok'     => false,
+                    'msg'    => 'Validación',
+                    'errors' => ['fecha' => 'Fecha inválida'],
+                ]);
+            }
+        }
+        if (isset($data['validez_dias'])) {
+            $vd = $data['validez_dias'];
+            if (!is_numeric($vd) || (int) $vd < 0 || (int) $vd != $vd) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'ok'     => false,
+                    'msg'    => 'Validación',
+                    'errors' => ['validez_dias' => 'Debe ser entero >= 0'],
+                ]);
+            }
+        }
 
         $db = \Config\Database::connect();
         $db->transBegin();
@@ -125,7 +168,7 @@ class CotizacionesController extends ResourceController
 
         } catch (\Exception $e) {
             $db->transRollback();
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
@@ -195,10 +238,10 @@ class CotizacionesController extends ResourceController
     // ── POST /cotizaciones/:id/convertir ──────────────────────────────────
     public function convertir($id = null)
     {
-        if (!$id) return $this->fail('ID no proporcionado', 400);
+        if (!$id) return $this->apiFail('ID no proporcionado', 400);
 
         $cotizacion = $this->model->find($id);
-        if (!$cotizacion) return $this->failNotFound("Cotización con ID $id no encontrada.");
+        if (!$cotizacion) return $this->apiNotFound("Cotización con ID $id no encontrada.");
 
         $db = \Config\Database::connect();
         $db->transBegin();
@@ -276,7 +319,7 @@ class CotizacionesController extends ResourceController
 
         } catch (\Exception $e) {
             $db->transRollback();
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 

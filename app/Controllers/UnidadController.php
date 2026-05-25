@@ -5,8 +5,10 @@ namespace App\Controllers;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\UnidadModel;
 
-class UnidadController extends ResourceController 
+class UnidadController extends ResourceController
 {
+    use \App\Traits\JwtUserAware;
+
     protected $modelName = UnidadModel::class;
 
     public function unidades()
@@ -91,6 +93,7 @@ class UnidadController extends ResourceController
         if ($deleted === false || (is_array($deleted) && isset($deleted['error']))) {
             return $this->fail("No se pudo eliminar la unidad con ID $id.");
         }
+        log_message('info', "[DELETE_UNIDAD] usuario={$this->getUsername()} id={$id}");
         return $this->respondDeleted([
             'mensaje' => "unidad con ID $id eliminada correctamente"
         ]);

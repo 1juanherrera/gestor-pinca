@@ -1,199 +1,99 @@
 # MEJORAS.md — Backend Pinca
 
-> Mejoras identificadas, priorizadas por impacto y riesgo. Actualizado 2026-05-18.
+> Mejoras técnicas identificadas y todavía pendientes. **Última limpieza 2026-05-25 (tarde)** — items resueltos eliminados de esta lista (su histórico vive en `CLAUDE.md` por sesión). El backlog operativo con checkboxes vive en `PENDIENTES.md`.
 
 ---
 
-## P0 — Bugs / Defectos activos
+## P1 — Seguridad (Deploy)
 
-### 1. `costos_item.costo_unitario` se puede sobrescribir desde Formulaciones
+### 1. HTTPS no forzado — 🚀 DEPLOY-ONLY
 
-**Archivo**: `app/Models/FormulacionesModel.php` (líneas 996-1001 y 1070-1075)
+`force_https()` no aparece en `app/Config/Boot/production.php` ni siquiera comentado. **Requerido solo cuando se decida deploy con SSL**.
 
-**Problema**: `crearFormulacion()` y `actualizarFormulacion()` ejecutan `UPDATE costos_item SET costo_unitario = ?` si el payload de un ingrediente incluye `costo_unitario`. Este campo debería ser de solo lectura, calculado exclusivamente por `InventarioCapasModel::recalcularPromedioPonderado()` al recibir OCs.
+### 2. Security headers ausentes — 🚀 DEPLOY-ONLY
 
-**Impacto**: Si el frontend (o un cliente API) envía `costo_unitario` en el payload de formulación, se rompe la integridad del promedio ponderado. El costo queda desvinculado de la realidad del inventario.
+No existe `SecurityHeadersFilter`. Filters actuales: solo `CorsFilter` + `JwtFilter`. Headers a agregar: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Strict-Transport-Security: max-age=63072000; includeSubDomains`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`.
 
-**Estado actual**: El frontend NO envía este campo, pero la puerta está abierta.
+### 3. Credenciales de base de datos — 🚀 DEPLOY-ONLY
 
-**Fix recomendado**: Eliminar ambos bloques `if (!empty($mp['costo_unitario']))` de `crearFormulacion()` y `actualizarFormulacion()`. Opcionalmente, agregar un log de warning si algún cliente lo intenta.
-
-```php
-// ELIMINAR estos bloques (líneas 996-1001 y 1070-1075):
-if (!empty($mp['costo_unitario'])) {
-    $this->db->query('UPDATE costos_item SET costo_unitario = ? WHERE item_general_id = ?',
-        [$mp['costo_unitario'], $mp['materia_prima_id']]);
-}
-```
+Hoy `user`/`password` (dev). Cambiar antes de deploy a credenciales fuertes vía variables de entorno o secrets manager.
 
 ---
 
-## P1 — Seguridad (pre-deploy)
+## P2 — Integridad de datos (residual)
 
-### 2. Validación de input con `$this->validate()`
+### 4. Validación de input — faltantes de baja superficie
 
-**Archivos**: La mayoría de controllers (`ItemProveedorController`, `FormulacionesController`, `OrdenesCompraController`, etc.)
-
-**Problema**: Los endpoints solo hacen chequeos de "no vacío" (`if (empty(...))`). No hay validación de tipos, rangos, ni formato. Un payload malformado puede causar errores SQL no controlados o datos inconsistentes.
-
-**Fix recomendado**: Agregar `$this->validate([...])` con reglas CI4 en cada endpoint de mutación (POST/PUT/PATCH/DELETE). Priorizar:
-- `OrdenesCompraController::recibirLinea` — cantidades, precios (decimal positivo)
-- `FormulacionesController::crear/actualizar` — porcentajes (sum ~100), cantidades (positivas)
-- `ItemProveedorController::create/update` — precio_unitario (>0), factor_conversion (>0)
-- `UsuarioController::crear` — email format, password strength
-
-### 3. `DBDebug: true` en producción
-
-**Archivo**: `app/Config/Database.php`
-
-**Problema**: Si `DBDebug` es `true`, los errores SQL se muestran con stack traces completos, incluyendo queries, nombres de tablas y columnas.
-
-**Fix**: `'DBDebug' => (ENVIRONMENT !== 'production')`
-
-### 4. HTTPS no forzado
-
-**Archivo**: `app/Config/Boot/production.php`
-
-**Problema**: `force_https()` está comentado. En producción, las cookies y tokens JWT viajan en texto plano por HTTP.
-
-**Fix**: Descomentar `force_https()` y configurar el reverse proxy (Nginx/Apache) con certificado SSL.
-
-### 5. Security headers ausentes
-
-**Archivo**: Nuevo middleware o en `CorsFilter`
-
-**Headers faltantes**:
-- `X-Frame-Options: DENY`
-- `X-Content-Type-Options: nosniff`
-- `Strict-Transport-Security: max-age=63072000; includeSubDomains`
-- `Referrer-Policy: strict-origin-when-cross-origin`
-- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
-
-**Fix**: Crear `SecurityHeadersFilter` y aplicarlo globalmente, o agregar al `CorsFilter::after`.
-
-### 6. Mass assignment en `BaseModel`
-
-**Archivo**: `app/Models/BaseModel.php`
-
-**Problema**: `create_table()` llena `allowedFields` dinámicamente desde `getFieldNames()`, lo que permite que cualquier campo de la tabla sea escrito desde el request.
-
-**Fix**: No auto-generar `allowedFields`. Cada modelo debe declarar explícitamente qué campos acepta (ya lo hacen los modelos que extienden `BaseModel` con `$allowedFields`, pero el método genérico `create_table` los ignora).
-
-### 7. Credenciales de base de datos
-
-**Archivo**: `.env`
-
-**Problema**: Credenciales actuales son `user`/`password` (las de desarrollo). Deben cambiarse antes del deploy.
+Controllers sin validación nueva todavía: `BodegasController::create`, `CategoriaController::create`, `UnidadController::create`. No urgente — son endpoints administrativos de baja superficie.
 
 ---
 
-## P2 — Integridad de datos
+## P3 — Deuda técnica abierta
 
-### 8. Validación de FKs antes de INSERT
+### 5. Formato de error inconsistente — 29 controllers sin `ApiResponse`
 
-**Problema**: No se valida que las FKs existan antes de insertar. Se confía en el constraint de la BD para rechazar, pero el error que devuelve es genérico y no informativo.
+10 controllers ya adoptaron `ApiResponse` para errores (`UsuarioController`, `OrdenesCompraController`, `FacturasController`, `CotizacionesController`, `RemisionesController`, `PreparacionesController`, `FormulacionesController`, `ItemProveedorController`, `CatalogoController`, `InventarioController`).
 
-**Fix recomendado**: En endpoints críticos (formulaciones, OCs, preparaciones), validar existencia de:
-- `item_general_id` existe y no está soft-deleted
-- `proveedor_id` existe y está activo
-- `bodega_id` existe
-- `formulaciones_id` existe y `estado = 1`
+**Falta**:
+- 29 controllers de tráfico medio/bajo (Cartera, Notificaciones, Auditoría, Configuración, Numeración, Empresa, Salud, CostosProduccion, Trazabilidad, Sincronizacion, Search, Comparador, GestionesCobro, etc.).
+- `PermisosController` requiere decisión aparte — usa shape `{success, message}` distinto al `{ok, msg}` de `ApiResponse`. Migrar rompería contrato.
+- **Respuestas de éxito en TODOS los controllers** (siguen con shape top-level `{ok, msg, ...datos}`). El método `apiSuccess($data, $msg)` mete todo en `data` — incompatible. Pendiente: extender trait con `apiSuccessFlat($data, $msg)` que mergee top-level.
 
-### 9. Race conditions en endpoints de mutación
+### 6. Tope de paginación — pendiente cuando se agregue
 
-**Estado**: Solo `OrdenesCompraController::recibirLinea` usa `SELECT ... FOR UPDATE`. Otros endpoints que mutan inventario o estados de documentos no tienen protección contra concurrencia.
+`InventarioController::global`, `DashboardController`, `CostosIndirectosController`, `RemisionesController`, `CotizacionesController` no aceptan `?limit=` hoy. Cuando se les agregue paginación, usar `Cfg::n('max_per_page', 200)`. Tracker para no olvidarlo.
 
-**Endpoints en riesgo**:
-- `PreparacionesModel::create_preparacion` — consumo de capas sin lock
-- `FacturasController::cambiarEstado` — transiciones de estado sin verificar estado actual en transacción
-- `NumeracionModel::reservar` — ya usa `FOR UPDATE` (OK)
+### 7. Versionado de API `/api/v1/` — ❌ ABIERTO
 
-**Fix**: Envolver mutaciones críticas en `transBegin()` + `SELECT ... FOR UPDATE` del registro principal.
-
-### 10. Porcentajes de formulación sin validación backend
-
-**Archivo**: `FormulacionesModel`
-
-**Problema**: `validarSumaPorcentajes` existe pero no se llama en todos los flujos. Verificar que `crearFormulacion`, `actualizarFormulacion` y `clonar` lo invocan.
-
----
-
-## P3 — Deuda técnica
-
-### 11. Tests
-
-**Estado**: `tests/` vacío. Sin PHPUnit tests.
-
-**Prioridad de tests**:
-1. `InventarioCapasModel` — consumo FIFO, promedio ponderado, restauración
-2. `OrdenesCompraController::recibirLinea` — conversión de unidades, creación de capas
-3. `PreparacionesModel` — consumo por proveedor, costo congelado, rollback
-4. `NumeracionModel::reservar` — reset anual, rango DIAN
-5. `FormulacionesModel` — CRUD, clonar, validación de porcentajes
-
-### 12. Formato de error inconsistente
-
-**Problema**: Coexisten `{ok: false, msg}`, `{success: false, message}`, `{status: 'error'}` dependiendo del controller.
-
-**Fix**: Estandarizar en `{ok: bool, msg: string, data?: any}` o `{success: bool, message: string, data?: any}`. Crear un trait `ApiResponse` con métodos `successResponse()` y `errorResponse()`.
-
-### 13. Tope de paginación
-
-**Estado**: Solo `AuditoriaController` y `NotificacionModel` tienen tope (`Cfg::n('max_per_page', 200)`). Otros controllers aceptan `?limit=9999`.
-
-**Fix**: Aplicar `min($limit, Cfg::n('max_per_page', 200))` en todos los endpoints que acepten `limit`.
-
-### 14. Sin `.env.example`
-
-Facilita el onboarding. Copiar `.env` quitando valores sensibles y dejando placeholders.
-
-### 15. Sin versionado de API
-
-Todas las rutas son `/api/...`. Si se necesita un breaking change, no hay forma de mantener retrocompatibilidad.
-
-**Fix a futuro**: Prefijo `/api/v1/` para nuevos endpoints. No urgente mientras el único cliente sea el frontend propio.
-
-### 16. `RemisionesController` detalle sin FK a `item_general`
-
-**Problema**: El detalle de remisiones es texto libre — no descuenta stock ni se puede trazar.
-
-**Fix**: Agregar `item_general_id` y `cantidad` al detalle de remisiones, y descontar stock al crear (como hace Preparaciones).
+Todas las rutas son `/api/...`. Pendiente cuando aparezca consumidor externo. Refactor masivo de routes + frontend `apiRoutes.js`.
 
 ---
 
 ## P4 — Optimización / Nice-to-have
 
-### 17. Health check endpoint
+### 8. OpenAPI / Swagger — ❌ ABIERTO
 
-`GET /api/health` que retorne `{ status: 'ok', db: bool, timestamp }`. Util para monitoreo y load balancers.
+Pendiente. Sin urgencia mientras el único cliente sea el frontend propio.
 
-### 18. OpenAPI / Swagger
+### 9. Soft-deletes en entidades faltantes — ⚠️ REVISAR
 
-Documentación auto-generada de la API. Facilita integración con terceros y testing.
+Soft-deletes activos en: `clientes`, `proveedor`, `item_general`, `facturas`, `cotizaciones`, `ordenes_compra`, `remisiones`, `item_proveedor`. Verificar si `categorias`, `unidad`, `bodegas`, `instalaciones` lo necesitan.
 
-### 19. Soft-deletes en entidades faltantes
+### 10. Cache de configuración en Redis — ❌ ABIERTO
 
-`item_general` y `categorias` aún no tienen soft-delete (verificar). Las queries raw que los referencian deberían filtrarlo.
-
-### 20. Cache de configuración en Redis
-
-`Cfg::` actualmente cachea por request (estático en PHP). Si la carga crece, mover a Redis con TTL de 5 min evitaría queries por request.
-
-### 21. Endpoint de costos por proveedor optimizado
-
-`GET /formulaciones/{id}/opciones-ingredientes` ejecuta un full scan de `item_proveedor` para luego filtrar por matching. Con formulaciones grandes y muchos proveedores, podría ser lento. Considerar pre-filtrar por `item_general_id IN (...)` de los ingredientes de la formulación.
+Hoy `Cfg::` cachea per-request (static en PHP). OK mientras la carga sea baja.
 
 ---
 
-## Checklist rápido pre-deploy
+## P5 — Items residuales detectados en sesión 2026-05-25
+
+### 11. Migraciones con `DROP INDEX IF EXISTS` — 6 archivos pendientes
+
+`2026-05-14-000001_AddSoftDeleteToItemProveedor.php` ya se arregló (usar como referencia). **Falta**: 6 migraciones más con el mismo patrón — `2026-05-13-000001`, `2026-05-14-000003`, `_000004`, `_000007`, `_000008` y posiblemente otras. Mientras existan, `composer test` falla con 2 errores en `ExampleDatabaseTest`. Fix: aplicar `INFORMATION_SCHEMA.STATISTICS` check + `ALTER TABLE ... DROP INDEX` en cada.
+
+### 12. `tests/README.md` desactualizado
+
+Sigue diciendo "vacío" cuando ya hay 8 tests Feature + 1 unit. Actualizar para listar lo presente.
+
+### 13. Tabla `tambores` en BD vacía
+
+Migración 2026-04-17 creó la tabla; el módulo se eliminó pero la tabla quedó. Si se decide limpiar, crear migración que la dropee.
+
+---
+
+## Checklist pre-deploy (consolidado)
+
+> **Producción NO está en agenda inmediata**. Cuando se reabra, todos los items 🚀 de arriba más:
 
 ```
-□ Fix P0 #1 — Eliminar overwrite de costos_item desde formulaciones
-□ Fix P1 #3 — DBDebug = false en producción
-□ Fix P1 #4 — HTTPS forzado
-□ Fix P1 #5 — Security headers
-□ Fix P1 #7 — Credenciales DB de producción
-□ Fix P1 #2 — Validación de input (al menos en endpoints críticos)
-□ Fix P2 #9 — Race conditions en preparaciones
-□ P3 #11 — Al menos tests de InventarioCapasModel y recibirLinea
+🚀 P1 #1 — HTTPS forzado (force_https())
+🚀 P1 #2 — Security headers (SecurityHeadersFilter)
+🚀 P1 #3 — Credenciales DB de producción
+🚀 CORS_ALLOWED_ORIGIN al dominio real (hoy http://localhost:5173)
+🚀 JwtFilter sin fallback débil (lanzar excepción como UsuarioController)
+🚀 MIME validation real en upload de logo (finfo_file en lugar de mime_content_type)
+🚀 backup-auto.sh debe incluir tar.gz de /public/uploads/
+🚀 Procedimiento de restore documentado
 ```
+
+Detalle en `PENDIENTES.md § 🚀 Deploy / Producción`.

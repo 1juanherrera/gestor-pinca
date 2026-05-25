@@ -9,6 +9,8 @@ use Exception;
 
 class BodegasController extends ResourceController
 {
+    use \App\Traits\JwtUserAware;
+
     protected $modelName = BodegasModel::class;
     protected IncomingRequest $req;
 
@@ -150,6 +152,7 @@ class BodegasController extends ResourceController
         if ($deleted === false || (is_array($deleted) && isset($deleted['error']))) {
             return $this->fail("No se pudo eliminar la bodega con ID $id.");
         }
+        log_message('info', "[DELETE_BODEGA] usuario={$this->getUsername()} id={$id}");
         return $this->respondDeleted([
             'mensaje' => "Bodega con ID $id eliminada correctamente"
         ]);
