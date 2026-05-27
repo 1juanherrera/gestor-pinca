@@ -9,6 +9,8 @@ use App\Models\NumeracionModel;
 
 class NotasCreditoController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     protected $modelName = NotasCreditoModel::class;
     protected $request;
 
@@ -73,11 +75,7 @@ class NotasCreditoController extends ResourceController
             $errors['motivo'] = 'motivo no puede superar 255 caracteres';
         }
         if (!empty($errors)) {
-            return $this->response->setStatusCode(422)->setJSON([
-                'ok'     => false,
-                'msg'    => 'Validación',
-                'errors' => $errors,
-            ]);
+            return $this->apiValidationError($errors, 'Validación');
         }
 
         foreach (['facturas_id', 'clientes_id', 'fecha', 'monto'] as $campo) {

@@ -5,8 +5,10 @@ namespace App\Controllers;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\CategoriaModel;
 
-class CategoriaController extends ResourceController 
+class CategoriaController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     protected $modelName = CategoriaModel::class;
 
     public function categorias()
@@ -42,6 +44,14 @@ class CategoriaController extends ResourceController
         // Validar que haya data
         if (!$data) {
             return $this->failValidationErrors('No se recibieron datos válidos.');
+        }
+        // Validación de input. Única columna real del modelo: nombre.
+        $validation = \Config\Services::validation();
+        $validation->setRules([
+            'nombre' => 'required|max_length[100]',
+        ]);
+        if (!$validation->run($data)) {
+            return $this->apiValidationError($validation->getErrors());
         }
         $insert_id = $this->model->create_table($data, 'categoria');
         if ($insert_id) {

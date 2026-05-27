@@ -22,6 +22,7 @@ $routes->group('api', function ($routes) {
     $routes->post('crear',                  'UsuarioController::crear');
     $routes->get('auth/me',                  'UsuarioController::me');
     $routes->post('auth/logout',             'UsuarioController::logout');
+    $routes->post('auth/refresh',            'UsuarioController::refresh');
     $routes->patch('usuarios/mi-password',   'UsuarioController::cambiarPassword');
     $routes->patch('usuarios/mi-perfil',     'UsuarioController::actualizarPerfil');
     $routes->get('usuarios/mi-actividad',    'UsuarioController::miActividad');

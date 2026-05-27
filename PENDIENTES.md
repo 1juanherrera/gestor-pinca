@@ -1,6 +1,6 @@
 # PENDIENTES — Backlog del Sistema PINCA
 
-> **Última limpieza 2026-05-25 (tarde)**. Solo quedan items abiertos. Lo resuelto vive como histórico en `CLAUDE.md` (backend y frontend) por sesión. Los detalles técnicos de algunos items están en `MEJORAS.md`.
+> **Última limpieza 2026-05-27**. Solo quedan items abiertos. Lo resuelto vive como histórico en `CLAUDE.md` (backend y frontend) por sesión. Los detalles técnicos de algunos items están en `MEJORAS.md`.
 >
 > El bloque **🚀 Deploy / Producción** está separado porque el dueño del proyecto pidió no considerarlo todavía.
 
@@ -30,12 +30,12 @@
 
 ### Backend
 
-- [ ] **Refresh token + modal "sesión por expirar"**. El JWT dura 8h y cuando expira, el frontend cae al login sin aviso. Logout server-side ya existe. Falta: endpoint `POST /api/auth/refresh` con refresh token de 7 días + modal frontend "tu sesión expira en 5 min, ¿extender?" 5 min antes del exp.
+- [x] ~~**Refresh token + modal "sesión por expirar"**~~ — ✅ 2026-05-27. Endpoint `POST /api/auth/refresh` rotativo (tabla `refresh_tokens`, expiry 7 días) + `SessionExpiryModal` en frontend. Login devuelve `refresh_token`, logout lo revoca.
 - [ ] **OpenAPI/Swagger spec** auto-generada o manual con `nelmio/api-doc-bundle` o equivalente.
 - [ ] **Versionado API `/api/v1/`** — breaking change, refactor masivo (rutas + frontend apiRoutes).
-- [ ] **Propagar `ApiResponse` a 29 controllers restantes** (solo errores). Patrón ya claro: copiar de OrdenesCompra/Facturas.
+- [ ] **Unificar shapes de error** — decidir si migrar los ~24 controllers que usan `$this->fail*()` nativo de CI4 (shape `{status, error, messages}`) al shape `{ok, msg}` de `ApiResponse`. **NO es mecánico** — es un cambio de contrato que rompe el frontend, requiere coordinación. Hoy 12 controllers usan `{ok, msg}`, ~24 usan `{status, error, messages}`, 3 usan `{success, message}`. Ver `MEJORAS.md #5`.
 - [ ] **Migrar respuestas de éxito a `ApiResponse`** (todos los controllers). Requiere extender el trait con `apiSuccessFlat($data, $msg)` que mergee top-level — sino rompe contrato `{ok, msg, token, usuario}`.
-- [ ] **6 migraciones más con `DROP INDEX IF EXISTS`** (`2026-05-13-000001`, `2026-05-14-000003`, `_000004`, `_000007`, `_000008`, etc.). Replicar fix de `2026-05-14-000001`.
+- [ ] **5 migraciones más con `DROP INDEX IF EXISTS`** (`2026-05-13-000001`, `2026-05-14-000003`, `_000004`, `_000007`, `_000008`, etc.). Replicar fix de `2026-05-14-000001` (ya arreglada).
 - [ ] **Anulación de factura por email al cliente** — requiere infra de email.
 - [ ] **Cache de configuración en Redis**. Hoy `Cfg::` cachea per-request. Migrar cuando la carga crezca.
 
@@ -44,8 +44,8 @@
 - [ ] **Dark mode** — design system entero (tokens dark, ~1 semana).
 - [ ] **Virtualización** en `MovimientosTable` y `ProduccionTable` con `react-window` (cuando empiecen a doler).
 - [ ] **Bulk actions** (selección múltiple + acción batch en Cotizaciones/Facturas/OCs) — necesita UX design.
-- [ ] **Export Excel** en Cotizaciones y OCs (xlsx ya instalado — falta UI + serialización).
-- [ ] **Vitest setup + cobertura** — `npm run test` no configurado. Prioridad: login → crear OC → recibir → producir.
+- [x] ~~**Export Excel** en Cotizaciones y OCs~~ — ✅ 2026-05-27. `ExportCotizacionExcel.js` + `ExportOrdenCompraExcel.js` (fila única o lista filtrada).
+- [ ] **Vitest — completar install**. Setup hecho 2026-05-27 (`vitest.config.js` + 2 tests). Falta correr `npm install -D vitest @testing-library/react @testing-library/jest-dom jsdom` y luego `npm run test -- --run`. Ampliar cobertura a flujos críticos (login → crear OC → recibir → producir).
 - [ ] **Búsqueda con debounce en drawers grandes** (selects de cliente/bodega/items con 100+ entradas) — pattern uno-a-uno por drawer.
 - [ ] **Notificaciones real-time** (WebSockets/SSE en lugar de polling 30s).
 
@@ -55,24 +55,17 @@
 
 ### Frontend
 
-- [ ] **Popovers `FormDate`/`DateRangePicker` viewport mobile** — hoy se desbordan en mobile.
-- [ ] **~12 errores ESLint restantes**: refs durante render (`FormulacionModal`, `FormCostProducts`), components-in-render legacy en exports no migrados, rules-of-hooks en `FormulacionesTable`.
-- [ ] **Migrar `SummaryCard` → `FlowCard`** en módulos legacy. Cuando se toquen esas páginas.
-- [ ] **Marcar todas como leídas con un click** en bell-icon. Endpoint backend `/notificaciones/leer-todas` ya existe; verificar que el botón esté en la UI.
-- [ ] **5 módulos sin sidebar entry** (`/pagos`, `/roles` en UserPanel): documentado en CLAUDE.md como intencional. Verificar si está OK o agregar.
+- [x] ~~**Popovers `FormDate`/`DateRangePicker` viewport mobile**~~ — ✅ 2026-05-27. Clamp contra `window.innerWidth` + 1 mes en `<640px`.
+- [ ] **4 errores ESLint restantes** (de 33): `CapasStockPanel:351` (`Date.now()` impuro en render), `FormulacionesTable:189` (memoization skip), `FormCostProducts:226` + `FormulacionModal:317` (2 `setState in effect` reset-on-open — necesitan refactor del padre con `key`). No afectan build/runtime.
+- [x] ~~**Migrar `SummaryCard` → `FlowCard`**~~ — ✅ 2026-05-27. 6 archivos migrados. `SummaryCard.jsx` quedó huérfano (borrable en cleanup futuro).
+- [x] ~~**Marcar todas como leídas**~~ — ✅ ya existía en `NotificacionesDropdown.jsx` (botón "Leer todas" + `useMarcarTodasLeidas`).
+- [x] ~~**Módulos sin sidebar entry**~~ — ✅ verificado 2026-05-27: `/pagos`, `/sincronizacion`, `/configuracion` por URL/links (intencional); `/roles` movido a tab del UserPanel. Todo OK, nada falta.
 
 ### Backend
 
 - [ ] **Tope de paginación** cuando se agregue `?limit=` a `InventarioController::global`, `DashboardController`, `CostosIndirectosController`, `RemisionesController`, `CotizacionesController` (hoy ninguno acepta). Recordar usar `Cfg::n('max_per_page', 200)`.
-- [ ] **Validación de input en controllers de baja superficie**: `BodegasController::create`, `CategoriaController::create`, `UnidadController::create`. No urgente.
-- [ ] **Soft-deletes en entidades faltantes**: revisar si `categorias`, `unidad`, `bodegas`, `instalaciones` lo necesitan.
-- [ ] **Tabla `tambores` en BD vacía** — el módulo se eliminó pero la tabla quedó. Crear migración que la dropee si se decide limpiar.
-
----
-
-## 📚 Documentación
-
-- [ ] **`tests/README.md` backend** sigue diciendo "vacío". Actualizar para listar los 8 tests Feature + 1 unit que ya existen.
+- [x] ~~**Validación de input en Bodegas/Categoría/Unidad create**~~ — ✅ 2026-05-27.
+- [ ] **Soft-deletes en entidades faltantes**: `categoria`, `unidad`, `bodegas`, `instalaciones` confirmados hard-delete (verificado 2026-05-27). Decidir si agregar `deleted_at` + `useSoftDeletes`.
 
 ---
 

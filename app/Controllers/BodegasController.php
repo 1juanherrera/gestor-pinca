@@ -10,6 +10,7 @@ use Exception;
 class BodegasController extends ResourceController
 {
     use \App\Traits\JwtUserAware;
+    use \App\Traits\ApiResponse;
 
     protected $modelName = BodegasModel::class;
     protected IncomingRequest $req;
@@ -94,6 +95,15 @@ class BodegasController extends ResourceController
         // Validar que haya data
         if (!$data) {
             return $this->failValidationErrors('No se recibieron datos válidos.');
+        }
+        // Validación de input. Columnas reales del modelo: nombre, instalaciones_id.
+        $validation = \Config\Services::validation();
+        $validation->setRules([
+            'nombre'           => 'required|max_length[100]',
+            'instalaciones_id' => 'permit_empty|is_natural_no_zero',
+        ]);
+        if (!$validation->run($data)) {
+            return $this->apiValidationError($validation->getErrors());
         }
         $insert_id = $this->model->create_table($data, 'bodegas');
         if ($insert_id) {

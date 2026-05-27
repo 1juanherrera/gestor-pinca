@@ -8,6 +8,7 @@ use App\Models\UnidadModel;
 class UnidadController extends ResourceController
 {
     use \App\Traits\JwtUserAware;
+    use \App\Traits\ApiResponse;
 
     protected $modelName = UnidadModel::class;
 
@@ -44,6 +45,15 @@ class UnidadController extends ResourceController
         // Validar que haya data
         if (!$data) {
             return $this->failValidationErrors('No se recibieron datos válidos.');
+        }
+        // Validación de input. Columnas reales del modelo: numero, nombre,
+        // descripcion, estados, escala. NO existe abreviatura/simbolo en el schema.
+        $validation = \Config\Services::validation();
+        $validation->setRules([
+            'nombre' => 'required|max_length[50]',
+        ]);
+        if (!$validation->run($data)) {
+            return $this->apiValidationError($validation->getErrors());
         }
         $insert_id = $this->model->create_table($data, 'unidad');
         if ($insert_id) {

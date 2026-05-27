@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-> **Última actualización**: 2026-05-25 (segunda mitad — backlog vacío excepto features grandes y deploy).
-> Backend en estado funcional con seguridad activa (JWT global + RBAC + rol superadmin + token_version + logout server-side) + análisis profundo aplicado (23 fixes 2026-05-19 + 12 hardening 2026-05-21 + 8 items 2026-05-25 mañana + 8 hardening 2026-05-25 tarde). Ver §"Sesión 2026-05-25 (tarde) — Hardening 2 + ApiResponse propagación + tests Feature ampliados" para lo más reciente. **`validar:fixes` 53/53 PASS, PHPUnit 13 nuevos tests 100% PASS.**
+> **Última actualización**: 2026-05-27 (refresh token + ApiResponse extra + cleanup migraciones).
+> Backend en estado funcional con seguridad activa (JWT global + RBAC + rol superadmin + token_version + logout server-side + **refresh token rotativo**). Ver §"Sesión 2026-05-27 — Refresh token + ApiResponse residual + drop tambores" para lo más reciente. **`validar:fixes` 53/53 PASS, 10 tests Feature nuevos 100% PASS, `migrate` limpio (batch 17).**
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -1368,4 +1368,68 @@ composer test  # suite completo
 ---
 
 > **Snapshot al cierre 2026-05-25 (tarde)**: Backend con backlog DEV prácticamente vacío. Lo que queda: features grandes (refresh token completo con `/auth/refresh`, OpenAPI/Swagger, versionado `/api/v1/`, propagación `ApiResponse` a respuestas de éxito), 6 migraciones con `DROP INDEX IF EXISTS` pendientes, decisiones de UX (anulación de factura por email — requiere infra de email). `validar:fixes` 53/53 + 10 nuevos tests Feature PASS. Bloque deploy aislado en `PENDIENTES.md § 🚀`. Próxima sesión grande: o deploy, o refresh token, o las 6 migraciones, según prioridad del dueño.
+
+---
+
+## Sesión 2026-05-27 — Refresh token + ApiResponse residual + drop tambores
+
+Sesión coordinada con frontend (3 agentes paralelos). El backlog DEV grande del backend queda casi vacío: solo OpenAPI, versionado `/v1/`, migración masiva de respuestas de éxito a `ApiResponse`, y 5 migraciones más con `DROP INDEX IF EXISTS`. **`validar:fixes` 53/53 PASS, Feature tests 10/10 PASS, `migrate` limpio.**
+
+### Refresh token rotativo — `POST /api/auth/refresh`
+
+Nueva capa de sesión sobre el JWT existente (que sigue durando `Cfg::n('jwt_expiracion_horas', 8)`).
+
+**Tabla nueva `refresh_tokens`** (migración `2026-05-25-000001_CreateRefreshTokens`):
+- `id` PK, `usuario_id` (FK→`usuarios(id_usuarios)` ON DELETE CASCADE — **INT con signo**, no unsigned, para coincidir con `id_usuarios`), `token_hash` VARCHAR(255) (SHA-256, **nunca el token plano**), `expires_at` DATETIME, `created_at` DATETIME, `revoked` TINYINT(1) DEFAULT 0. Índices en `token_hash` y `usuario_id`.
+
+**Contrato (el frontend depende de esto)**:
+- `POST /login` ahora devuelve `{ok, msg, token, refresh_token, usuario}` — agregó `refresh_token` (string `bin2hex(random_bytes(32))`, guardado hasheado con expiry de 7 días).
+- `POST /api/auth/refresh` (público, en `except` del filtro jwt): body `{refresh_token}`. Busca por hash SHA-256 con `revoked=0` y `expires_at > NOW()`. Si inválido/expirado → `apiFail('Refresh token inválido o expirado', 401)`. Si válido: genera JWT nuevo (con `token_version` ACTUAL de BD), **rota** el refresh (revoca el viejo, crea uno nuevo) y devuelve `{ok: true, token, refresh_token}`.
+- `logout()` ahora también marca `revoked=1` todos los refresh tokens del usuario (además de bumpear `token_version`).
+
+**Cambios en `UsuarioController`**: JWT inline extraído a método privado `generarJwt($usuario)` (reusado por `login` y `refresh`); helpers `modulosDeRol()` y `crearRefreshToken()`; nuevo método `refresh()`.
+
+Verificado en vivo: refresh válido → JWT+refresh nuevos; reusar el viejo → 401 (rotación funciona); token inválido → 401.
+
+### Drop tabla `tambores` (migración `2026-05-25-000002`)
+
+⚠️ **La tabla tenía 335 filas, no estaba vacía** (el backlog asumía vacía). Se dropeó igual porque el módulo Tambores se eliminó completo en 2026-05-21 (controllers, models, rutas, frontend). **Backup de seguridad**: `backups/tambores_pre_drop_2026-05-27.sql`. Si esos datos importaban, restaurar desde ahí. `down()` usa `dropTable(..., true)` (sin `DROP INDEX IF EXISTS`).
+
+### ApiResponse — hallazgo sobre el shape real de errores
+
+Al intentar propagar `ApiResponse` a los "29 controllers restantes" se descubrió que **el codebase tiene 3 shapes de error coexistiendo**:
+1. `{ok, msg}` — `ApiResponse` + raw. Hoy en 12 controllers (los 10 de la tarde 2026-05-25 + `PagosClienteController` + `NotasCreditoController` migrados esta sesión).
+2. `{status, error, messages}` — métodos nativos CI4 `$this->fail*()` (`fail`, `failNotFound`, `failValidationErrors`, `failForbidden`, `failServerError`). ~24 controllers usan SOLO esto para errores.
+3. `{success, message}` — helpers internos del `BaseController`. `PermisosController`, `RequisicionesCompraController`, `DashboardController`.
+
+**Conclusión**: migrar los ~24 controllers que usan `$this->fail*()` NO es mecánico — cambiaría el body JSON de `{status, error, messages}` a `{ok, msg}`, lo que **rompería el frontend**. Es un cambio de contrato que requiere coordinación backend+frontend, NO un refactor interno. Por eso esta sesión solo migró los 2 controllers que tenían raw `{ok:false}` (`PagosCliente`, `NotasCredito`). El item "propagar ApiResponse a 29 controllers" en el backlog estaba mal planteado — se reformuló en `MEJORAS.md`.
+
+### Validación de input en 3 controllers de baja superficie
+
+- `BodegasController::create` — `nombre` required|max[100], `instalaciones_id` permit_empty|is_natural_no_zero (columna real es `instalaciones_id`).
+- `CategoriaController::create` — `nombre` required|max[100]. Tabla real es `categoria` (singular).
+- `UnidadController::create` — `nombre` required|max[50]. NO existe `abreviatura`/`simbolo` (columnas reales: `numero, nombre, descripcion, estados, escala`).
+
+### Soft-deletes — reporte (sin cambios de schema)
+
+`categoria`, `unidad`, `bodegas`, `instalaciones`: los 4 son **hard-delete** (sin columna `deleted_at`, modelos sin `useSoftDeletes`). No se tocó schema (decisión del dueño). Si se quieren preservar, agregar `deleted_at` + `useSoftDeletes` por cada uno.
+
+### `tests/README.md` actualizado
+
+Ahora lista los 8 tests Feature + 1 unit reales (antes decía "vacío") + menciona `composer test` y `php spark validar:fixes`.
+
+### Archivos de esta sesión
+
+**Creados**: `app/Database/Migrations/2026-05-25-000001_CreateRefreshTokens.php`, `2026-05-25-000002_DropTamboresTable.php`, `backups/tambores_pre_drop_2026-05-27.sql`.
+**Modificados**: `UsuarioController` (refresh), `Routes.php` (`auth/refresh`), `Filters.php` (except), `PagosClienteController` + `NotasCreditoController` (ApiResponse errores), `BodegasController` + `CategoriaController` + `UnidadController` (validación), `tests/README.md`.
+
+### Riesgos al cierre
+
+1. **`tambores` tenía 335 filas dropeadas** — backup en `backups/tambores_pre_drop_2026-05-27.sql`. Confirmar con el dueño si esos datos importaban.
+2. **`usuario_id` en `refresh_tokens` es INT con signo** (no unsigned) para coincidir con `id_usuarios`. Documentado en la migración.
+3. **Migrar `$this->fail*()` a `ApiResponse` es un cambio de contrato** (no mecánico) — ver hallazgo arriba.
+
+---
+
+> **Snapshot al cierre 2026-05-27**: Backend con refresh token rotativo funcional (rotación + revocación verificadas en vivo), tabla `tambores` eliminada (backup guardado), ApiResponse en 12 controllers, validación en 3 más, tests/README al día. Backlog DEV restante: OpenAPI, versionado `/v1/`, migración de respuestas de éxito a ApiResponse (cambio de contrato), 5 migraciones más con `DROP INDEX IF EXISTS`, email anulación factura. `validar:fixes` 53/53, Feature 10/10, `migrate` limpio.
 

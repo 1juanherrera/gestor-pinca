@@ -5,6 +5,58 @@ it takes to set up your application and get it ready to run unit tests.
 It is not intended to be a full description of the test features that you can
 use to test your application. Those details can be found in the documentation.
 
+## PINCA test suite (estado actual)
+
+El directorio `tests/` ya **no está vacío**. Tests reales presentes:
+
+### `tests/Feature/`
+- `LoginTest.php` — autenticación + rate limiting de login.
+- `OrdenesCompraTest.php` — flujo de OC + recepción de líneas + creación de capas.
+- `PreparacionesTest.php` — producción + consumo FIFO de capas.
+- `RemisionesStockTest.php` — descuento de stock al crear remisiones.
+- `SoftDeleteTest.php` — filtrado de registros con `deleted_at`.
+- `InventarioCapasModelTest.php` — capas de costo: crear, promedio ponderado, FIFO por proveedor, restaurar, selección manual.
+- `NumeracionModelTest.php` — `NumeracionModel::reservar`: secuencial, reset anual, agotamiento de rango DIAN.
+- `FormulacionesModelTest.php` — clonado de fórmula (copia ingredientes, rechaza origen == destino).
+
+### `tests/unit/`
+- `HealthTest.php` — smoke test.
+
+> También existen `tests/database/ExampleDatabaseTest.php` y
+> `tests/session/ExampleSessionTest.php` (boilerplate de CI4).
+
+## Cómo correr los tests
+
+Suite completo de PHPUnit:
+
+```console
+> composer test          # alias de vendor/bin/phpunit
+```
+
+Filtrar a un subconjunto:
+
+```console
+> vendor/bin/phpunit --filter "InventarioCapasModelTest|NumeracionModelTest|FormulacionesModelTest"
+```
+
+Dentro del contenedor Docker:
+
+```console
+> docker exec gestor-pinca-app composer test
+```
+
+### Validador de regresiones (no es PHPUnit)
+
+Además de PHPUnit, existe un comando Spark que corre los tests de regresión
+contra la base de datos real:
+
+```console
+> php spark validar:fixes
+> docker exec gestor-pinca-app php spark validar:fixes
+```
+
+Útil correrlo antes de un commit grande. **No** es parte de `composer test`.
+
 ## Resources
 
 * [CodeIgniter 4 User Guide on Testing](https://codeigniter.com/user_guide/testing/index.html)

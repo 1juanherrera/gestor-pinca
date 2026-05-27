@@ -1,6 +1,6 @@
 # MEJORAS.md — Backend Pinca
 
-> Mejoras técnicas identificadas y todavía pendientes. **Última limpieza 2026-05-25 (tarde)** — items resueltos eliminados de esta lista (su histórico vive en `CLAUDE.md` por sesión). El backlog operativo con checkboxes vive en `PENDIENTES.md`.
+> Mejoras técnicas identificadas y todavía pendientes. **Última limpieza 2026-05-27** — items resueltos eliminados de esta lista (su histórico vive en `CLAUDE.md` por sesión). El backlog operativo con checkboxes vive en `PENDIENTES.md`.
 
 ---
 
@@ -20,24 +20,21 @@ Hoy `user`/`password` (dev). Cambiar antes de deploy a credenciales fuertes vía
 
 ---
 
-## P2 — Integridad de datos (residual)
-
-### 4. Validación de input — faltantes de baja superficie
-
-Controllers sin validación nueva todavía: `BodegasController::create`, `CategoriaController::create`, `UnidadController::create`. No urgente — son endpoints administrativos de baja superficie.
-
 ---
 
 ## P3 — Deuda técnica abierta
 
-### 5. Formato de error inconsistente — 29 controllers sin `ApiResponse`
+### 5. Formato de error inconsistente — 3 shapes coexisten (cambio de contrato pendiente)
 
-10 controllers ya adoptaron `ApiResponse` para errores (`UsuarioController`, `OrdenesCompraController`, `FacturasController`, `CotizacionesController`, `RemisionesController`, `PreparacionesController`, `FormulacionesController`, `ItemProveedorController`, `CatalogoController`, `InventarioController`).
+**Hallazgo 2026-05-27**: el item original ("29 controllers sin ApiResponse") estaba mal planteado. El codebase tiene **3 shapes de error**:
 
-**Falta**:
-- 29 controllers de tráfico medio/bajo (Cartera, Notificaciones, Auditoría, Configuración, Numeración, Empresa, Salud, CostosProduccion, Trazabilidad, Sincronizacion, Search, Comparador, GestionesCobro, etc.).
-- `PermisosController` requiere decisión aparte — usa shape `{success, message}` distinto al `{ok, msg}` de `ApiResponse`. Migrar rompería contrato.
-- **Respuestas de éxito en TODOS los controllers** (siguen con shape top-level `{ok, msg, ...datos}`). El método `apiSuccess($data, $msg)` mete todo en `data` — incompatible. Pendiente: extender trait con `apiSuccessFlat($data, $msg)` que mergee top-level.
+1. `{ok, msg}` — `ApiResponse` + raw. Hoy en **12 controllers**: los 10 de 2026-05-25 (`UsuarioController`, `OrdenesCompra`, `Facturas`, `Cotizaciones`, `Remisiones`, `Preparaciones`, `Formulaciones`, `ItemProveedor`, `Catalogo`, `Inventario`) + `PagosCliente` + `NotasCredito` (2026-05-27).
+2. `{status, error, messages}` — métodos nativos CI4 `$this->fail*()` (`fail`, `failNotFound`, `failValidationErrors`, `failForbidden`, `failServerError`). **~24 controllers** usan SOLO esto.
+3. `{success, message}` — helpers internos del `BaseController`. `PermisosController`, `RequisicionesCompraController`, `DashboardController`.
+
+**Lo que falta NO es mecánico**: migrar los ~24 controllers que usan `$this->fail*()` cambiaría el body de `{status, error, messages}` a `{ok, msg}` → **rompe el frontend**. Es un **cambio de contrato coordinado backend+frontend**, no un refactor interno. Decidir si vale la pena unificar o dejar los 3 shapes (el frontend ya los maneja).
+
+- **Respuestas de éxito en TODOS los controllers** siguen top-level (`{ok, msg, ...datos}`). `apiSuccess($data, $msg)` mete todo en `data` — incompatible. Pendiente: extender trait con `apiSuccessFlat($data, $msg)`.
 
 ### 6. Tope de paginación — pendiente cuando se agregue
 
@@ -55,9 +52,11 @@ Todas las rutas son `/api/...`. Pendiente cuando aparezca consumidor externo. Re
 
 Pendiente. Sin urgencia mientras el único cliente sea el frontend propio.
 
-### 9. Soft-deletes en entidades faltantes — ⚠️ REVISAR
+### 9. Soft-deletes en entidades faltantes — ⚠️ REVISADO 2026-05-27, decisión pendiente
 
-Soft-deletes activos en: `clientes`, `proveedor`, `item_general`, `facturas`, `cotizaciones`, `ordenes_compra`, `remisiones`, `item_proveedor`. Verificar si `categorias`, `unidad`, `bodegas`, `instalaciones` lo necesitan.
+Soft-deletes activos en: `clientes`, `proveedor`, `item_general`, `facturas`, `cotizaciones`, `ordenes_compra`, `remisiones`, `item_proveedor`.
+
+**Confirmado hard-delete** (sin `deleted_at`, modelos sin `useSoftDeletes`): `categoria` (singular), `unidad`, `bodegas`, `instalaciones`. Los 4 borran permanentemente. No se tocó schema (decisión del dueño). Si se quieren preservar, agregar `deleted_at` + `useSoftDeletes` por cada uno.
 
 ### 10. Cache de configuración en Redis — ❌ ABIERTO
 
@@ -67,17 +66,17 @@ Hoy `Cfg::` cachea per-request (static en PHP). OK mientras la carga sea baja.
 
 ## P5 — Items residuales detectados en sesión 2026-05-25
 
-### 11. Migraciones con `DROP INDEX IF EXISTS` — 6 archivos pendientes
+### 11. Migraciones con `DROP INDEX IF EXISTS` — 5 archivos pendientes
 
-`2026-05-14-000001_AddSoftDeleteToItemProveedor.php` ya se arregló (usar como referencia). **Falta**: 6 migraciones más con el mismo patrón — `2026-05-13-000001`, `2026-05-14-000003`, `_000004`, `_000007`, `_000008` y posiblemente otras. Mientras existan, `composer test` falla con 2 errores en `ExampleDatabaseTest`. Fix: aplicar `INFORMATION_SCHEMA.STATISTICS` check + `ALTER TABLE ... DROP INDEX` en cada.
+`2026-05-14-000001_AddSoftDeleteToItemProveedor.php` ya se arregló (usar como referencia). **Falta**: ~5 migraciones más con el mismo patrón — `2026-05-13-000001`, `2026-05-14-000003`, `_000004`, `_000007`, `_000008` y posiblemente otras. Mientras existan, `composer test` falla con 2 errores en `ExampleDatabaseTest`. Fix: aplicar `INFORMATION_SCHEMA.STATISTICS` check + `ALTER TABLE ... DROP INDEX` en cada.
 
-### 12. `tests/README.md` desactualizado
+### 12. ~~`tests/README.md` desactualizado~~ — ✅ RESUELTO 2026-05-27
 
-Sigue diciendo "vacío" cuando ya hay 8 tests Feature + 1 unit. Actualizar para listar lo presente.
+Actualizado con los 8 tests Feature + 1 unit reales + comandos `composer test` / `php spark validar:fixes`.
 
-### 13. Tabla `tambores` en BD vacía
+### 13. ~~Tabla `tambores`~~ — ✅ DROPEADA 2026-05-27 (⚠️ tenía 335 filas)
 
-Migración 2026-04-17 creó la tabla; el módulo se eliminó pero la tabla quedó. Si se decide limpiar, crear migración que la dropee.
+Migración `2026-05-25-000002_DropTamboresTable` aplicada. ⚠️ **La tabla NO estaba vacía — tenía 335 filas**. Backup en `backups/tambores_pre_drop_2026-05-27.sql`. Confirmar con el dueño si esos datos importaban.
 
 ---
 

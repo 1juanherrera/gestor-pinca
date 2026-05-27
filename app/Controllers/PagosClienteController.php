@@ -8,6 +8,8 @@ use App\Models\FacturasModel;
 
 class PagosClienteController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     protected $modelName = PagosClienteModel::class;
     protected $request;
 
@@ -71,11 +73,7 @@ class PagosClienteController extends ResourceController
             $errors['metodo_pago'] = 'metodo_pago es requerido (string)';
         }
         if (!empty($errors)) {
-            return $this->response->setStatusCode(422)->setJSON([
-                'ok'     => false,
-                'msg'    => 'Validación',
-                'errors' => $errors,
-            ]);
+            return $this->apiValidationError($errors, 'Validación');
         }
 
         foreach (['fecha_pago', 'monto', 'clientes_id'] as $campo) {
