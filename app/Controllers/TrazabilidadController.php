@@ -25,6 +25,8 @@ use CodeIgniter\RESTful\ResourceController;
  */
 class TrazabilidadController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     use \App\Traits\JwtUserAware;
 
     /**
@@ -33,7 +35,7 @@ class TrazabilidadController extends ResourceController
      */
     public function porPreparacion(int $id = 0): ResponseInterface
     {
-        if ($id <= 0) return $this->fail('ID de preparación requerido', 400);
+        if ($id <= 0) return $this->apiFail('ID de preparación requerido', 400);
 
         $db = \Config\Database::connect();
 
@@ -57,7 +59,7 @@ class TrazabilidadController extends ResourceController
             WHERE p.id_preparaciones = ?
         ", [$id])->getRowArray();
 
-        if (!$prep) return $this->failNotFound("Preparación #{$id} no encontrada");
+        if (!$prep) return $this->apiNotFound("Preparación #{$id} no encontrada");
 
         // Detalle de capas consumidas (granularidad real por lote)
         $consumos = $db->query("
@@ -136,7 +138,7 @@ class TrazabilidadController extends ResourceController
     public function porLote(string $lote = ''): ResponseInterface
     {
         $lote = trim(urldecode($lote));
-        if ($lote === '') return $this->fail('Lote requerido', 400);
+        if ($lote === '') return $this->apiFail('Lote requerido', 400);
 
         $db = \Config\Database::connect();
 

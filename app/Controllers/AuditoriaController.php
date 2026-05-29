@@ -14,6 +14,8 @@ use App\Helpers\Cfg;
  */
 class AuditoriaController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     use JwtUserAware;
 
     protected $format = 'json';
@@ -24,7 +26,7 @@ class AuditoriaController extends ResourceController
     public function loginAttempts()
     {
         if (!$this->userHasAdminAccess()) {
-            return $this->failForbidden('Solo administradores pueden ver el log de auditoría.');
+            return $this->apiForbidden('Solo administradores pueden ver el log de auditoría.');
         }
 
         $db    = \Config\Database::connect();
@@ -60,7 +62,7 @@ class AuditoriaController extends ResourceController
     public function movimientos()
     {
         if (!$this->userHasAdminAccess()) {
-            return $this->failForbidden('Solo administradores pueden ver el log de auditoría.');
+            return $this->apiForbidden('Solo administradores pueden ver el log de auditoría.');
         }
 
         $db    = \Config\Database::connect();

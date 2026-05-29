@@ -107,7 +107,15 @@ class CreateFormulacionesVersiones extends Migration
     public function down()
     {
         if ($this->db->fieldExists('formulacion_version_id', 'preparaciones')) {
-            $this->db->query("DROP INDEX IF EXISTS idx_prep_form_ver ON preparaciones");
+            // MySQL no soporta DROP INDEX IF EXISTS; chequeo manual vía INFORMATION_SCHEMA.
+            $existe = (int) $this->db->query(
+                "SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.STATISTICS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?",
+                ['preparaciones', 'idx_prep_form_ver']
+            )->getRow()->c > 0;
+            if ($existe) {
+                $this->db->query("ALTER TABLE preparaciones DROP INDEX idx_prep_form_ver");
+            }
             $this->forge->dropColumn('preparaciones', 'formulacion_version_id');
         }
         if ($this->db->fieldExists('version_actual', 'formulaciones')) {

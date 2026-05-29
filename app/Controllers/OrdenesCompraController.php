@@ -671,8 +671,7 @@ class OrdenesCompraController extends ResourceController
 
             log_message('info', "[OC_PRORRATEO] id={$idOrden} factor=" . round($factor, 4) . " líneas=" . count($lineasPreparadas) . " por {$username}");
 
-            return $this->respond([
-                'ok'      => true,
+            return $this->apiSuccessFlat([
                 'mensaje' => 'Lote prorrateado y recibido correctamente.',
                 'factor'  => round($factor, 6),
                 'lineas'  => count($lineasPreparadas),

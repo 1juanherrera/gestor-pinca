@@ -76,37 +76,21 @@ class CotizacionesController extends ResourceController
         $tieneClienteId    = !empty($data['cliente_id']) && (int) $data['cliente_id'] > 0;
         $tieneClienteLibre = isset($data['cliente_libre']) && trim((string) $data['cliente_libre']) !== '';
         if (!$tieneClienteId && !$tieneClienteLibre) {
-            return $this->response->setStatusCode(422)->setJSON([
-                'ok'     => false,
-                'msg'    => 'Validación',
-                'errors' => ['cliente_id' => 'Se requiere cliente_id o cliente_libre'],
-            ]);
+            return $this->apiValidationError(['cliente_id' => 'Se requiere cliente_id o cliente_libre']);
         }
         if (!isset($data['items']) || !is_array($data['items']) || count($data['items']) < 1) {
-            return $this->response->setStatusCode(422)->setJSON([
-                'ok'     => false,
-                'msg'    => 'Validación',
-                'errors' => ['items' => 'Debe enviarse un array de items con al menos 1 elemento'],
-            ]);
+            return $this->apiValidationError(['items' => 'Debe enviarse un array de items con al menos 1 elemento']);
         }
         if (!empty($data['fecha'])) {
             $ts = strtotime((string) $data['fecha']);
             if ($ts === false) {
-                return $this->response->setStatusCode(422)->setJSON([
-                    'ok'     => false,
-                    'msg'    => 'Validación',
-                    'errors' => ['fecha' => 'Fecha inválida'],
-                ]);
+                return $this->apiValidationError(['fecha' => 'Fecha inválida']);
             }
         }
         if (isset($data['validez_dias'])) {
             $vd = $data['validez_dias'];
             if (!is_numeric($vd) || (int) $vd < 0 || (int) $vd != $vd) {
-                return $this->response->setStatusCode(422)->setJSON([
-                    'ok'     => false,
-                    'msg'    => 'Validación',
-                    'errors' => ['validez_dias' => 'Debe ser entero >= 0'],
-                ]);
+                return $this->apiValidationError(['validez_dias' => 'Debe ser entero >= 0']);
             }
         }
 

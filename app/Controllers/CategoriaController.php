@@ -22,7 +22,7 @@ class CategoriaController extends ResourceController
         $data = $this->model->get_item_categorias($id);
 
         if ($id !== null && !$data) {
-            return $this->failNotFound("categoria con ID $id no encontrada.");
+            return $this->apiNotFound("categoria con ID $id no encontrada.");
         }
 
         return $this->respond($data);
@@ -32,7 +32,7 @@ class CategoriaController extends ResourceController
     {
         $categoria = $this->model->get($id, 'categoria');
         if (!$categoria) {
-            return $this->failNotFound("categoria con ID $id no encontrada.");
+            return $this->apiNotFound("categoria con ID $id no encontrada.");
         }
         return $this->respond($categoria);
     }
@@ -43,7 +43,7 @@ class CategoriaController extends ResourceController
         $data = json_decode($json, true);
         // Validar que haya data
         if (!$data) {
-            return $this->failValidationErrors('No se recibieron datos válidos.');
+            return $this->apiFail('No se recibieron datos válidos.', 422);
         }
         // Validación de input. Única columna real del modelo: nombre.
         $validation = \Config\Services::validation();
@@ -60,7 +60,7 @@ class CategoriaController extends ResourceController
                 'id'      => $insert_id,
             ]);
         }
-        return $this->fail('Error al crear la categoria.');
+        return $this->apiFail('Error al crear la categoria.');
     }
 
     public function update($id = null)
@@ -69,16 +69,16 @@ class CategoriaController extends ResourceController
         $data = json_decode($json, true);
         // Validar que haya data
         if (!$data) {
-            return $this->failValidationErrors('No se recibieron datos válidos.');
+            return $this->apiFail('No se recibieron datos válidos.', 422);
         }
         // Verificar que el registro exista antes de actualizar
         if (!$this->model->get($id, 'categoria')) {
-            return $this->failNotFound("categoria con ID $id no encontrada.");
+            return $this->apiNotFound("categoria con ID $id no encontrada.");
         }
         // Intentar actualizar
         $updated = $this->model->update_table($id, $data, 'categoria');
         if ($updated === false || (is_array($updated) && isset($updated['error']))) {
-            return $this->fail('No se pudo actualizar la categoria.');
+            return $this->apiFail('No se pudo actualizar la categoria.');
         }
         return $this->respond([
             'mensaje' => "categoria con ID $id actualizada correctamente",
@@ -90,16 +90,16 @@ class CategoriaController extends ResourceController
     {
         // Validar que se envió un ID
         if ($id === null) {
-            return $this->failValidationErrors('No se proporcionó un ID válido.');
+            return $this->apiFail('No se proporcionó un ID válido.', 422);
         }
         // Verificar que la categoria exista
         if (!$this->model->get($id, 'categoria')) {
-            return $this->failNotFound("categoria con ID $id no encontrada.");
+            return $this->apiNotFound("categoria con ID $id no encontrada.");
         }
         // Intentar eliminar usando BaseModel
         $deleted = $this->model->delete_table($id, 'categoria');
         if ($deleted === false || (is_array($deleted) && isset($deleted['error']))) {
-            return $this->fail("No se pudo eliminar la categoria con ID $id.");
+            return $this->apiFail("No se pudo eliminar la categoria con ID $id.");
         }
         return $this->respondDeleted([
             'mensaje' => "categoria con ID $id eliminada correctamente"

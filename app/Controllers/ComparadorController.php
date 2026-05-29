@@ -7,6 +7,8 @@ use App\Models\ComparadorModel;
 
 class ComparadorController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     protected $modelName = ComparadorModel::class;
 
     // GET api/comparador/por_item
@@ -20,7 +22,7 @@ class ComparadorController extends ResourceController
     public function por_proveedor($id = null)
     {
         if (!$id) {
-            return $this->failValidationErrors('Se requiere el ID del proveedor.');
+            return $this->apiFail('Se requiere el ID del proveedor.', 422);
         }
         $data = $this->model->por_proveedor((int) $id);
         return $this->respond($data);
@@ -30,7 +32,7 @@ class ComparadorController extends ResourceController
     public function historial($id = null)
     {
         if (!$id) {
-            return $this->failValidationErrors('Se requiere el ID del item proveedor.');
+            return $this->apiFail('Se requiere el ID del item proveedor.', 422);
         }
         $data = $this->model->historial((int) $id);
         return $this->respond($data);

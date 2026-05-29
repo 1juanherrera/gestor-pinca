@@ -8,6 +8,8 @@ use CodeIgniter\RESTful\ResourceController;
 
 class NotificacionesController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     use \App\Traits\JwtUserAware;
 
     protected $modelName = NotificacionModel::class;
@@ -19,7 +21,7 @@ class NotificacionesController extends ResourceController
     {
         $userId = $this->getUserId();
         $rol    = $this->getUserRol();
-        if (!$userId) return $this->fail('No autenticado.', 401);
+        if (!$userId) return $this->apiFail('No autenticado.', 401);
 
         // Regenerar notificaciones automáticas on-demand (lazy cron)
         // Solo lo hace una vez por hora gracias al dedup_key con timestamp.
@@ -169,7 +171,7 @@ class NotificacionesController extends ResourceController
     {
         $userId = $this->getUserId();
         $rol    = $this->getUserRol();
-        if (!$userId) return $this->fail('No autenticado.', 401);
+        if (!$userId) return $this->apiFail('No autenticado.', 401);
 
         return $this->respond([
             'no_leidas' => $this->model->contarNoLeidas($userId, $rol),
@@ -183,11 +185,11 @@ class NotificacionesController extends ResourceController
     {
         $userId = $this->getUserId();
         $rol    = $this->getUserRol();
-        if (!$userId) return $this->fail('No autenticado.', 401);
-        if (!$id)     return $this->fail('ID requerido.', 400);
+        if (!$userId) return $this->apiFail('No autenticado.', 401);
+        if (!$id)     return $this->apiFail('ID requerido.', 400);
 
         $ok = $this->model->marcarLeida((int) $id, $userId, $rol);
-        if (!$ok) return $this->failNotFound("Notificación #{$id} no encontrada.");
+        if (!$ok) return $this->apiNotFound("Notificación #{$id} no encontrada.");
 
         return $this->respond(['ok' => true]);
     }
@@ -199,7 +201,7 @@ class NotificacionesController extends ResourceController
     {
         $userId = $this->getUserId();
         $rol    = $this->getUserRol();
-        if (!$userId) return $this->fail('No autenticado.', 401);
+        if (!$userId) return $this->apiFail('No autenticado.', 401);
 
         $count = $this->model->marcarTodasLeidas($userId, $rol);
         return $this->respond(['marcadas' => $count]);

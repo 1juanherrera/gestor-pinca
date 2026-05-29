@@ -14,6 +14,9 @@ class BodegasModel extends BaseModel
         "instalaciones_id",
     ];
 
+    protected $useSoftDeletes = true;
+    protected $deletedField   = 'deleted_at';
+
     public function __construct(){
 
         parent::__construct();

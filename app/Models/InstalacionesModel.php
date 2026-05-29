@@ -14,6 +14,9 @@ class InstalacionesModel extends BaseModel
         'id_empresa'
     ];
 
+    protected $useSoftDeletes = true;
+    protected $deletedField   = 'deleted_at';
+
     public function __construct(){
         parent::__construct();
     }

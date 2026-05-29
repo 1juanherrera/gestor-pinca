@@ -7,6 +7,8 @@ use App\Models\CarteraModel;
 
 class CarteraController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     protected $modelName = CarteraModel::class;
 
     // ── GET /cartera/resumen ──────────────────────────────────
@@ -30,11 +32,11 @@ class CarteraController extends ResourceController
     // cliente + facturas con sus pagos + totales.
     public function estadoCuenta($clienteId = null)
     {
-        if (!$clienteId) return $this->fail('ID de cliente no proporcionado', 400);
+        if (!$clienteId) return $this->apiFail('ID de cliente no proporcionado', 400);
 
         $data = $this->model->estadoCuenta((int) $clienteId);
 
-        if (!$data) return $this->failNotFound("Cliente con ID $clienteId no encontrado.");
+        if (!$data) return $this->apiNotFound("Cliente con ID $clienteId no encontrado.");
 
         return $this->respond($data);
     }

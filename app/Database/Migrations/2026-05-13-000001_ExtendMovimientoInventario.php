@@ -89,11 +89,11 @@ class ExtendMovimientoInventario extends Migration
     {
         $tabla = 'movimiento_inventario';
 
-        $this->db->query("DROP INDEX IF EXISTS idx_mov_item    ON {$tabla}");
-        $this->db->query("DROP INDEX IF EXISTS idx_mov_bodega  ON {$tabla}");
-        $this->db->query("DROP INDEX IF EXISTS idx_mov_ref     ON {$tabla}");
-        $this->db->query("DROP INDEX IF EXISTS idx_mov_fecha   ON {$tabla}");
-        $this->db->query("DROP INDEX IF EXISTS idx_mov_tipo    ON {$tabla}");
+        $this->dropIndiceSiExiste($tabla, 'idx_mov_item');
+        $this->dropIndiceSiExiste($tabla, 'idx_mov_bodega');
+        $this->dropIndiceSiExiste($tabla, 'idx_mov_ref');
+        $this->dropIndiceSiExiste($tabla, 'idx_mov_fecha');
+        $this->dropIndiceSiExiste($tabla, 'idx_mov_tipo');
 
         $cols = ['item_general_id','bodega_id','referencia_id','costo_unitario',
                  'saldo_anterior','saldo_nuevo','responsable','metadata','created_at'];
@@ -101,6 +101,18 @@ class ExtendMovimientoInventario extends Migration
             if ($this->db->fieldExists($c, $tabla)) {
                 $this->forge->dropColumn($tabla, $c);
             }
+        }
+    }
+
+    private function dropIndiceSiExiste(string $tabla, string $indexName): void
+    {
+        $existsResult = $this->db->query(
+            "SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.STATISTICS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?",
+            [$tabla, $indexName]
+        )->getRow();
+        if ($existsResult && (int) $existsResult->c > 0) {
+            $this->db->query("ALTER TABLE {$tabla} DROP INDEX {$indexName}");
         }
     }
 }

@@ -238,6 +238,13 @@ class PreparacionesModel extends BaseModel
             if ($multiplicador < 0 && $capasModel->tieneCapas($itemId)) {
                 if ($seleccion && $seleccion['modo'] === 'MANUAL' && !empty($seleccion['capas'])) {
                     $consumosCapas = $capasModel->consumirCapasManual($seleccion['capas'], $itemId);
+                    $consumido = array_sum(array_column($consumosCapas, 'cantidad_consumida'));
+                    if (abs($consumido - $cantidadAbs) > 0.0001) {
+                        throw new Exception(
+                            "La selección manual de capas para el ingrediente #{$itemId} no cubre la cantidad requerida. "
+                            . "Seleccionado: {$consumido} kg, Requerido: {$cantidadAbs} kg"
+                        );
+                    }
 
                 } elseif ($seleccionProveedorId) {
                     $consumosCapas = $capasModel->consumirCapasPorProveedor(

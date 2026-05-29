@@ -68,7 +68,15 @@ class RemisionesStockTracking extends Migration
                 NOT NULL DEFAULT 'Pendiente'
         ");
         if ($this->db->fieldExists('item_general_id', 'remisiones_detalle')) {
-            $this->db->query("DROP INDEX IF EXISTS idx_remdet_item ON remisiones_detalle");
+            // MySQL no soporta DROP INDEX IF EXISTS; chequeo manual vía INFORMATION_SCHEMA.
+            $existe = (int) $this->db->query(
+                "SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.STATISTICS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?",
+                ['remisiones_detalle', 'idx_remdet_item']
+            )->getRow()->c > 0;
+            if ($existe) {
+                $this->db->query("ALTER TABLE remisiones_detalle DROP INDEX idx_remdet_item");
+            }
             $this->forge->dropColumn('remisiones_detalle', 'item_general_id');
             $this->forge->dropColumn('remisiones_detalle', 'bodega_id');
         }

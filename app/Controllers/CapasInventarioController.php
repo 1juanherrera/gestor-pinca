@@ -7,10 +7,12 @@ use App\Models\InventarioCapasModel;
 
 class CapasInventarioController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     public function capas($itemGeneralId = null)
     {
         if (!$itemGeneralId) {
-            return $this->failValidationErrors('item_general_id requerido.');
+            return $this->apiFail('item_general_id requerido.', 422);
         }
 
         $bodegaId = $this->request->getGet('bodega_id')
@@ -75,7 +77,7 @@ class CapasInventarioController extends ResourceController
     public function consumosPorPreparacion($preparacionId = null)
     {
         if (!$preparacionId) {
-            return $this->failValidationErrors('preparacion_id requerido.');
+            return $this->apiFail('preparacion_id requerido.', 422);
         }
 
         $db = \Config\Database::connect();

@@ -27,6 +27,43 @@ class ValidarFixes extends BaseCommand
 
     public function run(array $params)
     {
+        // Modo seguro por defecto: TODO corre dentro de una transacción global
+        // que se revierte al final. Así ni `NumeracionModel::reservar()` (que
+        // commitea atómicamente) ni ningún test que toque la BD deja basura en
+        // la base real. CI4 anida transacciones: los transBegin/transCommit
+        // internos de los tests y de reservar() se vuelven no-ops a nivel físico
+        // mientras esta transacción global esté abierta, y el rollback global
+        // los revierte a todos.
+        //
+        // Para persistir los efectos a propósito (raro): `php spark validar:fixes --commit`.
+        $db     = \Config\Database::connect();
+        $commit = in_array('--commit', $params, true);
+
+        if ($commit) {
+            CLI::write('⚠ Modo --commit: los cambios de prueba SE PERSISTIRÁN en la BD real.', 'red');
+        } else {
+            $db->transBegin();
+            CLI::write('🔒 Modo seguro: ningún cambio se persiste (rollback global al cierre).', 'green');
+        }
+        CLI::newLine();
+
+        try {
+            $this->runTests();
+        } finally {
+            if (!$commit) {
+                // Drena todos los niveles de transacción que hayan quedado
+                // abiertos; el rollback real ocurre en el nivel 0 y revierte todo.
+                while ($db->transRollback()) {
+                    // sigue drenando
+                }
+                CLI::newLine();
+                CLI::write('↩ Rollback global aplicado — la BD real NO fue modificada.', 'yellow');
+            }
+        }
+    }
+
+    private function runTests(): void
+    {
         CLI::write('═══ Validación de fixes — ' . date('Y-m-d H:i:s') . ' ═══', 'cyan');
         CLI::newLine();
 

@@ -46,7 +46,15 @@ class AddLoteProveedorToProduccionInsumos extends Migration
     public function down()
     {
         $tabla = 'produccion_insumos_detalle';
-        $this->db->query("DROP INDEX IF EXISTS idx_pid_lote ON {$tabla}");
+        // MySQL no soporta DROP INDEX IF EXISTS; chequeo manual vía INFORMATION_SCHEMA.
+        $existe = (int) $this->db->query(
+            "SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.STATISTICS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?",
+            [$tabla, 'idx_pid_lote']
+        )->getRow()->c > 0;
+        if ($existe) {
+            $this->db->query("ALTER TABLE {$tabla} DROP INDEX idx_pid_lote");
+        }
         if ($this->db->fieldExists('lote_proveedor', $tabla)) {
             $this->forge->dropColumn($tabla, 'lote_proveedor');
         }

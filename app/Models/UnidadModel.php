@@ -15,6 +15,9 @@ class UnidadModel extends BaseModel
         "escala"
     ];
 
+    protected $useSoftDeletes = true;
+    protected $deletedField   = 'deleted_at';
+
     public function __construct()
     {
         parent::__construct();

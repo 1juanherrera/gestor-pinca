@@ -176,9 +176,7 @@ class UsuarioController extends BaseController
 
         log_message('info', "[LOGIN_OK] Usuario: $username | rol: $rol | IP: $ip");
 
-        return $this->response->setJSON([
-            'ok'            => true,
-            'msg'           => 'Login exitoso',
+        return $this->apiSuccessFlat([
             'token'         => $token,
             'refresh_token' => $refreshToken,
             'usuario' => [
@@ -189,7 +187,7 @@ class UsuarioController extends BaseController
                 'modulos'              => $modulos,
                 'password_must_change' => (int) ($usuario['password_must_change'] ?? 0),
             ],
-        ]);
+        ], 'Login exitoso');
     }
 
     /**
@@ -226,8 +224,7 @@ class UsuarioController extends BaseController
             'modulo'
         );
 
-        return $this->response->setJSON([
-            'ok'      => true,
+        return $this->apiSuccessFlat([
             'usuario' => [
                 'id'                   => (int) $usuario['id_usuarios'],
                 'username'             => $usuario['username'],
@@ -242,7 +239,7 @@ class UsuarioController extends BaseController
     public function miActividad()
     {
         if (!isset($this->request->usuario)) {
-            return $this->response->setStatusCode(401)->setJSON(['ok' => false]);
+            return $this->apiFail('No autenticado.', 401);
         }
 
         $username = $this->request->usuario->username;
@@ -254,7 +251,7 @@ class UsuarioController extends BaseController
             ->limit(10)
             ->get()->getResultArray();
 
-        return $this->response->setJSON(['ok' => true, 'data' => $intentos]);
+        return $this->apiSuccessFlat(['data' => $intentos]);
     }
 
     /**
@@ -265,16 +262,14 @@ class UsuarioController extends BaseController
     public function actualizarPerfil()
     {
         if (!isset($this->request->usuario)) {
-            return $this->response->setStatusCode(401)
-                ->setJSON(['ok' => false, 'msg' => 'No autenticado.']);
+            return $this->apiFail('No autenticado.', 401);
         }
 
         $body   = $this->request->getJSON(true) ?? [];
         $nombre = isset($body['nombre']) ? trim((string) $body['nombre']) : null;
 
         if ($nombre !== null && strlen($nombre) > 100) {
-            return $this->response->setStatusCode(400)
-                ->setJSON(['ok' => false, 'msg' => 'El nombre no puede superar 100 caracteres.']);
+            return $this->apiFail('El nombre no puede superar 100 caracteres.', 400);
         }
 
         $usuarioModel = new UsuarioModel();
@@ -288,8 +283,7 @@ class UsuarioController extends BaseController
         try {
             $secretKey = $this->getJwtSecret();
         } catch (\InvalidArgumentException $e) {
-            return $this->response->setStatusCode(500)
-                ->setJSON(['ok' => false, 'msg' => 'Error de configuración del servidor.']);
+            return $this->apiFail('Error de configuración del servidor.', 500);
         }
         $jwtHoras    = (int) $this->cfg()->obtener('jwt_expiracion_horas', 8);
         $db          = \Config\Database::connect();
@@ -313,9 +307,7 @@ class UsuarioController extends BaseController
         ];
         $token = JWT::encode($payload, (string) $secretKey, 'HS256');
 
-        return $this->response->setJSON([
-            'ok'      => true,
-            'msg'     => 'Perfil actualizado.',
+        return $this->apiSuccessFlat([
             'token'   => $token,
             'usuario' => [
                 'id'       => $userId,
@@ -324,7 +316,7 @@ class UsuarioController extends BaseController
                 'rol'      => $this->request->usuario->rol,
                 'modulos'  => $modulos,
             ],
-        ]);
+        ], 'Perfil actualizado.');
     }
 
     public function cambiarPassword()
@@ -401,11 +393,9 @@ class UsuarioController extends BaseController
 
         log_message('info', "[PASSWORD] Usuario {$this->request->usuario->username} actualizó su contraseña");
 
-        return $this->response->setJSON([
-            'ok'    => true,
-            'msg'   => 'Contraseña actualizada correctamente.',
+        return $this->apiSuccessFlat([
             'token' => $nuevoToken,
-        ]);
+        ], 'Contraseña actualizada correctamente.');
     }
 
     /**
@@ -500,8 +490,7 @@ class UsuarioController extends BaseController
 
         log_message('info', "[REFRESH] Usuario id={$row['usuario_id']} renovó su sesión");
 
-        return $this->response->setJSON([
-            'ok'            => true,
+        return $this->apiSuccessFlat([
             'token'         => $token,
             'refresh_token' => $nuevoRefresh,
         ]);
@@ -547,9 +536,6 @@ class UsuarioController extends BaseController
         log_message('info', "[USUARIO_CREADO] $username (rol: $rol) por {$this->request->usuario->username}");
 
         // Mantener shape original `{ok, msg}` para no romper consumidores.
-        return $this->response->setJSON([
-            'ok'  => true,
-            'msg' => 'Usuario creado correctamente',
-        ]);
+        return $this->apiSuccessFlat([], 'Usuario creado correctamente');
     }
 }

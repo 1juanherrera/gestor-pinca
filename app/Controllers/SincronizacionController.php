@@ -7,6 +7,8 @@ use App\Models\SincronizacionModel;
 
 class SincronizacionController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     use \App\Traits\JwtUserAware;
 
     protected $modelName = SincronizacionModel::class;
@@ -17,7 +19,7 @@ class SincronizacionController extends ResourceController
             return $this->respond($this->model->stats());
         } catch (\Throwable $e) {
             log_message('error', '[SincronizacionController::stats] ' . $e->getMessage());
-            return $this->failServerError('Error al obtener estadísticas de sincronización.');
+            return $this->apiFail('Error al obtener estadísticas de sincronización.', 500);
         }
     }
 
@@ -36,7 +38,7 @@ class SincronizacionController extends ResourceController
             return $this->respond($data);
         } catch (\Throwable $e) {
             log_message('error', '[SincronizacionController::maestro] ' . $e->getMessage());
-            return $this->failServerError('Error al obtener el maestro de sincronización.');
+            return $this->apiFail('Error al obtener el maestro de sincronización.', 500);
         }
     }
 
@@ -46,7 +48,7 @@ class SincronizacionController extends ResourceController
             return $this->respond($this->model->pendientes());
         } catch (\Throwable $e) {
             log_message('error', '[SincronizacionController::pendientes] ' . $e->getMessage());
-            return $this->failServerError('Error al obtener pendientes de sincronización.');
+            return $this->apiFail('Error al obtener pendientes de sincronización.', 500);
         }
     }
 
@@ -59,7 +61,7 @@ class SincronizacionController extends ResourceController
             return $this->respond($this->model->duplicados($threshold));
         } catch (\Throwable $e) {
             log_message('error', '[SincronizacionController::duplicados] ' . $e->getMessage());
-            return $this->failServerError('Error al detectar duplicados.');
+            return $this->apiFail('Error al detectar duplicados.', 500);
         }
     }
 
@@ -69,7 +71,7 @@ class SincronizacionController extends ResourceController
             return $this->respond($this->model->huerfanos());
         } catch (\Throwable $e) {
             log_message('error', '[SincronizacionController::huerfanos] ' . $e->getMessage());
-            return $this->failServerError('Error al obtener huérfanos.');
+            return $this->apiFail('Error al obtener huérfanos.', 500);
         }
     }
 
@@ -77,7 +79,7 @@ class SincronizacionController extends ResourceController
     {
         // Solo admin u operador pueden mergear items (afecta integridad histórica)
         if (!$this->userHasRole(['admin', 'operador'])) {
-            return $this->failForbidden('Solo administradores u operadores pueden unificar items.');
+            return $this->apiForbidden('Solo administradores u operadores pueden unificar items.');
         }
 
         $data = $this->request->getJSON(true) ?? [];
@@ -86,7 +88,7 @@ class SincronizacionController extends ResourceController
         $removeId = isset($data['remove_id']) ? (int) $data['remove_id'] : 0;
 
         if ($keepId <= 0 || $removeId <= 0) {
-            return $this->fail('keep_id y remove_id son requeridos.', 400);
+            return $this->apiFail('keep_id y remove_id son requeridos.', 400);
         }
 
         try {
@@ -126,7 +128,7 @@ class SincronizacionController extends ResourceController
             ]);
         } catch (\Throwable $e) {
             log_message('error', '[SincronizacionController::merge] ' . $e->getMessage());
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 }

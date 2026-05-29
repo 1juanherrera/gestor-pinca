@@ -14,6 +14,8 @@ use App\Traits\JwtUserAware;
  */
 class NumeracionController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     use JwtUserAware;
 
     protected $modelName = NumeracionModel::class;
@@ -38,11 +40,11 @@ class NumeracionController extends ResourceController
     public function update($id = null)
     {
         if (!$this->userHasAdminAccess()) {
-            return $this->failForbidden('Solo administradores pueden modificar la numeración.');
+            return $this->apiForbidden('Solo administradores pueden modificar la numeración.');
         }
 
         $existente = $this->model->find($id);
-        if (!$existente) return $this->failNotFound("Serie #$id no encontrada.");
+        if (!$existente) return $this->apiNotFound("Serie #$id no encontrada.");
 
         $body = $this->request->getJSON(true) ?? [];
 
@@ -72,7 +74,7 @@ class NumeracionController extends ResourceController
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
-            return $this->fail($e->getMessage());
+            return $this->apiFail($e->getMessage());
         }
 
         return $this->respond([
@@ -85,12 +87,12 @@ class NumeracionController extends ResourceController
     public function create()
     {
         if (!$this->userHasAdminAccess()) {
-            return $this->failForbidden('Solo administradores pueden crear series.');
+            return $this->apiForbidden('Solo administradores pueden crear series.');
         }
 
         $body = $this->request->getJSON(true) ?? [];
         if (empty($body['tipo_doc']) || empty($body['prefijo'])) {
-            return $this->failValidationErrors('`tipo_doc` y `prefijo` son obligatorios.');
+            return $this->apiFail('`tipo_doc` y `prefijo` son obligatorios.', 422);
         }
 
         $activarNueva = !isset($body['activo']) || (int) $body['activo'] === 1;
@@ -116,7 +118,7 @@ class NumeracionController extends ResourceController
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
-            return $this->fail($e->getMessage());
+            return $this->apiFail($e->getMessage());
         }
 
         return $this->respondCreated([

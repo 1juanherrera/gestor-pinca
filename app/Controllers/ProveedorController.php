@@ -8,6 +8,8 @@ use App\Models\ProveedorModel;
 
 class ProveedorController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     use \App\Traits\ValidatesJson;
     use \App\Traits\JwtUserAware;
 
@@ -33,7 +35,7 @@ class ProveedorController extends ResourceController
         $data = $this->model->get_item_proveedores($id);
 
         if ($id !== null && !$data) {
-            return $this->failNotFound("Proveedor con ID $id no encontrado.");
+            return $this->apiNotFound("Proveedor con ID $id no encontrado.");
         }
 
         return $this->respond($data);
@@ -43,7 +45,7 @@ class ProveedorController extends ResourceController
     {
         $proveedor = $this->model->get($id, 'proveedor');
         if (!$proveedor) {
-            return $this->failNotFound("Proveedor con ID $id no encontrado.");
+            return $this->apiNotFound("Proveedor con ID $id no encontrado.");
         }
         return $this->respond($proveedor);
     }
@@ -66,13 +68,13 @@ class ProveedorController extends ResourceController
                 'id'      => $insert_id,
             ]);
         }
-        return $this->fail('Error al crear el proveedor');
+        return $this->apiFail('Error al crear el proveedor');
     }
 
     public function update($id = null)
     {
         if (!$this->model->get($id, 'proveedor')) {
-            return $this->failNotFound("Proveedor con ID $id no encontrado.");
+            return $this->apiNotFound("Proveedor con ID $id no encontrado.");
         }
 
         $data = $this->validateJson(self::RULES_BASE);
@@ -80,7 +82,7 @@ class ProveedorController extends ResourceController
 
         $updated = $this->model->update_table($id, $data, 'proveedor');
         if ($updated === false || (is_array($updated) && isset($updated['error']))) {
-            return $this->fail('No se pudo actualizar el proveedor.');
+            return $this->apiFail('No se pudo actualizar el proveedor.');
         }
         return $this->respond([
             'mensaje' => "Proveedor con ID $id actualizado correctamente",
@@ -92,16 +94,16 @@ class ProveedorController extends ResourceController
     {
         // Validar que se envió un ID
         if ($id === null) {
-            return $this->failValidationErrors('No se proporcionó un ID válido.');
+            return $this->apiFail('No se proporcionó un ID válido.', 422);
         }
         // Verificar que la proveedor exista
         if (!$this->model->get($id, 'proveedor')) {
-            return $this->failNotFound("proveedor con ID $id no encontrada.");
+            return $this->apiNotFound("proveedor con ID $id no encontrada.");
         }
         // Intentar eliminar usando BaseModel
         $deleted = $this->model->delete_table($id, 'proveedor');
         if ($deleted === false || (is_array($deleted) && isset($deleted['error']))) {
-            return $this->fail("No se pudo eliminar la proveedor con ID $id.");
+            return $this->apiFail("No se pudo eliminar la proveedor con ID $id.");
         }
         log_message('info', "[DELETE_PROVEEDOR] usuario={$this->getUsername()} id={$id}");
         return $this->respondDeleted([
@@ -115,15 +117,15 @@ class ProveedorController extends ResourceController
     public function restore($id = null)
     {
         if ($id === null) {
-            return $this->failValidationErrors('No se proporcionó un ID válido.');
+            return $this->apiFail('No se proporcionó un ID válido.', 422);
         }
         $db  = \Config\Database::connect();
         $row = $db->table('proveedor')->where('id_proveedor', $id)->get()->getRowArray();
         if (!$row) {
-            return $this->failNotFound("Proveedor con ID $id no encontrado.");
+            return $this->apiNotFound("Proveedor con ID $id no encontrado.");
         }
         if ($row['deleted_at'] === null) {
-            return $this->fail("El proveedor no está archivado.");
+            return $this->apiFail("El proveedor no está archivado.");
         }
         $this->model->restore_table($id, 'proveedor');
         return $this->respond([

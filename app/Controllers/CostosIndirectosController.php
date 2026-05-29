@@ -6,6 +6,8 @@ use App\Models\CostosIndirectosModel;
 
 class CostosIndirectosController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     protected $modelName = CostosIndirectosModel::class;
 
     // GET /costos_indirectos
@@ -24,7 +26,7 @@ class CostosIndirectosController extends ResourceController
     public function show($id = null)
     {
         $row = $this->model->find($id);
-        if (!$row) return $this->failNotFound("Costo indirecto #$id no encontrado.");
+        if (!$row) return $this->apiNotFound("Costo indirecto #$id no encontrado.");
         return $this->respond($row);
     }
 
@@ -33,7 +35,7 @@ class CostosIndirectosController extends ResourceController
     {
         $data = $this->request->getJSON(true);
         if (empty($data['nombre']) || empty($data['categoria'])) {
-            return $this->failValidationErrors('nombre y categoria son obligatorios.');
+            return $this->apiFail('nombre y categoria son obligatorios.', 422);
         }
         $data['fecha_actualizacion'] = date('Y-m-d');
         $data['activo'] = 1;
@@ -45,7 +47,7 @@ class CostosIndirectosController extends ResourceController
     public function update($id = null)
     {
         $row = $this->model->find($id);
-        if (!$row) return $this->failNotFound("Costo indirecto #$id no encontrado.");
+        if (!$row) return $this->apiNotFound("Costo indirecto #$id no encontrado.");
 
         $data = $this->request->getJSON(true);
         $data['fecha_actualizacion'] = date('Y-m-d');
@@ -57,7 +59,7 @@ class CostosIndirectosController extends ResourceController
     public function delete($id = null)
     {
         $row = $this->model->find($id);
-        if (!$row) return $this->failNotFound("Costo indirecto #$id no encontrado.");
+        if (!$row) return $this->apiNotFound("Costo indirecto #$id no encontrado.");
         $this->model->delete($id);
         return $this->respondDeleted(['mensaje' => "Costo indirecto #$id eliminado"]);
     }
@@ -65,7 +67,7 @@ class CostosIndirectosController extends ResourceController
     // GET /costos_indirectos/item/:item_id
     public function costosItem($itemId = null)
     {
-        if (!$itemId) return $this->fail('item_id requerido', 400);
+        if (!$itemId) return $this->apiFail('item_id requerido', 400);
         $costos = $this->model->costosDeItem((int)$itemId);
         $total  = $this->model->totalAsignadoItem((int)$itemId);
         return $this->respond(['costos' => $costos, 'total_asignado' => $total]);
@@ -75,10 +77,10 @@ class CostosIndirectosController extends ResourceController
     // Body: { costos_indirectos_id, valor_asignado }
     public function asignarItem($itemId = null)
     {
-        if (!$itemId) return $this->fail('item_id requerido', 400);
+        if (!$itemId) return $this->apiFail('item_id requerido', 400);
         $data = $this->request->getJSON(true);
         if (empty($data['costos_indirectos_id'])) {
-            return $this->failValidationErrors('costos_indirectos_id es obligatorio.');
+            return $this->apiFail('costos_indirectos_id es obligatorio.', 422);
         }
         $this->model->asignarAItem(
             (int)$itemId,

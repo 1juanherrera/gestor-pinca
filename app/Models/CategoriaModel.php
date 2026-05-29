@@ -11,6 +11,9 @@ class CategoriaModel extends BaseModel
         "nombre",
     ];
 
+    protected $useSoftDeletes = true;
+    protected $deletedField   = 'deleted_at';
+
     public function __construct()
     {
         parent::__construct();

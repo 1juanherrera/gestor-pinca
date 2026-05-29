@@ -65,4 +65,16 @@ trait ApiResponse
     {
         return $this->apiFail($msg, 422, $errors);
     }
+
+    /**
+     * Like apiSuccess(), but merges $data top-level into the response instead of
+     * nesting it under "data". Preserves the legacy shape {ok, msg, ...datos}
+     * that older endpoints (login, refresh, me, cambiarPassword) use, so the
+     * frontend doesn't need to change.
+     */
+    protected function apiSuccessFlat(array $data = [], string $msg = '', int $status = 200)
+    {
+        $payload = array_merge(['ok' => true, 'msg' => $msg], $data);
+        return $this->response->setStatusCode($status)->setJSON($payload);
+    }
 }

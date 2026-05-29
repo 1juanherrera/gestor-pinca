@@ -23,7 +23,7 @@ class UnidadController extends ResourceController
         $data = $this->model->get_item_unidades($id);
 
         if ($id !== null && !$data) {
-            return $this->failNotFound("unidad con ID $id no encontrada.");
+            return $this->apiNotFound("unidad con ID $id no encontrada.");
         }
 
         return $this->respond($data);
@@ -33,7 +33,7 @@ class UnidadController extends ResourceController
     {
         $unidad = $this->model->get($id, 'unidad');
         if (!$unidad) {
-            return $this->failNotFound("unidad con ID $id no encontrada.");
+            return $this->apiNotFound("unidad con ID $id no encontrada.");
         }
         return $this->respond($unidad);
     }
@@ -44,7 +44,7 @@ class UnidadController extends ResourceController
         $data = json_decode($json, true);
         // Validar que haya data
         if (!$data) {
-            return $this->failValidationErrors('No se recibieron datos válidos.');
+            return $this->apiFail('No se recibieron datos válidos.', 422);
         }
         // Validación de input. Columnas reales del modelo: numero, nombre,
         // descripcion, estados, escala. NO existe abreviatura/simbolo en el schema.
@@ -62,7 +62,7 @@ class UnidadController extends ResourceController
                 'id'      => $insert_id,
             ]);
         }
-        return $this->fail('Error al crear la unidad');
+        return $this->apiFail('Error al crear la unidad');
     }
 
     public function update($id = null)
@@ -71,16 +71,16 @@ class UnidadController extends ResourceController
         $data = json_decode($json, true);
         // Validar que haya data
         if (!$data) {
-            return $this->failValidationErrors('No se recibieron datos válidos.');
+            return $this->apiFail('No se recibieron datos válidos.', 422);
         }
         // Verificar que el registro exista antes de actualizar
         if (!$this->model->get($id, 'unidad')) {
-            return $this->failNotFound("unidad con ID $id no encontrada.");
+            return $this->apiNotFound("unidad con ID $id no encontrada.");
         }
         // Intentar actualizar
         $updated = $this->model->update_table($id, $data, 'unidad');
         if ($updated === false || (is_array($updated) && isset($updated['error']))) {
-            return $this->fail('No se pudo actualizar la unidad.');
+            return $this->apiFail('No se pudo actualizar la unidad.');
         }
         return $this->respond([
             'mensaje' => "unidad con ID $id actualizada correctamente",
@@ -92,16 +92,16 @@ class UnidadController extends ResourceController
     {
         // Validar que se envió un ID
         if ($id === null) {
-            return $this->failValidationErrors('No se proporcionó un ID válido.');
+            return $this->apiFail('No se proporcionó un ID válido.', 422);
         }
         // Verificar que la unidad exista
         if (!$this->model->get($id, 'unidad')) {
-            return $this->failNotFound("unidad con ID $id no encontrada.");
+            return $this->apiNotFound("unidad con ID $id no encontrada.");
         }
         // Intentar eliminar usando BaseModel
         $deleted = $this->model->delete_table($id, 'unidad');
         if ($deleted === false || (is_array($deleted) && isset($deleted['error']))) {
-            return $this->fail("No se pudo eliminar la unidad con ID $id.");
+            return $this->apiFail("No se pudo eliminar la unidad con ID $id.");
         }
         log_message('info', "[DELETE_UNIDAD] usuario={$this->getUsername()} id={$id}");
         return $this->respondDeleted([

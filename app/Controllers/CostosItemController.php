@@ -7,6 +7,8 @@ use App\Models\CostosItemModel;
 
 class CostosItemController extends ResourceController 
 {
+    use \App\Traits\ApiResponse;
+
     protected $modelName = CostosItemModel::class;
 
     public function update($id = null)
@@ -15,11 +17,11 @@ class CostosItemController extends ResourceController
         $data = json_decode($json, true);
 
         if (!$data) {
-            return $this->failValidationErrors('No se recibieron datos válidos.');
+            return $this->apiFail('No se recibieron datos válidos.', 422);
         }
 
         if (!$this->model->get($id, 'costos_item')) {
-            return $this->failNotFound("costos_item con ID $id no encontrada.");
+            return $this->apiNotFound("costos_item con ID $id no encontrada.");
         }
 
         // Filtrar solo campos permitidos
@@ -27,13 +29,13 @@ class CostosItemController extends ResourceController
         $dataToSave = array_intersect_key($data, array_flip($allowedFields));
 
         if (empty($dataToSave)) {
-            return $this->failValidationErrors('No hay campos válidos para actualizar.');
+            return $this->apiFail('No hay campos válidos para actualizar.', 422);
         }
 
         $updated = $this->model->update_costos_item($id, $dataToSave, 'costos_item');
 
         if ($updated === false) {
-            return $this->fail('No se pudo actualizar el costos_item.');
+            return $this->apiFail('No se pudo actualizar el costos_item.');
         }
 
         return $this->respond([

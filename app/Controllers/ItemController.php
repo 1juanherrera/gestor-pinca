@@ -7,6 +7,8 @@ use App\Models\ItemModel;
 
 class ItemController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     use \App\Traits\JwtUserAware;
 
     protected $modelName = ItemModel::class;
@@ -31,12 +33,12 @@ class ItemController extends ResourceController
 
     public function show($id = null)
     {
-        if (!$id) return $this->fail("ID no proporcionado", 400);
+        if (!$id) return $this->apiFail("ID no proporcionado", 400);
 
         $item = $this->model->get_full_item_details($id);
 
         if (!$item) {
-            return $this->failNotFound("El item no existe.");
+            return $this->apiNotFound("El item no existe.");
         }
 
         return $this->respond($item);
@@ -47,11 +49,11 @@ class ItemController extends ResourceController
         $data = $this->request->getJSON(true);
 
         if (!$data) {
-            return $this->fail('No se recibieron datos o el JSON es inválido', 400);
+            return $this->apiFail('No se recibieron datos o el JSON es inválido', 400);
         }
 
         if (empty($data['nombre'])) {
-            return $this->failValidationErrors('El nombre es obligatorio.');
+            return $this->apiFail('El nombre es obligatorio.', 422);
         }
 
         try {
@@ -69,7 +71,7 @@ class ItemController extends ResourceController
             // 🔥 AQUÍ ESTÁ LA MAGIA: 
             // Si el modelo falla, capturamos el mensaje real (ej. "Data too long") 
             // y lo devolvemos como un error 400 limpio en Postman.
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
@@ -102,7 +104,7 @@ class ItemController extends ResourceController
         $data = $this->request->getJSON(true);
 
         if (!$id) {
-            return $this->fail("ID no proporcionado", 400);
+            return $this->apiFail("ID no proporcionado", 400);
         }
 
         try {
@@ -117,16 +119,16 @@ class ItemController extends ResourceController
 
         } catch (\Exception $e) {
             // 3. Si algo falla (el item no existe o error SQL), devolvemos el error real
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
     public function updatePrecioManual($id = null)
     {
-        if (!$id) return $this->fail('ID no proporcionado', 400);
+        if (!$id) return $this->apiFail('ID no proporcionado', 400);
 
         $data = $this->request->getJSON(true);
-        if (!$data) return $this->fail('No se recibieron datos válidos.', 400);
+        if (!$data) return $this->apiFail('No se recibieron datos válidos.', 400);
 
         try {
             $this->model->update_precio_manual($id, $data);
@@ -136,14 +138,14 @@ class ItemController extends ResourceController
                 'data'    => $data,
             ]);
         } catch (\Exception $e) {
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
     public function delete($id = null)
     {
         if (!$this->model->find($id)) {
-            return $this->failNotFound("Item con ID $id no encontrado.");
+            return $this->apiNotFound("Item con ID $id no encontrado.");
         }
         $this->model->delete($id);
         log_message('info', "[DELETE_ITEM] usuario={$this->getUsername()} id={$id}");
@@ -152,7 +154,7 @@ class ItemController extends ResourceController
 
     public function inventario_por_item($id = null)
     {
-        if (!$id) return $this->fail('ID no proporcionado', 400);
+        if (!$id) return $this->apiFail('ID no proporcionado', 400);
 
         $db = \Config\Database::connect();
 

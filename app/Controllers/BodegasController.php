@@ -36,7 +36,7 @@ class BodegasController extends ResourceController
     {
         try {
             if ($id === null) {
-                return $this->failValidationErrors('El ID de bodega es obligatorio.');
+                return $this->apiFail('El ID de bodega es obligatorio.', 422);
             }
 
             $page    = $this->req->getGet('page')    ?? 1;
@@ -47,7 +47,7 @@ class BodegasController extends ResourceController
             $data = $this->model->bodega_inventario($id, $page, $perPage, $search, $tipo);
 
             if (!$data) {
-                return $this->failNotFound("Bodega con ID $id no encontrada.");
+                return $this->apiNotFound("Bodega con ID $id no encontrada.");
             }
 
             return $this->respond([
@@ -55,7 +55,7 @@ class BodegasController extends ResourceController
                 'data'   => $data
             ]);
         } catch (Exception $e) {
-            return $this->fail($e->getMessage(), 500);
+            return $this->apiFail($e->getMessage(), 500);
         }
     }
 
@@ -63,7 +63,7 @@ class BodegasController extends ResourceController
     {
         $bodega = $this->model->get($id, 'bodegas');
         if (!$bodega) {
-            return $this->failNotFound("Bodega con ID $id no encontrada.");
+            return $this->apiNotFound("Bodega con ID $id no encontrada.");
         }
         return $this->respond($bodega);
     }
@@ -74,7 +74,7 @@ class BodegasController extends ResourceController
             $data = $this->req->getJSON(true);
 
             if (empty($data)) {
-                return $this->failValidationErrors('No se recibieron datos válidos.');
+                return $this->apiFail('No se recibieron datos válidos.', 422);
             }
 
             $result = $this->model->create_item_bodega($data);
@@ -85,7 +85,7 @@ class BodegasController extends ResourceController
                 'id'      => $result['id']
             ]);
         } catch (Exception $e) {
-            return $this->fail($e->getMessage(), 500);
+            return $this->apiFail($e->getMessage(), 500);
         }
 }
 
@@ -94,7 +94,7 @@ class BodegasController extends ResourceController
         $data = json_decode($json, true);
         // Validar que haya data
         if (!$data) {
-            return $this->failValidationErrors('No se recibieron datos válidos.');
+            return $this->apiFail('No se recibieron datos válidos.', 422);
         }
         // Validación de input. Columnas reales del modelo: nombre, instalaciones_id.
         $validation = \Config\Services::validation();
@@ -112,7 +112,7 @@ class BodegasController extends ResourceController
                 'id'      => $insert_id,
             ]);
         }
-        return $this->fail('Error al crear la bodega');
+        return $this->apiFail('Error al crear la bodega');
     }
 
     // update_item_bodega ELIMINADO — bypaseaba capas y audit log.
@@ -125,17 +125,17 @@ class BodegasController extends ResourceController
         $data = json_decode($json, true);
         // Validar que haya data
         if (!$data) {
-            return $this->failValidationErrors('No se recibieron datos válidos.');
+            return $this->apiFail('No se recibieron datos válidos.', 422);
         }
         // Verificar que el registro exista antes de actualizar
         if (!$this->model->get($id, 'bodegas')) {
-            return $this->failNotFound("Bodega con ID $id no encontrada.");
+            return $this->apiNotFound("Bodega con ID $id no encontrada.");
         }
         // Intentar actualizar
         $updated = $this->model->update_table($id, $data, 'bodegas');
 
         if ($updated === false || (is_array($updated) && isset($updated['error']))) {
-            return $this->fail('No se pudo actualizar la bodega.');
+            return $this->apiFail('No se pudo actualizar la bodega.');
         }
         return $this->respond([
             'mensaje' => "Bodega con ID $id actualizada correctamente",
@@ -151,16 +151,16 @@ class BodegasController extends ResourceController
     {
         // Validar que se envió un ID
         if ($id === null) {
-            return $this->failValidationErrors('No se proporcionó un ID válido.');
+            return $this->apiFail('No se proporcionó un ID válido.', 422);
         }
         // Verificar que la bodega exista
         if (!$this->model->get($id, 'bodegas')) {
-            return $this->failNotFound("Bodega con ID $id no encontrada.");
+            return $this->apiNotFound("Bodega con ID $id no encontrada.");
         }
         // Intentar eliminar usando BaseModel
         $deleted = $this->model->delete_table($id, 'bodegas');
         if ($deleted === false || (is_array($deleted) && isset($deleted['error']))) {
-            return $this->fail("No se pudo eliminar la bodega con ID $id.");
+            return $this->apiFail("No se pudo eliminar la bodega con ID $id.");
         }
         log_message('info', "[DELETE_BODEGA] usuario={$this->getUsername()} id={$id}");
         return $this->respondDeleted([

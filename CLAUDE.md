@@ -1,7 +1,8 @@
 # CLAUDE.md
 
-> **Última actualización**: 2026-05-27 (refresh token + ApiResponse extra + cleanup migraciones).
-> Backend en estado funcional con seguridad activa (JWT global + RBAC + rol superadmin + token_version + logout server-side + **refresh token rotativo**). Ver §"Sesión 2026-05-27 — Refresh token + ApiResponse residual + drop tambores" para lo más reciente. **`validar:fixes` 53/53 PASS, 10 tests Feature nuevos 100% PASS, `migrate` limpio (batch 17).**
+> **Última actualización**: 2026-05-29 (tarde: análisis profundo del sistema + fixes de seguridad/integridad + validar:fixes seguro + carga proveedores isGroup/distriatlantico). Ver §"Sesión 2026-05-29 (tarde)".
+> **Penúltima**: 2026-05-29 (mañana: ApiResponse propagation total + OpenAPI + soft-deletes + 5ª migración DROP INDEX).
+> Backend en estado funcional con seguridad activa (JWT global + RBAC + rol superadmin + token_version + logout server-side + refresh token rotativo) + **API documentada en Swagger UI** + **shape de error unificado en 33 controllers**. Ver §"Sesión 2026-05-29 — ApiResponse propagation total + OpenAPI + soft-deletes" para lo más reciente. `migrate` limpio. **NO correr `php spark validar:fixes` contra la base real** — muta datos.
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -1432,4 +1433,154 @@ Ahora lista los 8 tests Feature + 1 unit reales (antes decía "vacío") + mencio
 ---
 
 > **Snapshot al cierre 2026-05-27**: Backend con refresh token rotativo funcional (rotación + revocación verificadas en vivo), tabla `tambores` eliminada (backup guardado), ApiResponse en 12 controllers, validación en 3 más, tests/README al día. Backlog DEV restante: OpenAPI, versionado `/v1/`, migración de respuestas de éxito a ApiResponse (cambio de contrato), 5 migraciones más con `DROP INDEX IF EXISTS`, email anulación factura. `validar:fixes` 53/53, Feature 10/10, `migrate` limpio.
+
+---
+
+## Sesión 2026-05-29 — ApiResponse propagation total + OpenAPI + soft-deletes + 5ª migración DROP INDEX
+
+Sesión coordinada con frontend (4 agentes paralelos: 2 backend, 2 frontend). El backlog DEV grande del backend queda **casi cerrado**: solo quedan migración de respuestas de éxito en los controllers comerciales (cambio de contrato pendiente de decidir), versionado `/api/v1/`, anulación factura por email, Redis cache.
+
+⚠️ **NO correr `php spark validar:fixes` contra la base de trabajo real**. Lo confirmamos en la sesión: el comando muta datos atómicos que no se pueden revertir (crea OCs de prueba via `NumeracionModel::reservar`, e incluso recibe OCs reales). Si hay que correrlo, hacer backup antes y limpiar después. Fix pendiente: que el comando use una BD de tests o envuelva todo en `transBegin/transRollback`.
+
+### Trait `ApiResponse` extendido
+
+Nuevo método `apiSuccessFlat(array $data = [], string $msg = '', int $status = 200)`:
+```php
+$payload = array_merge(['ok' => true, 'msg' => $msg], $data);
+return $this->response->setStatusCode($status)->setJSON($payload);
+```
+
+Preserva el shape legacy top-level `{ok, msg, ...datos}` que usan los endpoints viejos (login, refresh, me, cambiarPassword). El frontend NO requiere cambios para consumir esto.
+
+### ApiResponse propagation — 33 controllers con shape `{ok, msg}` para errores
+
+**Antes de la sesión**: 12 controllers usando `ApiResponse` para errores.
+**Después**: **33 controllers**. Migrados 21 nuevos (los listados a continuación) reemplazando los métodos nativos CI4 `fail*()` por sus equivalentes del trait:
+
+`CarteraController`, `NotificacionesController`, `AuditoriaController`, `ConfiguracionController`, `NumeracionController`, `EmpresaController`, `CostosProduccionController`, `TrazabilidadController`, `SincronizacionController`, `ComparadorController`, `GestionesCobroController`, `ClientesController`, `ProveedorController`, `BodegasController`, `InstalacionesController`, `CategoriaController`, `UnidadController`, `ItemController`, `CapasInventarioController`, `CostosItemController`, `CostosIndirectosController`.
+
+Mapeo aplicado: `fail` → `apiFail`, `failNotFound` → `apiNotFound`, `failValidationErrors` → `apiValidationError`, `failForbidden` → `apiForbidden`, `failServerError` → `apiFail(..., 500)`. Status codes y mensajes preservados.
+
+**Cambio de contrato**: respuestas de error pasaron de `{status, error, messages}` (shape CI4 nativo) a `{ok, msg}` (shape ApiResponse). El frontend `apiClient.js` ya tolera ambos para los toasts (lee `.message || .messages.error || .msg`), pero las queries que inspeccionan `.messages.error` directamente reciben `null` ahora — smoke-test recomendado en producción manual.
+
+**NO migrados** (con razón):
+- `PermisosController`, `RequisicionesCompraController`, `DashboardController` — usan `{success, message}` (helpers internos del `BaseController`). Distinto contrato.
+- `SaludSistemaController`, `SearchController`, `MovimientoInventarioController` — no tenían `fail*()` ni shapes raw, no había nada que migrar.
+- `Facturas`, `Remisiones`, `PagosCliente`, `NotasCredito`, `Formulaciones`, `Catalogo`, `ItemProveedor`, `Preparaciones`, `Inventario` — sus respuestas de éxito usan shape `{status, message, data}` o `respond([...])` plano. Migrarlos cambiaría contrato del frontend; pendiente coordinar.
+
+### Respuestas de éxito — `apiSuccessFlat` adoptado
+
+Solo migré las que el trait soporta sin romper contrato. Hoy usan `apiSuccessFlat`:
+- `UsuarioController`: `login`, `me`, `miActividad`, `actualizarPerfil`, `cambiarPassword`, `refresh`, `crear`.
+- `OrdenesCompraController`: `recibirLoteProrrateado`.
+- `CotizacionesController`: 4 bloques de validación migrados a `apiValidationError`.
+
+El resto de los controllers comerciales mantienen su shape original.
+
+### Soft-deletes en 4 entidades básicas (categoria, unidad, bodegas, instalaciones)
+
+Migración `2026-05-27-000001_AddSoftDeleteToBasicEntities`:
+- `ALTER TABLE categoria/unidad/bodegas/instalaciones ADD COLUMN deleted_at DATETIME NULL`.
+- Índice `idx_deleted_at` en cada una.
+- `down()` usa `INFORMATION_SCHEMA.STATISTICS` para chequear índice antes de `DROP INDEX` (patrón seguro MySQL).
+
+Modelos `CategoriaModel`, `UnidadModel`, `BodegasModel`, `InstalacionesModel`: agregado `protected $useSoftDeletes = true` + `protected $deletedField = 'deleted_at'`. Ahora estas tablas hacen soft-delete (antes eran hard-delete).
+
+**Raw queries detectadas sin filtro `deleted_at IS NULL`** (no críticas hoy porque no hay soft-deletes aún en estas tablas, pero documentadas para fix futuro):
+- `BodegasModel:29` SELECT por id.
+- `InstalacionesModel:31/36` SELECTs varios.
+- `BodegasController:28` JOIN raw.
+
+### 5ª migración con `DROP INDEX IF EXISTS` arreglada
+
+`2026-05-13-000001_ExtendMovimientoInventario.php` tenía **5 `DROP INDEX IF EXISTS`** en su `down()` (idx_mov_item, idx_mov_bodega, idx_mov_ref, idx_mov_fecha, idx_mov_tipo). Reemplazados via helper privado `dropIndiceSiExiste()` que sigue el patrón de `2026-05-14-000001`.
+
+Las otras 4 migraciones que el plan mencionaba como sospechosas (`2026-05-14-000003/4/7/8`) son **SEEDS puros** (INSERTs en `configuracion_sistema`), sin DROP INDEX. Reportadas como "no aplica".
+
+### OpenAPI 3.0 + Swagger UI
+
+**Archivos creados**:
+- `public/openapi.yaml` (~37 KB) — OpenAPI 3.0.3 manual. **42 paths, 52 operaciones HTTP, 8 tags** (Auth, Catálogo, Inventario, Compras, Ventas, Producción, Reportes, Sistema), 11 schemas reusables (`Error`, `Success`, `Health`, `Usuario`, `LoginResponse`, `CatalogoItem`, `CatalogoItemInput`, `CatalogoItemDetalle`, `ItemProveedor`, `OrdenCompra`, `Capa`). `securitySchemes.bearerAuth` global; `security: []` override en `/health`, `/login`, `/crear`, `/auth/refresh` (públicos).
+- `public/swagger-ui.html` — carga swagger-ui-dist@5 desde unpkg, header con marca PINCA, `tryItOutEnabled`, `persistAuthorization` (mantiene el JWT entre recargas), filter de endpoints.
+
+**URL**: `http://localhost:8080/swagger-ui.html` (no requiere ruta en Routes.php, Apache sirve `public/` directo).
+
+**Cobertura**: ~52 de ~100+ endpoints. Documenta los flujos críticos. Endpoints faltantes (proveedores, clientes, bodegas, instalaciones, unidades, categorías, costos_indirectos, gestiones_cobro, comparador, numeración, auditoría, roles, empresa CRUD) están como deuda — el spec es referencia interactiva, no contrato 100% sincronizado.
+
+### Pagination caps — 0 nuevos (todos los candidatos son no-paginables)
+
+Los 5 controllers candidatos (`InventarioController::global`, `DashboardController`, `CostosIndirectosController`, `RemisionesController`, `CotizacionesController`) **no aceptan `?limit=`** hoy. No tienen lógica de listado paginable que requiera cap. Item cerrado por "no aplica".
+
+### Riesgos al cierre
+
+1. **Contract change en 21 controllers** (errores `fail*() → ApiResponse`). El frontend tolera el cambio para toasts (verificado en `apiClient.js`). Smoke-test manual recomendado en escenarios de error específicos (404, 422, 403, 500) en módulos como Auditoría, Configuración, Trazabilidad para confirmar UX no rompe.
+2. **`migrate:rollback` completo está roto** desde hace varias sesiones — `DropTamboresTable.down()` falla porque recrear `tambores` con FKs incompatibles. No afecta `migrate` forward. Solo un problema si alguien intenta rollback masivo.
+3. **`apiValidationError` con string literal** (no array): hubo 37 casos que `apiValidationError('mensaje')` cuando el método espera `array $errors`. Convertidos a `apiFail($mensaje, 422)`. Type error en runtime evitado.
+4. **`validar:fixes` sigue corrupting real DB**. Pendiente: fix del comando para que use BD test o envuelva en transaction. NO correrlo manualmente contra la base de trabajo.
+
+---
+
+> **Snapshot al cierre 2026-05-29 (mañana)**: Backend con shape de error unificado en 33 controllers (`ApiResponse`), trait extendido con `apiSuccessFlat`, soft-deletes en 4 entidades más, API documentada en Swagger UI (52 endpoints, 8 tags), 5ª migración `DROP INDEX IF EXISTS` arreglada. `migrate` limpio.
+
+---
+
+## Sesión 2026-05-29 (tarde) — Análisis profundo + fixes de seguridad/integridad + validar:fixes seguro + carga de proveedores
+
+Sesión grande: carga de datos reales (2 proveedores), `validar:fixes` vuelto seguro, análisis profundo del sistema con 3 agentes (backend / frontend / integridad de datos), y fixes de los hallazgos accionables.
+
+### `validar:fixes` ahora es SEGURO (no muta la BD real)
+
+**Causa raíz del problema histórico** (OCs basura, OC-002 recibida sin querer): el comando llamaba `NumeracionModel::reservar()` que commitea atómico, y los tests dejaban residuos.
+
+**Fix** (`app/Commands/ValidarFixes.php`): `run()` ahora abre una **transacción global** y hace **rollback garantizado** al final (`runTests()` extraído + `try/finally`). CI4 anida transacciones, así que los `transBegin/transCommit` internos de los tests y de `reservar()` se vuelven no-ops físicos y el rollback global revierte todo. Verificado: corrido 2× seguidas, `proximo_numero` no se movió, 0 residuos.
+
+- Muestra `🔒 Modo seguro` al inicio y `↩ Rollback global aplicado` al final.
+- Flag `--commit` para persistir a propósito (raro).
+- **Ya se puede correr contra la base real sin miedo** (la advertencia previa queda obsoleta).
+
+### Carga de proveedores reales (datos, no código)
+
+Dos proveedores cargados vía SQL transaccional (todos `unidad_compra=KILO`, `factor=1`, tipo Materia Prima):
+
+- **isGroup** (id_proveedor 32): 16 item_proveedor — 7 vinculados a catálogo existente + 9 item_general nuevos (334-342). Precios "más IVA" → `precio_unitario`=base, `precio_con_iva`=×1.19.
+- **distriatlantico** (id_proveedor 33, NIT 900751588-5): 19 item_proveedor — 11 vinculados a existente + 8 nuevos (343-350: HIDROFUGANTE MATE/BRILLANTE, BIOCIDA DA PLUS/ULTRA, OMYACARB 15/4, TALCO EXTRA/EXTRA MEJORADO). Lista con **IVA incluido** → `precio_con_iva`=precio lista, `precio_unitario`=÷1.19. Precio/kg derivado del **bulto más chico** (no kg suelto minorista). **Caolina tiza Caomin: peso 25kg ASUMIDO — confirmar con cliente** (marcado en su descripción).
+
+> Entre ambos, distriatlantico entra como opción de compra en 34 de 57 formulaciones activas; isGroup en 33. Los ingredientes más usados (Dispersante, Dióxido de titanio, Talco TY400, Antiespumante) ahora tienen 2-3 proveedores compitiendo en precio.
+
+### Fixes de seguridad/integridad (de la auditoría)
+
+**RBAC en mutaciones de stock** (antes cualquier rol, incluso visor, podía destruir inventario):
+- `InventarioController::traspaso/ajusteManual/removeFromBodega` → ahora `userHasRole(['admin','superadmin','operador'])` (bloquea solo visor; el operador de bodega sí puede operar).
+- `RemisionesController::delete` → `userHasAdminAccess()` (admin-only, consistente con los otros deletes de documentos).
+
+**Consumo MANUAL de capas valida cantidad** (`PreparacionesModel::_ajustarInventarioPorPreparacion`): el modo MANUAL no validaba que las capas seleccionadas sumaran la cantidad requerida → producía con consumo parcial y costo congelado falso. Ahora valida la suma (tolerancia 0.0001) y lanza Exception si difiere, igual que el modo proveedor. ⚠️ Producciones que antes permitían sub-selección manual ahora fallan con rollback — comportamiento deseado.
+
+**4 migraciones más con `DROP INDEX IF EXISTS`** arregladas (`2026-05-13-000003/000004/000007/000008`). Un agente anterior las había marcado mal como "limpias". Ahora `grep "DROP INDEX IF EXISTS"` = 0 reales. `migrate` limpio.
+
+### Hallazgos NO arreglados (documentados en MEJORAS/PENDIENTES)
+
+**🔴 Datos rotos (es carga del cliente, no bug de código)** — del análisis de integridad de la BD:
+- **81% de materias primas (153/189) sin proveedor vinculado**.
+- **60% de fórmulas (34/57) con ingredientes sin precio** → costo subvaluado.
+- **91% de capas activas (90/99) con costo $0**.
+- **`porcentaje` NULL en las 57 fórmulas** (682 filas, 0 con valor — campo sin usar).
+- 35 item_proveedor huérfanos, 6 pares de duplicados de catálogo, 4 FKs colgadas a proveedores inexistentes (datos de prueba viejos: ids 35-38).
+- **El costeo del sistema hoy no es confiable por falta de datos, no por bugs.** Ver `PREGUNTAS_CLIENTE.md` (raíz del monorepo).
+
+**🟡 Pendientes de código (necesitan decisión o son grandes)**:
+- RBAC en create/update/cambiarEstado de documentos comerciales (Facturas/OC/Remisiones/Cotizaciones/Preparaciones) — necesita matriz rol→acción definida con el cliente.
+- JWT con fallback débil (`JwtFilter.php:26` `?? 'miClaveSuperSecreta'`) — deploy-only pero código vivo.
+- `recalcularSaldo` suma pagos sin filtrar anulados (hoy pagos no tiene soft-delete, bajo riesgo).
+- `InventarioController::global` sin paginación.
+- 6 modelos sin `$allowedFields` explícito (mass assignment potencial vía insert directo).
+- `EmpresaController` usa `mime_content_type()` (deprecado).
+
+### Estado de tests al cierre
+- `php spark migrate`: limpio.
+- `php spark validar:fixes`: **53/53 PASS** (modo seguro, rollback).
+- Feature tests: 10/10 (InventarioCapas/Numeracion/Formulaciones).
+
+---
+
+> **Snapshot al cierre 2026-05-29 (tarde)**: `validar:fixes` seguro (rollback global). 2 proveedores reales cargados (isGroup + distriatlantico). RBAC reforzado en mutaciones de stock (bloquea visor) + delete de remisiones (admin). Consumo MANUAL de capas valida cantidad. 4 migraciones DROP INDEX más arregladas (0 restantes). Análisis profundo reveló que **el costeo está roto por DATOS faltantes** (81% MP sin proveedor, porcentajes NULL), no por bugs — eso es carga del cliente (ver `PREGUNTAS_CLIENTE.md`). Backlog de código en `PENDIENTES.md`/`MEJORAS.md`.
 

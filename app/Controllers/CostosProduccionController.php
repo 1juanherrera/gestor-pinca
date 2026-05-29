@@ -18,6 +18,8 @@ use App\Models\FormulacionesModel;
  */
 class CostosProduccionController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     use \App\Traits\JwtUserAware;
 
     protected $modelName = FormulacionesModel::class;
@@ -30,7 +32,7 @@ class CostosProduccionController extends ResourceController
             $data = $this->model->get_costos_produccion_batch();
             return $this->respond($data);
         } catch (\Throwable $e) {
-            return $this->fail($e->getMessage(), 500);
+            return $this->apiFail($e->getMessage(), 500);
         }
     }
 
@@ -38,14 +40,14 @@ class CostosProduccionController extends ResourceController
     public function show($id = null)
     {
         if (!$id || !is_numeric($id)) {
-            return $this->failValidationErrors('ID inválido.');
+            return $this->apiFail('ID inválido.', 422);
         }
         try {
             $data = $this->model->get_costo_produccion_detalle((int) $id);
-            if (!$data) return $this->failNotFound("Producto #{$id} no encontrado o sin fórmula activa.");
+            if (!$data) return $this->apiNotFound("Producto #{$id} no encontrado o sin fórmula activa.");
             return $this->respond($data);
         } catch (\Throwable $e) {
-            return $this->fail($e->getMessage(), 500);
+            return $this->apiFail($e->getMessage(), 500);
         }
     }
 
@@ -53,7 +55,7 @@ class CostosProduccionController extends ResourceController
     public function historia($id = null)
     {
         if (!$id || !is_numeric($id)) {
-            return $this->failValidationErrors('ID inválido.');
+            return $this->apiFail('ID inválido.', 422);
         }
         $db = \Config\Database::connect();
         $rows = $db->table('costos_snapshot')

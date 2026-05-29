@@ -7,6 +7,8 @@ use App\Models\GestionesCobroModel;
 
 class GestionesCobroController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     protected $modelName = GestionesCobroModel::class;
 
     protected $request;
@@ -33,7 +35,7 @@ class GestionesCobroController extends ResourceController
     // ── GET /gestiones_cobro/:id ──────────────────────────────
     public function show($id = null)
     {
-        if (!$id) return $this->fail('ID no proporcionado', 400);
+        if (!$id) return $this->apiFail('ID no proporcionado', 400);
 
         $db      = \Config\Database::connect();
         $gestion = $db->table('gestiones_cobro g')
@@ -43,7 +45,7 @@ class GestionesCobroController extends ResourceController
             ->where('g.id_gestion', $id)
             ->get()->getRowArray();
 
-        if (!$gestion) return $this->failNotFound("Gestión con ID $id no encontrada.");
+        if (!$gestion) return $this->apiNotFound("Gestión con ID $id no encontrada.");
 
         return $this->respond($gestion);
     }
@@ -54,17 +56,17 @@ class GestionesCobroController extends ResourceController
     {
         $data = $this->request->getJSON(true);
 
-        if (!$data) return $this->fail('No se recibieron datos o el JSON es inválido', 400);
+        if (!$data) return $this->apiFail('No se recibieron datos o el JSON es inválido', 400);
 
         foreach (['facturas_id', 'clientes_id', 'tipo'] as $campo) {
             if (empty($data[$campo])) {
-                return $this->fail("El campo '$campo' es requerido", 400);
+                return $this->apiFail("El campo '$campo' es requerido", 400);
             }
         }
 
         $tiposValidos = ['llamada', 'email', 'visita', 'whatsapp'];
         if (!in_array($data['tipo'], $tiposValidos)) {
-            return $this->fail("El tipo debe ser uno de: " . implode(', ', $tiposValidos), 400);
+            return $this->apiFail("El tipo debe ser uno de: " . implode(', ', $tiposValidos), 400);
         }
 
         try {
@@ -78,25 +80,25 @@ class GestionesCobroController extends ResourceController
             ]);
 
         } catch (\Exception $e) {
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
     // ── PUT /gestiones_cobro/:id ──────────────────────────────
     public function update($id = null)
     {
-        if (!$id) return $this->fail('ID no proporcionado', 400);
+        if (!$id) return $this->apiFail('ID no proporcionado', 400);
 
         $data = $this->request->getJSON(true);
-        if (!$data) return $this->fail('No se recibieron datos o el JSON es inválido', 400);
+        if (!$data) return $this->apiFail('No se recibieron datos o el JSON es inválido', 400);
 
         $existing = $this->model->find($id);
-        if (!$existing) return $this->failNotFound("Gestión con ID $id no encontrada.");
+        if (!$existing) return $this->apiNotFound("Gestión con ID $id no encontrada.");
 
         if (isset($data['tipo'])) {
             $tiposValidos = ['llamada', 'email', 'visita', 'whatsapp'];
             if (!in_array($data['tipo'], $tiposValidos)) {
-                return $this->fail("El tipo debe ser uno de: " . implode(', ', $tiposValidos), 400);
+                return $this->apiFail("El tipo debe ser uno de: " . implode(', ', $tiposValidos), 400);
             }
         }
 
@@ -110,17 +112,17 @@ class GestionesCobroController extends ResourceController
             ]);
 
         } catch (\Exception $e) {
-            return $this->fail($e->getMessage(), 400);
+            return $this->apiFail($e->getMessage(), 400);
         }
     }
 
     // ── DELETE /gestiones_cobro/:id ───────────────────────────
     public function delete($id = null)
     {
-        if (!$id) return $this->fail('ID no proporcionado', 400);
+        if (!$id) return $this->apiFail('ID no proporcionado', 400);
 
         $existing = $this->model->find($id);
-        if (!$existing) return $this->failNotFound("Gestión con ID $id no encontrada.");
+        if (!$existing) return $this->apiNotFound("Gestión con ID $id no encontrada.");
 
         $this->model->delete((int) $id);
 

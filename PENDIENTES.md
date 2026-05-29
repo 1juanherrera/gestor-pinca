@@ -1,8 +1,24 @@
 # PENDIENTES — Backlog del Sistema PINCA
 
-> **Última limpieza 2026-05-27**. Solo quedan items abiertos. Lo resuelto vive como histórico en `CLAUDE.md` (backend y frontend) por sesión. Los detalles técnicos de algunos items están en `MEJORAS.md`.
+> **Última limpieza 2026-05-29 (tarde)**. Solo quedan items abiertos. Lo resuelto vive como histórico en `CLAUDE.md` (backend y frontend) por sesión. Los detalles técnicos de algunos items están en `MEJORAS.md`.
 >
 > El bloque **🚀 Deploy / Producción** está separado porque el dueño del proyecto pidió no considerarlo todavía.
+
+---
+
+## 🔴 PRIORIDAD: datos rotos (bloquean el costeo confiable) — carga del CLIENTE
+
+El análisis de integridad de la BD (2026-05-29) reveló que **el costeo del sistema hoy no es confiable, por falta de datos** (no por bugs). En cadena:
+
+- [ ] **81% de materias primas (153/189) sin proveedor vinculado**. Causa raíz de todo lo demás. → cargar proveedores+precios (ver `PREGUNTAS_CLIENTE.md` #13).
+- [ ] **`porcentaje` NULL en las 57 fórmulas** (682 filas de ingredientes, 0 con valor). El campo está sin usar. → definir si el costeo usa cantidad o porcentaje, y poblarlo.
+- [ ] **60% de fórmulas (34/57) con ingredientes sin precio** → costo subvaluado. Se resuelve al vincular proveedores.
+- [ ] **91% de capas activas (90/99) con costo $0** → valuación de inventario irreal. Se corrige con recepciones reales de OC (que setean costo) o `recalcularPromedioPonderado`.
+- [ ] **35 item_proveedor huérfanos** (sin `item_general_id`) → vincular o limpiar vía módulo Sincronización.
+- [ ] **6 pares de duplicados de catálogo** (BENTOCLAY BP 184, CHEMOSPERSE 77, DIOXIDO SULFATO 2196, EDAPLAN/LANSPERSE, ETANOL 96%, MICROTALC C20) → fusionar con el merge de Sincronización.
+- [ ] **4 FKs colgadas**: item_proveedor ids 35-38 apuntan a proveedores inexistentes (8 y 2) — datos de prueba viejos, además con IVA mal (~1.14). → borrar.
+
+> Estos NO se arreglan inventando datos. Las respuestas del cliente (`PREGUNTAS_CLIENTE.md`) los desbloquean.
 
 ---
 
@@ -30,42 +46,58 @@
 
 ### Backend
 
-- [x] ~~**Refresh token + modal "sesión por expirar"**~~ — ✅ 2026-05-27. Endpoint `POST /api/auth/refresh` rotativo (tabla `refresh_tokens`, expiry 7 días) + `SessionExpiryModal` en frontend. Login devuelve `refresh_token`, logout lo revoca.
-- [ ] **OpenAPI/Swagger spec** auto-generada o manual con `nelmio/api-doc-bundle` o equivalente.
 - [ ] **Versionado API `/api/v1/`** — breaking change, refactor masivo (rutas + frontend apiRoutes).
-- [ ] **Unificar shapes de error** — decidir si migrar los ~24 controllers que usan `$this->fail*()` nativo de CI4 (shape `{status, error, messages}`) al shape `{ok, msg}` de `ApiResponse`. **NO es mecánico** — es un cambio de contrato que rompe el frontend, requiere coordinación. Hoy 12 controllers usan `{ok, msg}`, ~24 usan `{status, error, messages}`, 3 usan `{success, message}`. Ver `MEJORAS.md #5`.
-- [ ] **Migrar respuestas de éxito a `ApiResponse`** (todos los controllers). Requiere extender el trait con `apiSuccessFlat($data, $msg)` que mergee top-level — sino rompe contrato `{ok, msg, token, usuario}`.
-- [ ] **5 migraciones más con `DROP INDEX IF EXISTS`** (`2026-05-13-000001`, `2026-05-14-000003`, `_000004`, `_000007`, `_000008`, etc.). Replicar fix de `2026-05-14-000001` (ya arreglada).
-- [ ] **Anulación de factura por email al cliente** — requiere infra de email.
+- [ ] **Migrar respuestas de éxito a `ApiResponse`** en controllers comerciales (`Facturas`, `Remisiones`, `PagosCliente`, `NotasCredito`, `Formulaciones`, `Catalogo`, `ItemProveedor`, `Preparaciones`, `Inventario`) — sus respuestas hoy usan shape `{status, message, data}` o `respond([])` plano. Migrar **cambia el contrato del frontend** — requiere coordinación.
+- [ ] **Anulación de factura por email al cliente** — requiere infra de email (SMTP/SES/SendGrid).
 - [ ] **Cache de configuración en Redis**. Hoy `Cfg::` cachea per-request. Migrar cuando la carga crezca.
+- [ ] **RBAC en create/update/cambiarEstado de documentos comerciales** (`Facturas`, `OC`, `Remisiones`, `Cotizaciones`, `Preparaciones`). Hoy un `visor` puede crear facturas, recibir OC y producir. Falta una **matriz rol→acción** definida con el cliente (ver `PREGUNTAS_CLIENTE.md` #21). Ya se gatearon las mutaciones de stock (traspaso/ajuste/remove → operador+; remisiones delete → admin).
+- [x] ~~**Fix `php spark validar:fixes`**~~ — ✅ resuelto 2026-05-29 (tarde). Transacción global con rollback garantizado. Ahora es seguro contra la BD real. Flag `--commit` para persistir a propósito.
 
 ### Frontend
 
-- [ ] **Dark mode** — design system entero (tokens dark, ~1 semana).
-- [ ] **Virtualización** en `MovimientosTable` y `ProduccionTable` con `react-window` (cuando empiecen a doler).
-- [ ] **Bulk actions** (selección múltiple + acción batch en Cotizaciones/Facturas/OCs) — necesita UX design.
-- [x] ~~**Export Excel** en Cotizaciones y OCs~~ — ✅ 2026-05-27. `ExportCotizacionExcel.js` + `ExportOrdenCompraExcel.js` (fila única o lista filtrada).
-- [ ] **Vitest — completar install**. Setup hecho 2026-05-27 (`vitest.config.js` + 2 tests). Falta correr `npm install -D vitest @testing-library/react @testing-library/jest-dom jsdom` y luego `npm run test -- --run`. Ampliar cobertura a flujos críticos (login → crear OC → recibir → producir).
-- [ ] **Búsqueda con debounce en drawers grandes** (selects de cliente/bodega/items con 100+ entradas) — pattern uno-a-uno por drawer.
 - [ ] **Notificaciones real-time** (WebSockets/SSE en lugar de polling 30s).
+- [ ] **Búsqueda con debounce en drawers grandes** (selects de cliente/bodega/items con 100+ entradas) — pattern uno-a-uno por drawer.
+- [ ] **Audit visual de dark mode (verificación final del usuario)**. El audit estático cerró todos los anti-patrones conocidos (backdrops, botones Export, chips translúcidos). Falta la confirmación visual abriendo cada módulo en dark — si aparece algo, es un `text-white` sobre fondo nuevo que se escapó.
+- [ ] **Replicar bulk actions** en `CotizacionesTab` y `OrdenesTab` (patrón ya documentado en `FacturasTable.jsx`).
+- [ ] **Endpoint backend bulk dedicado** para cambios de estado masivos (`POST /facturas/bulk/cambiar-estado`) — hoy se hacen N requests paralelos con `Promise.allSettled`.
+- [ ] **recharts en chunk eager** — `vite.config.js` lo agrupa con lucide-react en `vendor-ui`, así entra en el bundle inicial aunque solo se use en Dashboard/Rentabilidad/CostosProduccion. Sacarlo a su propio chunk lazy.
+- [ ] **~30 hooks con rutas hardcodeadas** en vez de `API_ROUTES` (`useBodegas`, `useClientes`, `useCotizaciones`, `useFactura`, `useItem`, etc.). Migrar para que cambios de ruta backend no rompan silenciosamente.
+- [ ] **Modal sin focus-trap** (`src/shared/Modal.jsx`) — sin autofocus, Tab escapa al fondo, no restaura foco al cerrar. A11y/teclado.
+- [ ] **Ocultar acciones de inventario por rol** — espejo del RBAC backend: el visor ahora recibe 403 en traspaso/ajuste/remove; ocultar esos botones en la UI para que no los vea.
 
 ---
 
-## 🛠️ Tareas medianas / refinamientos
-
-### Frontend
-
-- [x] ~~**Popovers `FormDate`/`DateRangePicker` viewport mobile**~~ — ✅ 2026-05-27. Clamp contra `window.innerWidth` + 1 mes en `<640px`.
-- [ ] **4 errores ESLint restantes** (de 33): `CapasStockPanel:351` (`Date.now()` impuro en render), `FormulacionesTable:189` (memoization skip), `FormCostProducts:226` + `FormulacionModal:317` (2 `setState in effect` reset-on-open — necesitan refactor del padre con `key`). No afectan build/runtime.
-- [x] ~~**Migrar `SummaryCard` → `FlowCard`**~~ — ✅ 2026-05-27. 6 archivos migrados. `SummaryCard.jsx` quedó huérfano (borrable en cleanup futuro).
-- [x] ~~**Marcar todas como leídas**~~ — ✅ ya existía en `NotificacionesDropdown.jsx` (botón "Leer todas" + `useMarcarTodasLeidas`).
-- [x] ~~**Módulos sin sidebar entry**~~ — ✅ verificado 2026-05-27: `/pagos`, `/sincronizacion`, `/configuracion` por URL/links (intencional); `/roles` movido a tab del UserPanel. Todo OK, nada falta.
+## 🛠️ Tareas medianas
 
 ### Backend
 
 - [ ] **Tope de paginación** cuando se agregue `?limit=` a `InventarioController::global`, `DashboardController`, `CostosIndirectosController`, `RemisionesController`, `CotizacionesController` (hoy ninguno acepta). Recordar usar `Cfg::n('max_per_page', 200)`.
-- [x] ~~**Validación de input en Bodegas/Categoría/Unidad create**~~ — ✅ 2026-05-27.
-- [ ] **Soft-deletes en entidades faltantes**: `categoria`, `unidad`, `bodegas`, `instalaciones` confirmados hard-delete (verificado 2026-05-27). Decidir si agregar `deleted_at` + `useSoftDeletes`.
+- [ ] **Raw queries en modelos básicos sin filtro `deleted_at IS NULL`** (post soft-deletes 2026-05-29):
+  - `BodegasModel:29` `SELECT * FROM bodegas WHERE id_bodegas = ?`
+  - `InstalacionesModel:31/36` SELECTs varios
+  - `BodegasController:28` JOIN raw
+
+  No críticos hoy (no hay soft-deletes en esas tablas todavía), pero filtrar cuando alguien empiece a soft-deletar.
+
+### Frontend
+
+- [ ] **Sort en headers de tablas virtualizadas** (`react-window` v2 modo virtual). Rare path (>200 filas), no urgente.
+- [ ] **`CapasStockPanel`: 3 efectos que llaman callbacks del padre** sin memoizar (los warnings ESLint reales). Riesgo de re-render en cascada si el padre recrea las callbacks. `useCallback` en el padre + incluir en deps.
+- [ ] **Smoke-test después de migración de errores**: los controllers que cambiaron shape de error (`{status, error, messages}` → `{ok, msg}`) podrían afectar UX en módulos que inspeccionan `.messages.error`. `apiClient.js` tiene fallback global (toasts OK); revisar handlers específicos. `useCatalogo` ya se arregló.
+
+### Backend (más del análisis 2026-05-29)
+
+- [ ] **JWT con fallback débil** (`JwtFilter.php:26` `?? 'miClaveSuperSecreta'`). Deploy-only pero código vivo. Cambiar a `throw` si `TOKEN_SECRET` vacío (como ya hace `UsuarioController`).
+- [ ] **6 modelos sin `$allowedFields`** (`FormulacionesModel`, `PreparacionesModel`, `SincronizacionModel`, `ComparadorModel`, `EmpresaModel`, `InventarioCapasModel`) — mass assignment potencial vía insert directo. Declarar allowedFields o usar arrays explícitos.
+- [ ] **`recalcularSaldo` suma pagos sin filtrar anulados** (`FacturasModel.php:58`). Hoy `pagos_cliente` no tiene soft-delete (bajo riesgo); filtrar explícitamente si se agrega anulación de pagos.
+- [ ] **`recibirLinea` marca estado con `$this->model->update()` fuera de la transacción** (`OrdenesCompraController.php:446`). Mover dentro del lock para evitar desincronización si el commit falla parcialmente.
+- [ ] **`EmpresaController` usa `mime_content_type()`** (deprecado PHP 8.4+). Reemplazar por `finfo_file`.
+
+---
+
+## 📚 Documentación
+
+- [ ] **Ampliar OpenAPI spec** (`public/openapi.yaml`). Hoy cubre 52 de ~100+ endpoints. Faltan: proveedores, clientes, bodegas, instalaciones, unidades, categorías, costos_indirectos, gestiones_cobro, comparador, numeración, auditoría, roles, empresa CRUD.
 
 ---
 
@@ -82,5 +114,10 @@
 ## Notas de operación
 
 - **Para retomar trabajo**: revisar la sección más reciente del CLAUDE.md backend y frontend.
-- **Backups**: `pinca_backend/backups/`. El más reciente es `gestorpincadb_backup_2026-05-21_post-refactor-fase3.sql`.
-- **Tests**: `docker exec gestor-pinca-app php spark validar:fixes` (53/53 PASS) + `vendor/bin/phpunit --filter "InventarioCapasModelTest|NumeracionModelTest|FormulacionesModelTest"` (10/10 PASS).
+- **Proveedores cargados** (2026-05-29): isGroup (id 32) e isGroup distriatlantico (id 33). Datos faltantes de isGroup (NIT/contacto) y peso real de Caolina pendientes — ver `PREGUNTAS_CLIENTE.md`.
+- **Backups**: `pinca_backend/backups/`. Generar uno antes de tocar datos.
+- **Tests**:
+  - Backend: `docker exec gestor-pinca-app php spark migrate` (limpio) + `php spark validar:fixes` (53/53, **ahora SEGURO** con rollback global) + Feature `vendor/bin/phpunit --filter "InventarioCapasModelTest|NumeracionModelTest|FormulacionesModelTest"` (10/10).
+  - Frontend: `npm run test -- --run` (34/34) + `npm run lint` (0 errors) + `npm run build` (~9s).
+- **OpenAPI**: `http://localhost:8080/swagger-ui.html` con `persistAuthorization` (mantiene JWT entre recargas).
+- **`PREGUNTAS_CLIENTE.md`** (raíz del monorepo): preguntas de negocio que desbloquean el costeo confiable. Las 🔴 son prioridad.

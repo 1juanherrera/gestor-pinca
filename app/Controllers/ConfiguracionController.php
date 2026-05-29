@@ -14,6 +14,8 @@ use App\Traits\JwtUserAware;
  */
 class ConfiguracionController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     use JwtUserAware;
 
     protected $modelName = ConfiguracionModel::class;
@@ -34,9 +36,9 @@ class ConfiguracionController extends ResourceController
     /** GET /api/configuracion/:clave */
     public function show($clave = null)
     {
-        if (!$clave) return $this->failValidationErrors('Clave requerida.');
+        if (!$clave) return $this->apiFail('Clave requerida.', 422);
         $valor = $this->model->obtener($clave, null);
-        if ($valor === null) return $this->failNotFound("Clave '$clave' no encontrada.");
+        if ($valor === null) return $this->apiNotFound("Clave '$clave' no encontrada.");
         return $this->respond(['clave' => $clave, 'valor' => $valor]);
     }
 
@@ -44,18 +46,18 @@ class ConfiguracionController extends ResourceController
     public function update($clave = null)
     {
         if (!$this->userHasAdminAccess()) {
-            return $this->failForbidden('Solo administradores pueden modificar la configuración.');
+            return $this->apiForbidden('Solo administradores pueden modificar la configuración.');
         }
 
-        if (!$clave) return $this->failValidationErrors('Clave requerida.');
+        if (!$clave) return $this->apiFail('Clave requerida.', 422);
 
         $body = $this->request->getJSON(true);
         if (!array_key_exists('valor', $body ?? [])) {
-            return $this->failValidationErrors('Campo `valor` requerido.');
+            return $this->apiFail('Campo `valor` requerido.', 422);
         }
 
         $ok = $this->model->guardar($clave, $body['valor'], $this->getUsername());
-        if (!$ok) return $this->fail("No se pudo actualizar '$clave'.");
+        if (!$ok) return $this->apiFail("No se pudo actualizar '$clave'.");
 
         return $this->respond([
             'mensaje' => "Configuración '$clave' actualizada",
@@ -94,13 +96,13 @@ class ConfiguracionController extends ResourceController
     public function bulkUpdate()
     {
         if (!$this->userHasAdminAccess()) {
-            return $this->failForbidden('Solo administradores pueden modificar la configuración.');
+            return $this->apiForbidden('Solo administradores pueden modificar la configuración.');
         }
 
         $body = $this->request->getJSON(true);
         $configs = $body['configs'] ?? null;
         if (!is_array($configs) || empty($configs)) {
-            return $this->failValidationErrors('Body debe contener `configs: { clave: valor, … }`.');
+            return $this->apiFail('Body debe contener `configs: { clave: valor, … }`.', 422);
         }
 
         $usuario   = $this->getUsername();

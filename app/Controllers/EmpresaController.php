@@ -8,6 +8,8 @@ use App\Traits\JwtUserAware;
 
 class EmpresaController extends ResourceController
 {
+    use \App\Traits\ApiResponse;
+
     use JwtUserAware;
 
     protected $modelName = EmpresaModel::class;
@@ -25,14 +27,14 @@ class EmpresaController extends ResourceController
     public function update($id = null)
     {
         if (!$this->userHasAdminAccess()) {
-            return $this->failForbidden('Solo administradores pueden modificar la empresa.');
+            return $this->apiForbidden('Solo administradores pueden modificar la empresa.');
         }
 
         $data = $this->request->getJSON(true) ?? $this->request->getPost();
-        if (!$data) return $this->fail('Datos inválidos', 400);
+        if (!$data) return $this->apiFail('Datos inválidos', 400);
 
         $empresa = $this->model->get_all('empresa');
-        if (empty($empresa)) return $this->failNotFound('No se encontró el registro de empresa.');
+        if (empty($empresa)) return $this->apiNotFound('No se encontró el registro de empresa.');
 
         $idEmpresa = $empresa[0]['id_empresa'];
         $allowed   = [
@@ -42,7 +44,7 @@ class EmpresaController extends ResourceController
         ];
         $update = array_intersect_key($data, array_flip($allowed));
 
-        if (empty($update)) return $this->fail('No se enviaron campos válidos.', 400);
+        if (empty($update)) return $this->apiFail('No se enviaron campos válidos.', 400);
 
         $this->model->update_table($idEmpresa, $update, 'empresa');
 
@@ -57,25 +59,25 @@ class EmpresaController extends ResourceController
     public function uploadLogo()
     {
         if (!$this->userHasAdminAccess()) {
-            return $this->failForbidden('Solo administradores pueden cambiar el logo.');
+            return $this->apiForbidden('Solo administradores pueden cambiar el logo.');
         }
 
         $file = $this->request->getFile('logo');
         if (!$file || !$file->isValid()) {
-            return $this->failValidationErrors('No se recibió un archivo válido.');
+            return $this->apiFail('No se recibió un archivo válido.', 422);
         }
 
         $ext = strtolower($file->getExtension());
         if (!in_array($ext, ['png', 'jpg', 'jpeg', 'webp'], true)) {
-            return $this->failValidationErrors('Formato no soportado. Usa PNG, JPG o WEBP.');
+            return $this->apiFail('Formato no soportado. Usa PNG, JPG o WEBP.', 422);
         }
 
         if ($file->getSize() > 2 * 1024 * 1024) {
-            return $this->failValidationErrors('El archivo excede 2 MB.');
+            return $this->apiFail('El archivo excede 2 MB.', 422);
         }
 
         $empresa = $this->model->get_all('empresa');
-        if (empty($empresa)) return $this->failNotFound('No hay registro de empresa.');
+        if (empty($empresa)) return $this->apiNotFound('No hay registro de empresa.');
         $idEmpresa = $empresa[0]['id_empresa'];
 
         $publicUploads = FCPATH . 'uploads/empresa';
@@ -90,7 +92,7 @@ class EmpresaController extends ResourceController
 
         $nombre = 'logo_' . time() . '.' . $ext;
         if (!$file->move($publicUploads, $nombre)) {
-            return $this->fail('No se pudo guardar el archivo.');
+            return $this->apiFail('No se pudo guardar el archivo.');
         }
 
         $logoPath = '/uploads/empresa/' . $nombre;
@@ -132,11 +134,11 @@ class EmpresaController extends ResourceController
     public function deleteLogo()
     {
         if (!$this->userHasAdminAccess()) {
-            return $this->failForbidden('Solo administradores pueden eliminar el logo.');
+            return $this->apiForbidden('Solo administradores pueden eliminar el logo.');
         }
 
         $empresa = $this->model->get_all('empresa');
-        if (empty($empresa)) return $this->failNotFound('No hay registro de empresa.');
+        if (empty($empresa)) return $this->apiNotFound('No hay registro de empresa.');
         $idEmpresa = $empresa[0]['id_empresa'];
 
         $previo = $empresa[0]['logo_path'] ?? null;

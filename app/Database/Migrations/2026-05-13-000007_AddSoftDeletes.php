@@ -55,7 +55,16 @@ class AddSoftDeletes extends Migration
     {
         foreach ($this->tablas as $tabla) {
             if (!$this->db->tableExists($tabla)) continue;
-            $this->db->query("DROP INDEX IF EXISTS idx_{$tabla}_deleted_at ON {$tabla}");
+            // MySQL no soporta DROP INDEX IF EXISTS; chequeo manual vía INFORMATION_SCHEMA.
+            $indexName = "idx_{$tabla}_deleted_at";
+            $existe = (int) $this->db->query(
+                "SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.STATISTICS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?",
+                [$tabla, $indexName]
+            )->getRow()->c > 0;
+            if ($existe) {
+                $this->db->query("ALTER TABLE {$tabla} DROP INDEX {$indexName}");
+            }
             if ($this->db->fieldExists('deleted_at', $tabla)) {
                 $this->forge->dropColumn($tabla, 'deleted_at');
             }
