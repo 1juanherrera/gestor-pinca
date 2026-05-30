@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: db
--- Tiempo de generación: 16-05-2026 a las 14:17:03
+-- Tiempo de generación: 30-05-2026 a las 16:00:02
 -- Versión del servidor: 8.0.46
 -- Versión de PHP: 8.3.26
 
@@ -32,23 +32,24 @@ CREATE TABLE `bodegas` (
   `nombre` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `descripcion` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `estado` tinyint DEFAULT NULL COMMENT '0 inactiva 1 activa',
-  `instalaciones_id` int NOT NULL
+  `instalaciones_id` int NOT NULL,
+  `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `bodegas`
 --
 
-INSERT INTO `bodegas` (`id_bodegas`, `nombre`, `descripcion`, `estado`, `instalaciones_id`) VALUES
-(1, 'Bodega principal', 'BODEGA INSUMOS, MATERIAS PRIMAS Y PRODUCTOS', 1, 1),
-(2, 'Bodega 1', 'Aditivos técnicos, impermeabilizantes de alto desempeño y maquinaria pesada.', 1, 2),
-(3, 'Juan Mina', 'Punto estratégico en la Vía Cordialidad, orientado al manejo de inventarios y distribución regional, con conexiones hacia rutas intermunicipales.', 1, 3),
-(8, 'Laboratorio', 'Área de bodega con acondicionamiento tipo laboratorio', 1, 1),
-(15, 'Centro de insumos', 'Área destinada al almacenamiento y distribución de insumos.', 1, 1),
-(16, 'Depósito especializado', 'Espacio seguro para almacenamiento bajo condiciones controladas.', 0, 1),
-(18, 'Bodega 2', 'Resinas base, solventes y una amplia gama de pinturas para acabados horneables.', 1, 2),
-(19, 'Bodega 3', 'Estación de colorimetría con pastas pigmentadas, anticorrosivos y productos listos para despacho.', 1, 2),
-(21, 'Patio', 'Almacenamiento masivo de solventes industriales, aglutinantes y selladores por volumen.', 1, 2);
+INSERT INTO `bodegas` (`id_bodegas`, `nombre`, `descripcion`, `estado`, `instalaciones_id`, `deleted_at`) VALUES
+(1, 'Bodega principal', 'BODEGA INSUMOS, MATERIAS PRIMAS Y PRODUCTOS', 1, 1, NULL),
+(2, 'Bodega 1', 'Aditivos técnicos, impermeabilizantes de alto desempeño y maquinaria pesada.', 1, 2, NULL),
+(3, 'Juan Mina', 'Punto estratégico en la Vía Cordialidad, orientado al manejo de inventarios y distribución regional, con conexiones hacia rutas intermunicipales.', 1, 3, NULL),
+(8, 'Laboratorio', 'Área de bodega con acondicionamiento tipo laboratorio', 1, 1, NULL),
+(15, 'Centro de insumos', 'Área destinada al almacenamiento y distribución de insumos.', 1, 1, NULL),
+(16, 'Depósito especializado', 'Espacio seguro para almacenamiento bajo condiciones controladas.', 0, 1, NULL),
+(18, 'Bodega 2', 'Resinas base, solventes y una amplia gama de pinturas para acabados horneables.', 1, 2, NULL),
+(19, 'Bodega 3', 'Estación de colorimetría con pastas pigmentadas, anticorrosivos y productos listos para despacho.', 1, 2, NULL),
+(21, 'Patio', 'Almacenamiento masivo de solventes industriales, aglutinantes y selladores por volumen.', 1, 2, NULL);
 
 -- --------------------------------------------------------
 
@@ -58,21 +59,22 @@ INSERT INTO `bodegas` (`id_bodegas`, `nombre`, `descripcion`, `estado`, `instala
 
 CREATE TABLE `categoria` (
   `id_categoria` int NOT NULL,
-  `nombre` varchar(13) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
+  `nombre` varchar(13) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 
 --
 -- Volcado de datos para la tabla `categoria`
 --
 
-INSERT INTO `categoria` (`id_categoria`, `nombre`) VALUES
-(1, 'ESMALTE'),
-(2, 'PASTA'),
-(3, 'ANTICORROSIVO'),
-(4, 'BARNIZ'),
-(5, 'VINILO'),
-(6, 'EPOXICA'),
-(7, 'LACA');
+INSERT INTO `categoria` (`id_categoria`, `nombre`, `deleted_at`) VALUES
+(1, 'ESMALTE', NULL),
+(2, 'PASTA', NULL),
+(3, 'ANTICORROSIVO', NULL),
+(4, 'BARNIZ', NULL),
+(5, 'VINILO', NULL),
+(6, 'EPOXICA', NULL),
+(7, 'LACA', NULL);
 
 -- --------------------------------------------------------
 
@@ -117,13 +119,13 @@ INSERT INTO `clientes` (`id_clientes`, `nombre_encargado`, `nombre_empresa`, `nu
 
 CREATE TABLE `configuracion_sistema` (
   `id_configuracion` int UNSIGNED NOT NULL,
-  `grupo` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `clave` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `grupo` varchar(40) COLLATE utf8mb4_general_ci NOT NULL,
+  `clave` varchar(80) COLLATE utf8mb4_general_ci NOT NULL,
   `valor` json DEFAULT NULL,
-  `tipo` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'string',
-  `descripcion` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `tipo` varchar(20) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'string',
+  `descripcion` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
-  `updated_by` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
+  `updated_by` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -131,30 +133,30 @@ CREATE TABLE `configuracion_sistema` (
 --
 
 INSERT INTO `configuracion_sistema` (`id_configuracion`, `grupo`, `clave`, `valor`, `tipo`, `descripcion`, `updated_at`, `updated_by`) VALUES
-(1, 'tributaria', 'iva_default', '19', 'number', 'Porcentaje IVA general (%) aplicado por defecto en facturas y compras.', '2026-05-14 18:18:27', 'seed'),
-(2, 'tributaria', 'retencion_fuente_pct', '2.5', 'number', 'Retención en la fuente por compra (%) — varía por concepto y régimen.', '2026-05-14 18:18:27', 'seed'),
-(3, 'tributaria', 'retencion_iva_pct', '15', 'number', 'ReteIVA: porcentaje del IVA pagado que se retiene al proveedor (%).', '2026-05-14 18:18:27', 'seed'),
-(4, 'tributaria', 'retencion_ica_default', '11.04', 'number', 'ReteICA por mil — default Barranquilla. Ajustar por ciudad/actividad.', '2026-05-14 18:18:27', 'seed'),
-(5, 'tributaria', 'aplicar_iva_por_default', 'true', 'boolean', 'Si true, los formularios de compra activan el toggle IVA al abrirse.', '2026-05-14 18:18:27', 'seed'),
-(6, 'umbrales', 'stock_critico_dias', '7', 'number', 'Días restantes de stock para considerar una MP \"crítica\" (rojo en dashboard / inventario).', '2026-05-14 18:34:55', 'seed'),
-(7, 'umbrales', 'stock_warning_dias', '30', 'number', 'Días restantes para \"advertencia\" (amarillo). Por encima → \"ok\" (verde).', '2026-05-14 18:34:55', 'seed'),
-(8, 'umbrales', 'mora_warning_dias', '30', 'number', 'Días de mora desde los cuales una factura entra en alerta amarilla.', '2026-05-14 18:34:55', 'seed'),
-(9, 'umbrales', 'mora_critica_dias', '60', 'number', 'Días de mora desde los cuales una factura entra en alerta roja (crítica).', '2026-05-14 18:34:55', 'seed'),
-(10, 'umbrales', 'margen_minimo_pct', '10', 'number', 'Margen (%) por debajo del cual el dashboard marca rentabilidad en rojo.', '2026-05-14 18:34:55', 'seed'),
-(11, 'umbrales', 'margen_objetivo_pct', '20', 'number', 'Margen (%) objetivo: por encima la rentabilidad se muestra en verde.', '2026-05-14 18:34:55', 'seed'),
-(12, 'seguridad', 'jwt_expiracion_horas', '8', 'number', 'Horas de validez del JWT desde su emisión. Tras este tiempo el usuario debe re-loguearse.', '2026-05-14 20:02:24', 'seed'),
-(13, 'seguridad', 'max_intentos_login', '5', 'number', 'Cantidad máxima de intentos de login fallidos antes de bloquear la IP temporalmente.', '2026-05-14 20:02:24', 'seed'),
-(14, 'seguridad', 'ventana_intentos_segundos', '900', 'number', 'Ventana en segundos durante la cual se cuentan los intentos fallidos (default 900 = 15 min).', '2026-05-14 20:02:24', 'seed'),
-(15, 'seguridad', 'password_min_caracteres', '8', 'number', 'Longitud mínima requerida para contraseñas nuevas.', '2026-05-14 20:02:24', 'seed'),
-(16, 'financiero', 'margen_utilidad_default_pct', '50', 'number', 'Margen de utilidad por defecto (%) cuando un costo no tiene `porcentaje_utilidad` explícito.', '2026-05-14 20:02:24', 'seed'),
-(17, 'comercial', 'dias_vencimiento_factura', '30', 'number', 'Días desde la emisión hasta el vencimiento por default al crear/convertir una factura.', '2026-05-14 20:02:24', 'seed'),
-(18, 'comercial', 'dias_credito_default', '30', 'number', 'Plazo de pago por default sugerido al crear un cliente nuevo.', '2026-05-14 20:02:24', 'seed'),
-(19, 'notificaciones', 'limit_default', '30', 'number', 'Cantidad de notificaciones a devolver por defecto en la query.', '2026-05-14 20:02:24', 'seed'),
-(20, 'notificaciones', 'limit_maximo', '100', 'number', 'Tope superior absoluto para evitar payloads excesivos.', '2026-05-14 20:02:24', 'seed'),
-(21, 'notificaciones', 'dias_alerta_vencimiento', '3', 'number', 'Días previos al vencimiento de una factura para empezar a notificar.', '2026-05-14 20:02:24', 'seed'),
-(22, 'paginacion', 'page_size_default', '25', 'number', 'Cantidad de filas por página default en tablas listables.', '2026-05-14 20:02:24', 'seed'),
-(23, 'paginacion', 'max_per_page', '200', 'number', 'Tope máximo permitido para `?per_page=` en endpoints paginados.', '2026-05-14 20:02:24', 'seed'),
-(24, 'apariencia', 'avatar_palette', '[{\"key\": \"default\", \"grad\": null, \"name\": \"Por rol\", \"preview\": \"from-zinc-400  to-zinc-600\"}, {\"key\": \"violet\", \"grad\": \"from-violet-500  to-purple-600\", \"name\": \"Violeta\", \"preview\": \"from-violet-500 to-purple-600\"}, {\"key\": \"blue\", \"grad\": \"from-blue-500    to-cyan-600\", \"name\": \"Azul\", \"preview\": \"from-blue-500   to-cyan-600\"}, {\"key\": \"emerald\", \"grad\": \"from-emerald-500 to-teal-600\", \"name\": \"Esmeralda\", \"preview\": \"from-emerald-500 to-teal-600\"}, {\"key\": \"amber\", \"grad\": \"from-amber-500   to-orange-600\", \"name\": \"Ámbar\", \"preview\": \"from-amber-500  to-orange-600\"}, {\"key\": \"rose\", \"grad\": \"from-rose-500    to-pink-600\", \"name\": \"Rosa\", \"preview\": \"from-rose-500   to-pink-600\"}, {\"key\": \"slate\", \"grad\": \"from-slate-600   to-zinc-800\", \"name\": \"Pizarra\", \"preview\": \"from-slate-600  to-zinc-800\"}, {\"key\": \"indigo\", \"grad\": \"from-indigo-500  to-fuchsia-600\", \"name\": \"Índigo\", \"preview\": \"from-indigo-500 to-fuchsia-600\"}]', 'json', 'Paleta de gradientes que cada usuario puede elegir para su avatar. Array JSON: [{key, name, grad, preview}].', '2026-05-14 20:10:40', 'seed');
+(1, 'tributaria', 'iva_default', '19', 'number', 'Porcentaje IVA general (%) aplicado por defecto en facturas y compras.', '2026-05-25 16:05:32', 'seed'),
+(2, 'tributaria', 'retencion_fuente_pct', '2.5', 'number', 'Retención en la fuente por compra (%) — varía por concepto y régimen.', '2026-05-25 16:05:32', 'seed'),
+(3, 'tributaria', 'retencion_iva_pct', '15', 'number', 'ReteIVA: porcentaje del IVA pagado que se retiene al proveedor (%).', '2026-05-25 16:05:32', 'seed'),
+(4, 'tributaria', 'retencion_ica_default', '11.04', 'number', 'ReteICA por mil — default Barranquilla. Ajustar por ciudad/actividad.', '2026-05-25 16:05:32', 'seed'),
+(5, 'tributaria', 'aplicar_iva_por_default', 'true', 'boolean', 'Si true, los formularios de compra activan el toggle IVA al abrirse.', '2026-05-25 16:05:32', 'seed'),
+(6, 'umbrales', 'stock_critico_dias', '7', 'number', 'Días restantes de stock para considerar una MP \"crítica\" (rojo en dashboard / inventario).', '2026-05-25 16:05:32', 'seed'),
+(7, 'umbrales', 'stock_warning_dias', '30', 'number', 'Días restantes para \"advertencia\" (amarillo). Por encima → \"ok\" (verde).', '2026-05-25 16:05:32', 'seed'),
+(8, 'umbrales', 'mora_warning_dias', '30', 'number', 'Días de mora desde los cuales una factura entra en alerta amarilla.', '2026-05-25 16:05:32', 'seed'),
+(9, 'umbrales', 'mora_critica_dias', '60', 'number', 'Días de mora desde los cuales una factura entra en alerta roja (crítica).', '2026-05-25 16:05:32', 'seed'),
+(10, 'umbrales', 'margen_minimo_pct', '10', 'number', 'Margen (%) por debajo del cual el dashboard marca rentabilidad en rojo.', '2026-05-25 16:05:32', 'seed'),
+(11, 'umbrales', 'margen_objetivo_pct', '20', 'number', 'Margen (%) objetivo: por encima la rentabilidad se muestra en verde.', '2026-05-25 16:05:32', 'seed'),
+(12, 'seguridad', 'jwt_expiracion_horas', '8', 'number', 'Horas de validez del JWT desde su emisión. Tras este tiempo el usuario debe re-loguearse.', '2026-05-25 16:05:32', 'seed'),
+(13, 'seguridad', 'max_intentos_login', '5', 'number', 'Cantidad máxima de intentos de login fallidos antes de bloquear la IP temporalmente.', '2026-05-25 16:05:32', 'seed'),
+(14, 'seguridad', 'ventana_intentos_segundos', '900', 'number', 'Ventana en segundos durante la cual se cuentan los intentos fallidos (default 900 = 15 min).', '2026-05-25 16:05:32', 'seed'),
+(15, 'seguridad', 'password_min_caracteres', '8', 'number', 'Longitud mínima requerida para contraseñas nuevas.', '2026-05-25 16:05:32', 'seed'),
+(16, 'financiero', 'margen_utilidad_default_pct', '50', 'number', 'Margen de utilidad por defecto (%) cuando un costo no tiene `porcentaje_utilidad` explícito.', '2026-05-25 16:05:32', 'seed'),
+(17, 'comercial', 'dias_vencimiento_factura', '30', 'number', 'Días desde la emisión hasta el vencimiento por default al crear/convertir una factura.', '2026-05-25 16:05:32', 'seed'),
+(18, 'comercial', 'dias_credito_default', '30', 'number', 'Plazo de pago por default sugerido al crear un cliente nuevo.', '2026-05-25 16:05:32', 'seed'),
+(19, 'notificaciones', 'limit_default', '30', 'number', 'Cantidad de notificaciones a devolver por defecto en la query.', '2026-05-25 16:05:32', 'seed'),
+(20, 'notificaciones', 'limit_maximo', '100', 'number', 'Tope superior absoluto para evitar payloads excesivos.', '2026-05-25 16:05:32', 'seed'),
+(21, 'notificaciones', 'dias_alerta_vencimiento', '3', 'number', 'Días previos al vencimiento de una factura para empezar a notificar.', '2026-05-25 16:05:32', 'seed'),
+(22, 'paginacion', 'page_size_default', '25', 'number', 'Cantidad de filas por página default en tablas listables.', '2026-05-25 16:05:32', 'seed'),
+(23, 'paginacion', 'max_per_page', '200', 'number', 'Tope máximo permitido para `?per_page=` en endpoints paginados.', '2026-05-25 16:05:32', 'seed'),
+(24, 'apariencia', 'avatar_palette', '[{\"key\": \"default\", \"grad\": null, \"name\": \"Por rol\", \"preview\": \"from-zinc-400  to-zinc-600\"}, {\"key\": \"violet\", \"grad\": \"from-violet-500  to-purple-600\", \"name\": \"Violeta\", \"preview\": \"from-violet-500 to-purple-600\"}, {\"key\": \"blue\", \"grad\": \"from-blue-500    to-cyan-600\", \"name\": \"Azul\", \"preview\": \"from-blue-500   to-cyan-600\"}, {\"key\": \"emerald\", \"grad\": \"from-emerald-500 to-teal-600\", \"name\": \"Esmeralda\", \"preview\": \"from-emerald-500 to-teal-600\"}, {\"key\": \"amber\", \"grad\": \"from-amber-500   to-orange-600\", \"name\": \"Ámbar\", \"preview\": \"from-amber-500  to-orange-600\"}, {\"key\": \"rose\", \"grad\": \"from-rose-500    to-pink-600\", \"name\": \"Rosa\", \"preview\": \"from-rose-500   to-pink-600\"}, {\"key\": \"slate\", \"grad\": \"from-slate-600   to-zinc-800\", \"name\": \"Pizarra\", \"preview\": \"from-slate-600  to-zinc-800\"}, {\"key\": \"indigo\", \"grad\": \"from-indigo-500  to-fuchsia-600\", \"name\": \"Índigo\", \"preview\": \"from-indigo-500 to-fuchsia-600\"}]', 'json', 'Paleta de gradientes que cada usuario puede elegir para su avatar. Array JSON: [{key, name, grad, preview}].', '2026-05-25 16:05:32', 'seed');
 
 -- --------------------------------------------------------
 
@@ -220,7 +222,6 @@ INSERT INTO `costos_item` (`id_costos_item`, `item_general_id`, `costo_unitario`
 (13, 42, 40.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (14, 43, 1550.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (15, 44, 4617.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(18, 47, 855.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (19, 48, 5400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (21, 50, 12215.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (23, 52, 14152.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
@@ -230,7 +231,6 @@ INSERT INTO `costos_item` (`id_costos_item`, `item_general_id`, `costo_unitario`
 (30, 59, 722.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (31, 60, 715.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (32, 61, 4300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(33, 62, 4400.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (34, 63, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (35, 64, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (36, 65, 1103.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
@@ -246,14 +246,13 @@ INSERT INTO `costos_item` (`id_costos_item`, `item_general_id`, `costo_unitario`
 (47, 76, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (48, 77, 11466.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (49, 78, 13000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(50, 79, 17000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (51, 80, 2900.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (52, 81, 17000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (54, 83, 4617.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (55, 84, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (56, 85, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (57, 86, 11000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(58, 2, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 212, 20000.00, 0, 600, NULL, 40),
+(58, 2, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 212, 20000.00, 0, 600, NULL, 75),
 (59, 3, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 398, 170000.00, 0, 600, NULL, NULL),
 (60, 4, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 440, 0.00, 0, 600, NULL, NULL),
 (61, 5, 0.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-07', 0, 3600.00, 350.00, 140, 153, 50, 0.00, 0, 600, NULL, NULL),
@@ -288,12 +287,9 @@ INSERT INTO `costos_item` (`id_costos_item`, `item_general_id`, `costo_unitario`
 (90, 90, 4372.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (92, 92, 16300.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (93, 93, 14152.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(94, 94, 11466.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (95, 95, 17000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (96, 96, 11447.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (97, 97, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(98, 98, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
-(99, 99, 22700.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-10', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (108, 100, 8000.00, 0, 0, 0, NULL, 'MANUAL', '2025-06-15', 0, 0.00, 0.00, 0, 0, 0, 0.00, 0, 0, NULL, NULL),
 (147, 133, 0.00, 0, 0, 0, NULL, 'Manual', '2026-01-16', 0, 0.00, 0.00, 0, 0, 213, 0.00, 1, 0, 1, NULL),
 (164, 223, 0.00, NULL, 0, 0, NULL, NULL, NULL, NULL, 0.00, 0.00, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL),
@@ -330,7 +326,10 @@ INSERT INTO `costos_item` (`id_costos_item`, `item_general_id`, `costo_unitario`
 (200, 297, 0.00, 0, 0, 0, '2026-05', 'Manual', '2026-05-07', 0, 0.00, 0.00, 0, 0, 5, 0.00, 0, 0, 1, NULL),
 (201, 298, 0.00, 0, 0, 0, '2026-05', 'Manual', '2026-05-07', 0, 0.00, 0.00, 0, 0, 4, 0.00, 0, 0, 1, NULL),
 (202, 299, 0.00, 0, 0, 0, '2026-05', 'Manual', '2026-05-07', 0, 0.00, 0.00, 0, 0, 50, 0.00, 0, 0, 1, NULL),
-(203, 230, 5157.50, NULL, 0, 0, NULL, 'PROMED', '2026-05-13', NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL);
+(203, 230, 5157.50, NULL, 0, 0, NULL, 'PROMED', '2026-05-25', NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL),
+(204, 300, 5040.00, 0, 0, 0, '2026-05', 'PROMED', '2026-05-27', 0, 0.00, 0.00, 0, 0, 1, 0.00, NULL, 0, 1, NULL),
+(205, 301, 7620.00, 0, 0, 0, '2026-05', 'PROMED', '2026-05-17', 0, 0.00, 0.00, 0, 0, 1, 0.00, NULL, 0, 1, NULL),
+(206, 302, 0.00, 0, 0, 0, '2026-05', 'Catálo', '2026-05-16', 0, 0.00, 0.00, 0, 0, 1, 0.00, NULL, 0, 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -357,6 +356,29 @@ CREATE TABLE `costos_produccion` (
   `costo_mod` smallint DEFAULT NULL,
   `preparaciones_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `costos_snapshot`
+--
+
+CREATE TABLE `costos_snapshot` (
+  `id_costos_snapshot` int UNSIGNED NOT NULL,
+  `item_general_id` int NOT NULL COMMENT 'FK a item_general',
+  `fecha` date NOT NULL COMMENT 'Fecha del snapshot (YYYY-MM-DD)',
+  `estado` varchar(20) COLLATE utf8mb4_general_ci NOT NULL COMMENT 'completo | incompleto al momento del snapshot',
+  `volumen_base` decimal(15,4) NOT NULL DEFAULT '1.0000',
+  `costo_mp_total` decimal(15,2) DEFAULT NULL COMMENT 'NULL si producto incompleto',
+  `costo_mp_por_unidad` decimal(15,2) DEFAULT NULL,
+  `costo_empaque_mod` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `costo_total` decimal(15,2) DEFAULT NULL,
+  `porcentaje_utilidad` decimal(5,2) NOT NULL DEFAULT '0.00',
+  `precio_venta_calc` decimal(15,2) DEFAULT NULL,
+  `mps_total` int NOT NULL DEFAULT '0',
+  `mps_cubiertas` int NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -439,14 +461,14 @@ CREATE TABLE `empresa` (
   `razon_social` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `descripcion` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `ciudad` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `direccion` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `direccion` varchar(200) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `telefono` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `celular` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `celular` varchar(45) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `pagina_web` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `locale` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'es-CO',
-  `moneda` varchar(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'COP',
-  `logo_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
+  `email` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `locale` varchar(10) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'es-CO',
+  `moneda` varchar(5) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'COP',
+  `logo_path` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -536,11 +558,11 @@ CREATE TABLE `formulaciones` (
 --
 
 INSERT INTO `formulaciones` (`id_formulaciones`, `nombre`, `descripcion`, `estado`, `defecto`, `version_actual`, `item_general_id`) VALUES
-(1, 'PREPARACIÓN BARNIZ TRANSPARENTE BIRILLANTE', NULL, 1, 1, 2, 1),
+(1, 'PREPARACION BARNIZ TRANSPARENTE BRILLANTE', NULL, 1, 1, 2, 1),
 (2, 'PREPARACION ESMALTE BLANCO', NULL, 1, 1, 2, 2),
 (3, 'PREPARACION ESMALTE CAOBA', NULL, 1, 1, 1, 3),
 (4, 'PREPARACION ESMALTE NEGRO MATE', NULL, 1, 1, 1, 4),
-(5, 'PREPARACIÓN ESMALTE ROJO FIESTA', NULL, 1, 1, 2, 5),
+(5, 'PREPARACION ESMALTE ROJO FIESTA', NULL, 1, 1, 2, 5),
 (6, 'PREPARACION ESMALTE NEGRO BRILLANTE', NULL, 1, 1, 1, 6),
 (7, 'PREPARACION ESMALTE VERDE ESMERALDA', NULL, 1, 1, 1, 7),
 (8, 'PREPARACION ESMALTE GRIS PLATA', NULL, 1, 1, 1, 8),
@@ -728,24 +750,6 @@ CREATE TABLE `historial_precios` (
   `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
---
--- Volcado de datos para la tabla `historial_precios`
---
-
-INSERT INTO `historial_precios` (`id_historial`, `item_proveedor_id`, `precio_unitario`, `precio_con_iva`, `fecha`, `observacion`, `creado_en`) VALUES
-(27, 35, 78000.00, 90000.00, '2024-04-01', 'Precio inicial', '2026-03-21 03:00:50'),
-(28, 35, 82000.00, 95000.00, '2024-09-01', 'Ajuste', '2026-03-21 03:00:50'),
-(29, 35, 85000.00, 98000.00, '2025-01-01', 'Precio actual', '2026-03-21 03:00:50'),
-(30, 36, 19000.00, 22000.00, '2024-04-01', 'Precio inicial', '2026-03-21 03:00:50'),
-(31, 36, 20500.00, 23500.00, '2024-10-01', 'Ajuste', '2026-03-21 03:00:50'),
-(32, 36, 22000.00, 25000.00, '2025-02-01', 'Precio actual', '2026-03-21 03:00:50'),
-(33, 37, 86000.00, 99000.00, '2024-04-01', 'Precio inicial', '2026-03-21 03:00:50'),
-(34, 37, 89000.00, 102000.00, '2024-09-01', 'Ajuste', '2026-03-21 03:00:50'),
-(35, 37, 92000.00, 106000.00, '2025-01-01', 'Precio actual', '2026-03-21 03:00:50'),
-(36, 38, 17000.00, 19500.00, '2024-04-01', 'Precio inicial', '2026-03-21 03:00:50'),
-(37, 38, 18500.00, 21000.00, '2024-10-01', 'Ajuste', '2026-03-21 03:00:50'),
-(38, 38, 19500.00, 22000.00, '2025-02-01', 'Precio actual', '2026-03-21 03:00:50');
-
 -- --------------------------------------------------------
 
 --
@@ -759,17 +763,18 @@ CREATE TABLE `instalaciones` (
   `ciudad` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `direccion` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `telefono` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `id_empresa` int NOT NULL
+  `id_empresa` int NOT NULL,
+  `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `instalaciones`
 --
 
-INSERT INTO `instalaciones` (`id_instalaciones`, `nombre`, `descripcion`, `ciudad`, `direccion`, `telefono`, `id_empresa`) VALUES
-(1, 'Sede Cordialidad', 'SEDE DE FABRICACIÓN DE PINTURAS', ' BARRANQUILLA', 'Calle 99 # 6-59', '3019794729', 1),
-(2, 'Sede Villa Olimpica', 'SEDE DE FABRICACIÓN DE PINTURAS', 'Galapa', '', '3019794729', 1),
-(3, 'Sede Juan Mina', 'SEDE DE FABRICACIÓN DE PINTURAS', 'Barranquilla', '', '3019794729', 1);
+INSERT INTO `instalaciones` (`id_instalaciones`, `nombre`, `descripcion`, `ciudad`, `direccion`, `telefono`, `id_empresa`, `deleted_at`) VALUES
+(1, 'Sede Cordialidad', 'SEDE DE FABRICACIÓN DE PINTURAS', ' BARRANQUILLA', 'Calle 99 # 6-59', '3019794729', 1, NULL),
+(2, 'Sede Villa Olimpica', 'SEDE DE FABRICACIÓN DE PINTURAS', 'Galapa', '', '3019794729', 1, NULL),
+(3, 'Sede Juan Mina', 'SEDE DE FABRICACIÓN DE PINTURAS', 'Barranquilla', '', '3019794729', 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -794,97 +799,6 @@ CREATE TABLE `inventario` (
 --
 
 INSERT INTO `inventario` (`id_inventario`, `cantidad`, `fecha_update`, `apartada`, `item_general_id`, `estado`, `movimiento_inventario_id`, `tipo`, `bodegas_id`) VALUES
-(1, 11.00, NULL, 0, 1, 0, NULL, 1, 1),
-(2, 0.00, NULL, 0, 2, 0, NULL, 1, 1),
-(3, 0.00, NULL, 0, 3, 0, NULL, 1, 1),
-(4, 0.00, NULL, 0, 4, 0, NULL, 1, 1),
-(5, 0.00, NULL, 0, 5, 0, NULL, 1, 1),
-(6, 0.00, NULL, 0, 6, 0, NULL, 1, 1),
-(7, 0.00, NULL, 0, 7, 0, NULL, 1, 1),
-(8, 0.00, NULL, 0, 8, 0, NULL, 1, 1),
-(9, 0.00, NULL, 0, 9, 0, NULL, 1, 1),
-(10, 0.00, NULL, 0, 10, 0, NULL, 1, 1),
-(11, 0.00, NULL, 0, 11, 0, NULL, 1, 1),
-(12, 0.00, NULL, 0, 12, 0, NULL, 1, 1),
-(13, 0.00, NULL, 0, 13, 0, NULL, 1, 1),
-(14, 0.00, NULL, 0, 14, 0, NULL, 1, 1),
-(15, 0.00, NULL, 0, 15, 0, NULL, 1, 1),
-(16, 0.00, NULL, 0, 16, 0, NULL, 1, 1),
-(17, 0.00, NULL, 0, 17, 0, NULL, 1, 1),
-(18, 0.00, NULL, 0, 18, 0, NULL, 1, 1),
-(19, 0.00, NULL, 0, 19, 0, NULL, 1, 1),
-(20, 0.00, NULL, 0, 20, 0, NULL, 1, 1),
-(21, 0.00, NULL, 0, 21, 0, NULL, 1, 1),
-(22, 0.00, NULL, 0, 22, 0, NULL, 1, 1),
-(23, 0.00, NULL, 0, 23, 0, NULL, 1, 1),
-(24, 0.00, NULL, 0, 24, 0, NULL, 1, 1),
-(25, 0.00, NULL, 0, 25, 0, NULL, 1, 1),
-(26, 0.00, NULL, 0, 26, 0, NULL, 1, 1),
-(27, 0.00, NULL, 0, 27, 0, NULL, 1, 1),
-(28, 0.00, NULL, 0, 28, 0, NULL, 1, 1),
-(29, 0.00, NULL, 0, 29, 0, NULL, 1, 1),
-(30, 0.00, NULL, 0, 30, 0, NULL, 1, 1),
-(31, 28.11, '2026-05-13', 0, 31, 0, NULL, 1, 1),
-(32, 3.99, '2026-05-13', 0, 32, 0, NULL, 1, 1),
-(33, 18.24, '2026-05-13', 0, 33, 0, NULL, 1, 1),
-(34, 2.23, '2026-05-13', 0, 34, 0, NULL, 1, 1),
-(35, 0.48, '2026-05-13', 0, 35, 0, NULL, 1, 1),
-(36, 18.65, '2026-05-13', 0, 36, 0, NULL, 1, 1),
-(37, 0.00, NULL, 0, 37, 0, NULL, 1, 1),
-(38, 0.00, NULL, 0, 38, 0, NULL, 1, 1),
-(39, 0.00, NULL, 0, 39, 0, NULL, 1, 1),
-(40, 0.00, NULL, 0, 40, 0, NULL, 1, 1),
-(41, 0.00, NULL, 0, 41, 0, NULL, 1, 1),
-(42, 0.00, NULL, 0, 42, 0, NULL, 1, 1),
-(43, 0.00, NULL, 0, 43, 0, NULL, 1, 1),
-(44, 0.00, NULL, 0, 44, 0, NULL, 1, 1),
-(46, 0.00, NULL, 0, 47, 0, NULL, 1, 1),
-(47, 0.00, NULL, 0, 48, 0, NULL, 1, 1),
-(48, 0.00, NULL, 0, 50, 0, NULL, 1, 1),
-(49, 0.00, NULL, 0, 52, 0, NULL, 1, 1),
-(50, 0.00, NULL, 0, 54, 0, NULL, 1, 1),
-(51, 0.00, NULL, 0, 56, 0, NULL, 1, 1),
-(52, 0.00, NULL, 0, 57, 0, NULL, 1, 1),
-(53, 0.00, NULL, 0, 59, 0, NULL, 1, 1),
-(54, 0.00, NULL, 0, 60, 0, NULL, 1, 1),
-(55, 0.00, NULL, 0, 61, 0, NULL, 1, 1),
-(56, 0.00, NULL, 0, 62, 0, NULL, 1, 1),
-(57, 0.00, NULL, 0, 63, 0, NULL, 1, 1),
-(58, 0.00, NULL, 0, 64, 0, NULL, 1, 1),
-(59, 0.00, NULL, 0, 65, 0, NULL, 1, 1),
-(60, 0.00, NULL, 0, 66, 0, NULL, 1, 1),
-(61, 0.00, NULL, 0, 67, 0, NULL, 1, 1),
-(62, 0.00, NULL, 0, 68, 0, NULL, 1, 1),
-(63, 0.00, NULL, 0, 69, 0, NULL, 1, 1),
-(65, 0.00, NULL, 0, 71, 0, NULL, 1, 1),
-(66, 0.00, NULL, 0, 72, 0, NULL, 1, 1),
-(67, 0.00, NULL, 0, 73, 0, NULL, 1, 1),
-(68, 0.00, NULL, 0, 74, 0, NULL, 1, 1),
-(69, 0.00, NULL, 0, 75, 0, NULL, 1, 1),
-(70, 0.00, NULL, 0, 76, 0, NULL, 1, 1),
-(71, 0.00, NULL, 0, 77, 0, NULL, 1, 1),
-(72, 0.00, NULL, 0, 78, 0, NULL, 1, 1),
-(73, 0.00, NULL, 0, 79, 0, NULL, 1, 1),
-(74, 0.00, NULL, 0, 80, 0, NULL, 1, 1),
-(75, 0.00, NULL, 0, 81, 0, NULL, 1, 1),
-(76, 0.00, NULL, 0, 83, 0, NULL, 1, 1),
-(77, 0.00, NULL, 0, 84, 0, NULL, 1, 1),
-(78, 0.00, NULL, 0, 85, 0, NULL, 1, 1),
-(79, 0.00, NULL, 0, 86, 0, NULL, 1, 1),
-(80, 0.00, NULL, 0, 87, 0, NULL, 1, 1),
-(81, 0.00, NULL, 0, 88, 0, NULL, 1, 1),
-(82, 0.00, NULL, 0, 89, 0, NULL, 1, 1),
-(83, 0.00, NULL, 0, 90, 0, NULL, 1, 1),
-(84, 0.00, NULL, 0, 92, 0, NULL, 1, 1),
-(85, 0.00, NULL, 0, 93, 0, NULL, 1, 1),
-(86, 0.00, NULL, 0, 94, 0, NULL, 1, 1),
-(87, 0.00, NULL, 0, 95, 0, NULL, 1, 1),
-(88, 0.00, NULL, 0, 96, 0, NULL, 1, 1),
-(89, 0.00, NULL, 0, 97, 0, NULL, 1, 1),
-(90, 0.00, NULL, 0, 98, 0, NULL, 1, 1),
-(91, 0.00, NULL, 0, 99, 0, NULL, 1, 1),
-(92, 0.00, NULL, 0, 100, 0, NULL, 1, 1),
-(139, 5.00, NULL, 0, 133, 1, NULL, 1, 1),
 (162, 2.00, '2026-04-17', 0, 134, 0, NULL, 1, 2),
 (163, 1.00, '2026-04-17', 0, 135, 0, NULL, 1, 2),
 (164, 1.00, '2026-04-17', 0, 136, 0, NULL, 1, 2),
@@ -894,7 +808,7 @@ INSERT INTO `inventario` (`id_inventario`, `cantidad`, `fecha_update`, `apartada
 (168, 1.00, '2026-04-17', 0, 140, 0, NULL, 1, 2),
 (169, 1.00, '2026-04-17', 0, 141, 0, NULL, 1, 2),
 (170, 6.00, '2026-04-17', 0, 194, 0, NULL, 1, 2),
-(171, 19.00, '2026-04-17', 0, 142, 0, NULL, 1, 2),
+(171, 9.00, '2026-05-16', 0, 142, 0, NULL, 1, 2),
 (172, 2.00, '2026-04-17', 0, 143, 0, NULL, 1, 18),
 (173, 1.00, '2026-04-17', 0, 144, 0, NULL, 1, 18),
 (174, 1.00, '2026-04-17', 0, 145, 0, NULL, 1, 18),
@@ -983,17 +897,7 @@ INSERT INTO `inventario` (`id_inventario`, `cantidad`, `fecha_update`, `apartada
 (257, 2.00, '2026-04-17', 0, 219, 0, NULL, 1, 21),
 (258, 1.00, '2026-04-17', 0, 220, 0, NULL, 1, 21),
 (259, 1.00, '2026-04-17', 0, 221, 0, NULL, 1, 21),
-(260, 1.00, '2026-04-17', 0, 222, 0, NULL, 1, 21),
-(261, 0.00, NULL, NULL, 223, NULL, NULL, NULL, 1),
-(262, 0.00, '2026-04-18', 0, 224, 1, NULL, 1, 1),
-(264, 0.00, '2026-04-22', 0, 231, 1, NULL, 1, 1),
-(265, 0.00, '2026-04-22', 0, 232, 1, NULL, 1, 1),
-(266, 0.00, '2026-04-22', 0, 233, 1, NULL, 1, 1),
-(268, 0.00, '2026-04-22', 0, 235, 1, NULL, 1, 1),
-(269, 0.00, '2026-04-22', 0, 236, 1, NULL, 1, 1),
-(273, 0.00, '2026-04-22', 0, 241, 1, NULL, 1, 1),
-(274, 0.00, '2026-04-22', 0, 242, 1, NULL, 1, 1),
-(275, 0.00, '2026-05-12', NULL, 230, 1, NULL, 1, 1);
+(260, 1.00, '2026-04-17', 0, 222, 0, NULL, 1, 21);
 
 -- --------------------------------------------------------
 
@@ -1025,14 +929,6 @@ CREATE TABLE `inventario_capas` (
 --
 
 INSERT INTO `inventario_capas` (`id_capa`, `item_general_id`, `bodegas_id`, `proveedor_id`, `item_proveedor_id`, `orden_compra_id`, `cantidad_original`, `cantidad_disponible`, `costo_unitario`, `unidad_compra_id`, `factor_conversion`, `precio_compra`, `fecha_ingreso`, `lote_proveedor`, `observaciones`, `estado`) VALUES
-(1, 1, 1, NULL, NULL, NULL, 11.0000, 11.0000, 0.0000, NULL, 1.000000, NULL, '2026-04-24 03:16:48', NULL, 'Migración: saldo existente sin proveedor identificado', 1),
-(2, 31, 1, NULL, NULL, NULL, 28.1100, 28.1100, 7000.0000, NULL, 1.000000, NULL, '2026-04-24 03:16:48', NULL, 'Migración: saldo existente sin proveedor identificado', 1),
-(3, 32, 1, NULL, NULL, NULL, 3.9900, 3.9900, 11000.0000, NULL, 1.000000, NULL, '2026-04-24 03:16:48', NULL, 'Migración: saldo existente sin proveedor identificado', 1),
-(4, 33, 1, NULL, NULL, NULL, 18.2400, 18.2400, 34050.0000, NULL, 1.000000, NULL, '2026-04-24 03:16:48', NULL, 'Migración: saldo existente sin proveedor identificado', 1),
-(5, 34, 1, NULL, NULL, NULL, 2.2300, 2.2300, 27144.0000, NULL, 1.000000, NULL, '2026-04-24 03:16:48', NULL, 'Migración: saldo existente sin proveedor identificado', 1),
-(6, 35, 1, NULL, NULL, NULL, 0.4800, 0.4800, 12691.0000, NULL, 1.000000, NULL, '2026-04-24 03:16:48', NULL, 'Migración: saldo existente sin proveedor identificado', 1),
-(7, 36, 1, NULL, NULL, NULL, 18.6500, 18.6500, 4372.0000, NULL, 1.000000, NULL, '2026-04-24 03:16:48', NULL, 'Migración: saldo existente sin proveedor identificado', 1),
-(8, 133, 1, NULL, NULL, NULL, 5.0000, 5.0000, 0.0000, NULL, 1.000000, NULL, '2026-04-24 03:16:48', NULL, 'Migración: saldo existente sin proveedor identificado', 1),
 (9, 134, 2, NULL, NULL, NULL, 2.0000, 2.0000, 0.0000, NULL, 1.000000, NULL, '2026-04-24 03:16:48', NULL, 'Migración: saldo existente sin proveedor identificado', 1),
 (10, 135, 2, NULL, NULL, NULL, 1.0000, 1.0000, 0.0000, NULL, 1.000000, NULL, '2026-04-24 03:16:48', NULL, 'Migración: saldo existente sin proveedor identificado', 1),
 (11, 136, 2, NULL, NULL, NULL, 1.0000, 1.0000, 0.0000, NULL, 1.000000, NULL, '2026-04-24 03:16:48', NULL, 'Migración: saldo existente sin proveedor identificado', 1),
@@ -1201,7 +1097,7 @@ INSERT INTO `item_general` (`id_item_general`, `nombre`, `codigo`, `tipo`, `cate
 (42, 'AGUA', 'SIA040', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 19500.00, NULL, 0, NULL, NULL),
 (43, 'SULFATO DE MAGNESIO', 'AET004', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 33500.00, NULL, 0, NULL, NULL),
 (44, 'VARSOL', 'SAV010', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 37200.00, NULL, 0, NULL, NULL),
-(47, 'MICROTALC C 20', 'CTA011', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8000.00, NULL, 0, NULL, NULL),
+(47, '[DUP->59] MICROTALC C 20', 'CTA011', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8000.00, NULL, 0, NULL, '2026-05-30 14:45:21'),
 (48, 'CELITE 499', 'MSI006', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11466.00, NULL, 0, NULL, NULL),
 (50, 'PASTA ESMALTE ROJO 57:1', 'PE1033', 2, 2, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 17000.00, NULL, 0, NULL, NULL),
 (52, 'PASTA AMARILLO CROMO MEDIO', 'PE1010', 2, 2, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 17000.00, NULL, 0, NULL, NULL),
@@ -1211,7 +1107,7 @@ INSERT INTO `item_general` (`id_item_general`, `nombre`, `codigo`, `tipo`, `cate
 (59, 'MICROTALC C 20', 'CTA025', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL, NULL),
 (60, 'CARBONATO DE CALCIO HI WHITE', 'CCC004', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL, NULL),
 (61, 'LECITINA DE SOYA', 'AHU002', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL, NULL),
-(62, 'ETANOL AL 96%', 'SAM023', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL, NULL),
+(62, '[DUP->40] ETANOL AL 96%', 'SAM023', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL, '2026-05-30 14:45:21'),
 (63, 'OXIDO DE HIERRO AMARILLO Y 4021', 'PEA010', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL, NULL),
 (64, 'OXIDO DE HIERRO ROJO R-5530', 'PER030', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL, NULL),
 (65, 'MICROTALC 20', 'CTA020', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL, NULL),
@@ -1227,7 +1123,7 @@ INSERT INTO `item_general` (`id_item_general`, `nombre`, `codigo`, `tipo`, `cate
 (76, 'PIGMENTO OXIFERR AMARILLO Y-4011', 'PEA013', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL, NULL),
 (77, 'DIOXIDO DE TITANIO SULFATO 2196', 'PED007', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL, NULL),
 (78, 'OXIFER TABACO R-4370', 'PET080', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8105.00, NULL, 0, NULL, NULL),
-(79, 'BENTOCLAY BP 184', 'AAS012', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL, NULL),
+(79, '[DUP->39] BENTOCLAY BP 184', 'AAS012', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL, '2026-05-30 14:45:21'),
 (80, 'METANOL', 'SAM023', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL, NULL),
 (81, 'ORGANOCLAY BK 884', 'AAS005', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL, NULL),
 (83, 'DISOLVENTE 2232 / VARSOL', 'SAA011', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, NULL, 0, NULL, NULL),
@@ -1240,12 +1136,12 @@ INSERT INTO `item_general` (`id_item_general`, `nombre`, `codigo`, `tipo`, `cate
 (90, 'DISOLVENTE 3', 'SAA011', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4372.00, NULL, 0, NULL, NULL),
 (92, 'OCTOATO DE ZINC 16%', 'SOZ016', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 16300.00, NULL, 0, NULL, NULL),
 (93, 'PASTA ESMALTE AMARILLO CROMO MEDIO', 'PE1010', 2, 2, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 14152.00, NULL, 0, NULL, NULL),
-(94, 'DIOXIDO DE TITANIO SULFATO 2196', 'PED010', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11466.00, NULL, 0, NULL, NULL),
+(94, '[DUP->77] DIOXIDO DE TITANIO SULFATO 2196', 'PED010', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11466.00, NULL, 0, NULL, '2026-05-30 14:45:21'),
 (95, 'BENTOCLAY BP184', 'AAS005', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 17000.00, NULL, 0, NULL, NULL),
 (96, 'PASTA ESMALTE AZUL 15:3', 'PE1021', 2, 2, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 11447.00, NULL, 0, NULL, NULL),
 (97, 'EDAPLAN 918', 'ADI010', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00, NULL, 0, NULL, NULL),
-(98, 'EDAPLAN 918 / LANSPERSE SUV', 'ADI010', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00, NULL, 0, NULL, NULL),
-(99, 'CHEMOSPERSE 77', 'ADI010', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00, NULL, 0, NULL, NULL),
+(98, '[DUP->97] EDAPLAN 918 / LANSPERSE SUV', 'ADI010', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00, NULL, 0, NULL, '2026-05-30 14:54:46'),
+(99, '[DUP->85] CHEMOSPERSE 77', 'ADI010', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 22700.00, NULL, 0, NULL, '2026-05-30 14:45:21'),
 (100, 'PIGMENTO OXIFERR ROJO R-5530', 'PER030', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL),
 (133, 'VINILO T1 BLANCO', 'EBT012', 0, 1, '', '', '', '', '', '', '', '', '', '', NULL, 1.00, NULL, 0, NULL, NULL),
 (134, 'SIKA WT-100 CO', 'SIK001', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 1, NULL),
@@ -1404,7 +1300,27 @@ INSERT INTO `item_general` (`id_item_general`, `nombre`, `codigo`, `tipo`, `cate
 (296, 'EPOXICA ROJO OXIDO', 'EPX296', 0, 6, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL),
 (297, 'ESMALTE EPOXI SILICATO BLANCO', 'ESM297', 0, 6, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL),
 (298, 'ESMALTE EPOXI SILICATO VERDE', 'ESM298', 0, 6, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL),
-(299, 'ESMALTE EPOXICO AMARILLO', 'ESM299', 0, 6, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL);
+(299, 'ESMALTE EPOXICO AMARILLO', 'ESM299', 0, 6, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL),
+(300, 'PVA RESIFLEX 610', 'PRE-193781', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2, 5040.00, NULL, 0, 9, NULL),
+(301, 'PVA RESIFLEX F55M', 'PRE-192392', 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 7620.00, NULL, 0, 9, NULL),
+(302, 'ENDURECEDOR 100%', NULL, 1, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 9, NULL),
+(334, 'COALESCENTE', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(335, 'ESPESANTE ACRILICO ASOCIATIVO', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(336, 'ESPESANTE CELULOSICO', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(337, 'RESINA ACRILICA EXTERIORES', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(338, 'DISPERSANTE BASE SOLVENTE', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(339, 'NIVELANTE', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(340, 'ANTIESPUMANTE EPOXICOS', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(341, 'AMARILLO CROMO MEDIO', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(342, 'HUMECTANTE BASE AGUA', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(343, 'HIDROFUGANTE MATE', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(344, 'HIDROFUGANTE BRILLANTE', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(345, 'BIOCIDA DA PLUS', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(346, 'BIOCIDA DA ULTRA', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(347, 'OMYACARB 15', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(348, 'OMYACARB 4', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(349, 'TALCO EXTRA', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL),
+(350, 'TALCO EXTRA MEJORADO', NULL, 1, 0, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, NULL, NULL, 0, 9, NULL);
 
 -- --------------------------------------------------------
 
@@ -1437,7 +1353,7 @@ INSERT INTO `item_general_formulaciones` (`id_item_general_formulaciones`, `form
 (31, 3, 113.00, NULL, 36),
 (32, 3, 114.00, NULL, 44),
 (33, 4, 775.00, NULL, 31),
-(34, 4, 224.00, NULL, 47),
+(34, 4, 224.00, NULL, 59),
 (35, 4, 40.00, NULL, 48),
 (36, 4, 12.00, NULL, 81),
 (37, 4, 6.00, NULL, 40),
@@ -1580,7 +1496,7 @@ INSERT INTO `item_general_formulaciones` (`id_item_general_formulaciones`, `form
 (259, 20, 76.00, NULL, 44),
 (260, 21, 186.00, NULL, 31),
 (261, 21, 3.00, NULL, 32),
-(262, 21, 5.00, NULL, 79),
+(262, 21, 5.00, NULL, 39),
 (263, 21, 3.00, NULL, 80),
 (264, 21, 15.00, NULL, 61),
 (265, 21, 52.00, NULL, 68),
@@ -2135,10 +2051,6 @@ CREATE TABLE `item_proveedor` (
 --
 
 INSERT INTO `item_proveedor` (`id_item_proveedor`, `nombre`, `codigo`, `tipo`, `precio_unitario`, `precio_con_iva`, `disponible`, `descripcion`, `proveedor_id`, `item_general_id`, `unidad_compra_id`, `factor_conversion`, `deleted_at`) VALUES
-(35, 'Pintura Epóxica Gris', 'AQ-EP-GR', 'Pinturas', 85000.00, 98000.00, 1, 'Pintura epóxica industrial', 8, NULL, NULL, 1.000000, NULL),
-(36, 'Thinner Acrílico', 'AQ-TH-AC', 'Solventes', 22000.00, 25000.00, 1, 'Thinner para pintura acrílica', 8, NULL, NULL, 1.000000, NULL),
-(37, 'Pintura Epóxica Gris', 'SL-EP-GR', 'Pinturas', 92000.00, 106000.00, 1, 'Pintura epóxica alta resistencia', 2, NULL, NULL, 1.000000, NULL),
-(38, 'Thinner Acrílico', 'SL-TH-AC', 'Solventes', 19500.00, 22000.00, 1, 'Thinner acrílico industrial', 2, NULL, NULL, 1.000000, NULL),
 (40, 'TALCO TY 400 G', 'QUI-MAT-0001', 'Materia Prima', 1504.00, 1790.00, 1, NULL, 23, NULL, NULL, 1.000000, NULL),
 (41, 'OMIYACARB UF', 'QUI-MAT-0002', 'Materia Prima', 1828.00, 2175.00, 1, NULL, 23, NULL, NULL, 1.000000, NULL),
 (42, 'COLARDIT ANTIESPUMANTE', 'QUI-ADIT-0001', 'Insumo', 7143.00, 8500.00, 1, NULL, 23, NULL, NULL, 1.000000, NULL),
@@ -2154,7 +2066,7 @@ INSERT INTO `item_proveedor` (`id_item_proveedor`, `nombre`, `codigo`, `tipo`, `
 (52, 'CARBONATO DE CALCIO M600', 'CARBM600', 'Materia Prima', 460.00, 547.00, 1, '', 24, NULL, 9, 1.000000, NULL),
 (53, 'RESINA EPOXICA', 'NPSN CHINA', 'Materia Prima', 15069.00, 17932.00, 1, '', 25, 226, 9, 1.000000, NULL),
 (54, 'RESINA KR 828 100%', 'KER828', 'Materia Prima', 10300.00, 12257.00, 1, '', 26, NULL, 9, 1.000000, NULL),
-(55, 'ENDURECEDOR 100%', 'NT-1515X70', 'Materia Prima', 20000.00, 23800.00, 1, '', 26, NULL, 9, 1.000000, NULL),
+(55, 'ENDURECEDOR 100%', 'NT-1515X70', 'Materia Prima', 20000.00, 23800.00, 1, '', 26, 302, 9, 1.000000, NULL),
 (56, 'ENDURECEDOR 100%', 'NX-5454', 'Materia Prima', 19700.00, 23443.00, 1, '', 26, NULL, 9, 1.000000, NULL),
 (57, 'XILOL', 'XIL21288', 'Materia Prima', 6120.00, 7283.00, 1, '', 27, 225, 9, 1.000000, NULL),
 (58, 'THINNER ', 'TH2092', 'Materia Prima', 15961.00, 18994.00, 1, '', 27, NULL, 3, 1.000000, NULL),
@@ -2176,7 +2088,44 @@ INSERT INTO `item_proveedor` (`id_item_proveedor`, `nombre`, `codigo`, `tipo`, `
 (74, 'RESINA UREA FORMALDEHIDO', 'RN-9E', 'Materia Prima', 8050.00, 9580.00, 1, '', 29, NULL, 9, 1.000000, NULL),
 (75, 'XILOL', 'XILB6800', 'Materia Prima', 5714.29, 6800.00, 1, '', 30, 225, 9, 1.000000, NULL),
 (76, 'ISOBUTANOL', 'ISOB7100', 'Materia Prima', 5966.39, 7100.00, 1, '', 30, 244, 9, 1.000000, NULL),
-(77, 'Butil Glicol', 'BUTB890', 'Materia Prima', 7478.99, 8900.00, 1, '', 30, 245, 9, 1.000000, NULL);
+(77, 'Butil Glicol', 'BUTB890', 'Materia Prima', 7478.99, 8900.00, 1, '', 30, 245, 9, 1.000000, NULL),
+(78, 'PVA RESIFLEX 610', 'PRE-193781', 'Materia Prima', 5040.00, 5998.00, 1, '', 31, 300, 9, 1.000000, NULL),
+(79, 'PVA RESIFLEX F55M', 'PRE-192392', 'Materia Prima', 7620.00, 9068.00, 1, '', 31, 301, 9, 1.000000, NULL),
+(80, 'DISPERS PA45', 'PA45', 'Materia Prima', 8500.00, 10115.00, 1, 'Dispersante base agua. Tambor 200 kg', 32, 231, 9, 1.000000, NULL),
+(81, 'RWANTA C-12', 'C-12', 'Materia Prima', 10000.00, 11900.00, 1, 'Coalescente. Tambor 200 kg', 32, 334, 9, 1.000000, NULL),
+(82, 'AKASIL RE20', 'RE20', 'Materia Prima', 18000.00, 21420.00, 1, 'Antiespumante base agua. Tambor 200 kg', 32, 249, 9, 1.000000, NULL),
+(83, 'REOLOG 30', 'REOLOG30', 'Materia Prima', 11500.00, 13685.00, 1, 'Espesante acrilico asociativo. Tambor 200 kg', 32, 335, 9, 1.000000, NULL),
+(84, 'HEM 150.000S', 'HEM150000S', 'Materia Prima', 19500.00, 23205.00, 1, 'Espesante celulosico', 32, 336, 9, 1.000000, NULL),
+(85, 'FLEX CA50', 'CA50', 'Materia Prima', 6800.00, 8092.00, 1, 'Resina Acrilica para exteriores', 32, 337, 9, 1.000000, NULL),
+(86, 'LANSPERSE SUV', 'LANSPERSE', 'Materia Prima', 25000.00, 29750.00, 1, 'Dispersante base solvente para esmaltes. Tambor 200 kg', 32, 338, 9, 1.000000, NULL),
+(87, 'SILOEN LA 271', 'LA271', 'Materia Prima', 80000.00, 95200.00, 1, 'Nivelante. Cunete 20 kg', 32, 339, 9, 1.000000, NULL),
+(88, 'SILOEN DA290', 'DA290', 'Materia Prima', 90000.00, 107100.00, 1, 'Antiespumante para epoxicos. Cunete 20 kg', 32, 340, 9, 1.000000, NULL),
+(89, 'AZUL 15.3', NULL, 'Materia Prima', 29500.00, 35105.00, 1, 'Pigmento Azul Ftalo PB15:3', 32, 68, 9, 1.000000, NULL),
+(90, 'VERDE 7', NULL, 'Materia Prima', 31000.00, 36890.00, 1, 'Pigmento Verde Ftalo PG7', 32, 67, 9, 1.000000, NULL),
+(91, 'CROMATO DE ZINC', NULL, 'Materia Prima', 19000.00, 22610.00, 1, 'Pigmento Cromato de Zinc', 32, 267, 9, 1.000000, NULL),
+(92, 'FOSFATO DE ZINC', NULL, 'Materia Prima', 20500.00, 24395.00, 1, 'Pigmento Fosfato de Zinc', 32, 236, 9, 1.000000, NULL),
+(93, 'AMARILLO CROMO MEDIO', NULL, 'Materia Prima', 20500.00, 24395.00, 1, 'Pigmento Amarillo Cromo Medio', 32, 341, 9, 1.000000, NULL),
+(94, 'CAOLIN CALCINADO', NULL, 'Materia Prima', 2900.00, 3451.00, 1, 'Caolin Calcinado', 32, 253, 9, 1.000000, NULL),
+(95, 'HUMECTANTE BASE AGUA CERO VOC', NULL, 'Materia Prima', 29000.00, 34510.00, 1, 'Humectante base agua, cero VOC', 32, 342, 9, 1.000000, NULL),
+(96, 'ACRONAL (resina acrilica estirenada)', NULL, 'Materia Prima', 7563.03, 9000.00, 1, 'kg ex-bulto 20kg, IVA incl', 33, 255, 9, 1.000000, NULL),
+(97, 'LATECOL (espesante acrilico)', NULL, 'Materia Prima', 7563.03, 9000.00, 1, 'kg ex-bulto 20kg, IVA incl', 33, 335, 9, 1.000000, NULL),
+(98, 'PVA (resina vinil acrilica 50-55%)', NULL, 'Materia Prima', 6722.69, 8000.00, 1, 'kg ex-bulto 20kg, IVA incl', 33, 301, 9, 1.000000, NULL),
+(99, 'TEXANOL / COALESCENTE', NULL, 'Materia Prima', 14705.88, 17500.00, 1, 'kg ex-bulto 20kg, IVA incl', 33, 254, 9, 1.000000, NULL),
+(100, 'ANTIESPUMANTE', NULL, 'Materia Prima', 9663.87, 11500.00, 1, 'kg ex-bulto 20kg, IVA incl', 33, 249, 9, 1.000000, NULL),
+(101, 'DISPERSANTE', NULL, 'Materia Prima', 5546.22, 6600.00, 1, 'kg ex-bulto 25kg, IVA incl', 33, 231, 9, 1.000000, NULL),
+(102, 'OMYACARB UF', NULL, 'Materia Prima', 2352.94, 2800.00, 1, 'kg ex-bulto 25kg, IVA incl', 33, 57, 9, 1.000000, NULL),
+(103, 'TALCO TY 400', NULL, 'Materia Prima', 1722.69, 2050.00, 1, 'kg ex-bulto 40kg, IVA incl', 33, 252, 9, 1.000000, NULL),
+(104, 'CAOLINA TIZA CAOMIN', NULL, 'Materia Prima', 2890.76, 3440.00, 1, 'kg ex-25kg ASUMIDO, confirmar', 33, 253, 9, 1.000000, NULL),
+(105, 'DIOXIDO DE TITANIO', NULL, 'Materia Prima', 12100.84, 14400.00, 1, 'kg ex-bulto 25kg, IVA incl', 33, 37, 9, 1.000000, NULL),
+(106, 'HUMECTANTE', NULL, 'Materia Prima', 12184.87, 14500.00, 1, 'kg ex-bulto 20kg, IVA incl', 33, 342, 9, 1.000000, NULL),
+(107, 'HIDROFUGANTE MATE', NULL, 'Materia Prima', 10084.03, 12000.00, 1, 'kg ex-cunete 20kg, IVA incl', 33, 343, 9, 1.000000, NULL),
+(108, 'HIDROFUGANTE BRILLANTE', NULL, 'Materia Prima', 11764.71, 14000.00, 1, 'kg ex-cunete 20kg, IVA incl', 33, 344, 9, 1.000000, NULL),
+(109, 'BIOCIDA DA PLUS', NULL, 'Materia Prima', 9243.70, 11000.00, 1, 'kg ex-bulto 20kg, IVA incl', 33, 345, 9, 1.000000, NULL),
+(110, 'BIOCIDA DA ULTRA', NULL, 'Materia Prima', 14285.71, 17000.00, 1, 'kg ex-bulto 20kg, IVA incl', 33, 346, 9, 1.000000, NULL),
+(111, 'OMYACARB 15', NULL, 'Materia Prima', 571.43, 680.00, 1, 'kg ex-bulto 25kg, IVA incl', 33, 347, 9, 1.000000, NULL),
+(112, 'OMYACARB 4', NULL, 'Materia Prima', 840.34, 1000.00, 1, 'kg ex-bulto 25kg, IVA incl', 33, 348, 9, 1.000000, NULL),
+(113, 'TALCO EXTRA', NULL, 'Materia Prima', 1323.53, 1575.00, 1, 'kg ex-bulto 40kg, IVA incl', 33, 349, 9, 1.000000, NULL),
+(114, 'TALCO EXTRA MEJORADO', NULL, 'Materia Prima', 1575.63, 1875.00, 1, 'kg ex-bulto 40kg, IVA incl', 33, 350, 9, 1.000000, NULL);
 
 -- --------------------------------------------------------
 
@@ -2190,20 +2139,6 @@ CREATE TABLE `login_attempts` (
   `username_attempt` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `login_attempts`
---
-
-INSERT INTO `login_attempts` (`id`, `ip_address`, `username_attempt`, `created_at`) VALUES
-(173, '0.0.0.0', 'root', '2026-05-13 20:03:38'),
-(174, '172.18.0.1', 'root', '2026-05-14 13:04:55'),
-(175, '172.18.0.1', 'root', '2026-05-14 13:05:05'),
-(176, '172.18.0.1', 'root', '2026-05-14 21:47:18'),
-(177, '172.18.0.1', 'root', '2026-05-15 13:33:48'),
-(178, '172.18.0.1', 'root', '2026-05-15 13:34:14'),
-(179, '172.18.0.1', 'root', '2026-05-15 21:49:33'),
-(180, '172.18.0.1', 'root', '2026-05-16 13:39:44');
 
 -- --------------------------------------------------------
 
@@ -2241,21 +2176,30 @@ INSERT INTO `migrations` (`id`, `version`, `class`, `group`, `namespace`, `time`
 (13, '2026-05-13-000004', 'App\\Database\\Migrations\\CreateFormulacionesVersiones', 'default', 'App', 1778690919, 10),
 (14, '2026-05-13-000005', 'App\\Database\\Migrations\\CreateNotificaciones', 'default', 'App', 1778691884, 11),
 (15, '2026-05-13-000006', 'App\\Database\\Migrations\\AddSugeridaToRequisiciones', 'default', 'App', 1778692918, 12),
-(16, '2020-02-22-222222', 'Tests\\Support\\Database\\Migrations\\ExampleMigration', 'tests', 'Tests\\Support', 1778700321, 13),
 (17, '2026-05-13-000007', 'App\\Database\\Migrations\\AddSoftDeletes', 'default', 'App', 1778701102, 14),
 (18, '2026-05-13-000008', 'App\\Database\\Migrations\\RemisionesStockTracking', 'default', 'App', 1778702058, 15),
-(19, '2026-05-14-000001', 'App\\Database\\Migrations\\AddSoftDeleteToItemProveedor', 'default', 'App', 1778776554, 16),
-(20, '2026-05-14-000002', 'App\\Database\\Migrations\\CreateConfiguracionSistema', 'default', 'App', 1778779548, 17),
-(21, '2026-05-14-000003', 'App\\Database\\Migrations\\SeedConfiguracionTributaria', 'default', 'App', 1778782707, 18),
-(22, '2026-05-14-000004', 'App\\Database\\Migrations\\SeedConfiguracionUmbrales', 'default', 'App', 1778783695, 19),
-(23, '2026-05-14-000005', 'App\\Database\\Migrations\\CreateNumeracionDocumentos', 'default', 'App', 1778784481, 20),
-(24, '2026-05-14-000006', 'App\\Database\\Migrations\\ExtendEmpresa', 'default', 'App', 1778788280, 21),
-(25, '2026-05-14-000007', 'App\\Database\\Migrations\\SeedConfiguracionSeguridadFinanciero', 'default', 'App', 1778788944, 22),
-(26, '2026-05-14-000008', 'App\\Database\\Migrations\\SeedAvatarPalette', 'default', 'App', 1778789440, 23),
-(27, '2026-05-14-000009', 'App\\Database\\Migrations\\SeedDefaultLogo', 'default', 'App', 1778791401, 24),
-(28, '2026-05-15-000001', 'App\\Database\\Migrations\\AddTrazabilidadModulo', 'default', 'App', 1778854016, 25),
-(29, '2026-05-15-000002', 'App\\Database\\Migrations\\AddCostosModulos', 'default', 'App', 1778866474, 26),
-(30, '2026-05-15-000003', 'App\\Database\\Migrations\\RemoveCostosIndirectosModulo', 'default', 'App', 1778871128, 27);
+(57, '2026-05-14-000001', 'App\\Database\\Migrations\\AddSoftDeleteToItemProveedor', 'default', 'App', 1779725132, 16),
+(58, '2026-05-14-000002', 'App\\Database\\Migrations\\CreateConfiguracionSistema', 'default', 'App', 1779725132, 16),
+(59, '2026-05-14-000003', 'App\\Database\\Migrations\\SeedConfiguracionTributaria', 'default', 'App', 1779725132, 16),
+(60, '2026-05-14-000004', 'App\\Database\\Migrations\\SeedConfiguracionUmbrales', 'default', 'App', 1779725132, 16),
+(61, '2026-05-14-000005', 'App\\Database\\Migrations\\CreateNumeracionDocumentos', 'default', 'App', 1779725132, 16),
+(62, '2026-05-14-000006', 'App\\Database\\Migrations\\ExtendEmpresa', 'default', 'App', 1779725132, 16),
+(63, '2026-05-14-000007', 'App\\Database\\Migrations\\SeedConfiguracionSeguridadFinanciero', 'default', 'App', 1779725132, 16),
+(64, '2026-05-14-000008', 'App\\Database\\Migrations\\SeedAvatarPalette', 'default', 'App', 1779725132, 16),
+(65, '2026-05-14-000009', 'App\\Database\\Migrations\\SeedDefaultLogo', 'default', 'App', 1779725132, 16),
+(66, '2026-05-15-000001', 'App\\Database\\Migrations\\AddTrazabilidadModulo', 'default', 'App', 1779725132, 16),
+(67, '2026-05-15-000002', 'App\\Database\\Migrations\\AddCostosModulos', 'default', 'App', 1779725132, 16),
+(68, '2026-05-15-000003', 'App\\Database\\Migrations\\RemoveCostosIndirectosModulo', 'default', 'App', 1779725132, 16),
+(69, '2026-05-19-000001', 'App\\Database\\Migrations\\AddIvaPctToOrdenesCompra', 'default', 'App', 1779725132, 16),
+(70, '2026-05-19-000002', 'App\\Database\\Migrations\\MergeCostosIntoRentabilidad', 'default', 'App', 1779725132, 16),
+(71, '2026-05-19-000003', 'App\\Database\\Migrations\\AddCostosProduccionModulo', 'default', 'App', 1779725132, 16),
+(72, '2026-05-20-000001', 'App\\Database\\Migrations\\AddSaludSistemaModulo', 'default', 'App', 1779725132, 16),
+(73, '2026-05-20-000002', 'App\\Database\\Migrations\\CreateCostosSnapshot', 'default', 'App', 1779725132, 16),
+(74, '2026-05-20-000003', 'App\\Database\\Migrations\\AddSuperadminRol', 'default', 'App', 1779725132, 16),
+(75, '2026-05-21-000001', 'App\\Database\\Migrations\\AddTokenVersionToUsuarios', 'default', 'App', 1779725132, 16),
+(76, '2026-05-25-000001', 'App\\Database\\Migrations\\CreateRefreshTokens', 'default', 'App', 1779898393, 17),
+(77, '2026-05-25-000002', 'App\\Database\\Migrations\\DropTamboresTable', 'default', 'App', 1779898393, 17),
+(78, '2026-05-27-000001', 'App\\Database\\Migrations\\AddSoftDeleteToBasicEntities', 'default', 'App', 1780074079, 18);
 
 -- --------------------------------------------------------
 
@@ -2280,6 +2224,23 @@ CREATE TABLE `movimiento_inventario` (
   `metadata` json DEFAULT NULL,
   `created_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
+
+--
+-- Volcado de datos para la tabla `movimiento_inventario`
+--
+
+INSERT INTO `movimiento_inventario` (`id_movimiento_inventario`, `tipo_movimiento`, `cantidad`, `fecha_movimiento`, `descripcion`, `referencia_tipo`, `item_general_id`, `bodega_id`, `referencia_id`, `costo_unitario`, `saldo_anterior`, `saldo_nuevo`, `responsable`, `metadata`, `created_at`) VALUES
+(36, 'ENTRADA', 1000.00, '2026-05-16 15:55:15', 'Recepción OC #OC-001 línea 47', 'ORDEN_COMPRA', 300, 1, 36, 5040.00, 0.00, 1000.00, 'root', '{\"numero_oc\": \"OC-001\", \"proveedor_id\": \"31\", \"unidad_compra\": \"9\", \"lote_proveedor\": \"LT-2026-A0450\", \"factor_conversion\": 1, \"item_proveedor_id\": \"78\", \"precio_unit_compra\": 5040, \"item_proveedor_nombre\": \"PVA RESIFLEX 610\", \"cantidad_recibida_unidad_compra\": 1000}', '2026-05-16 15:55:15'),
+(50, 'ENTRADA', 200.00, '2026-05-17 01:12:21', 'Recepción OC #OC-001 línea 48', 'ORDEN_COMPRA', 301, 1, 36, 7620.00, 0.00, 200.00, 'root', '{\"numero_oc\": \"OC-001\", \"proveedor_id\": \"31\", \"unidad_compra\": \"9\", \"lote_proveedor\": \"LT-2026-A0450\", \"factor_conversion\": 1, \"item_proveedor_id\": \"79\", \"precio_unit_compra\": 7620, \"item_proveedor_nombre\": \"PVA RESIFLEX F55M\", \"cantidad_recibida_unidad_compra\": 200}', '2026-05-17 01:12:21'),
+(51, 'AJUSTE', 5.00, '2026-05-18 20:06:26', 'Ajuste manual: removido de bodega Bodega principal', 'AJUSTE_MANUAL', 133, 1, NULL, NULL, 5.00, 0.00, 'root', '{\"accion\": \"remove_from_bodega\", \"motivo\": null, \"bodega_id\": 1, \"bodega_nombre\": \"Bodega principal\", \"cantidad_removida\": 5}', '2026-05-18 20:06:26'),
+(52, 'ENTRADA', 10.00, '2026-05-25 14:59:54', 'Recepción OC #OC-020 línea 53', 'ORDEN_COMPRA', 230, 1, 39, 5000.00, 0.00, 10.00, 'root', '{\"numero_oc\": \"OC-020\", \"proveedor_id\": \"23\", \"unidad_compra\": null, \"lote_proveedor\": \"TEST-LOTE-6a1463ead3dd0\", \"factor_conversion\": 1, \"item_proveedor_id\": \"46\", \"precio_unit_compra\": 5000, \"item_proveedor_nombre\": \"DISPERSANTE\", \"cantidad_recibida_unidad_compra\": 10}', '2026-05-25 14:59:54'),
+(53, 'SALIDA', 1.50, '2026-05-25 14:59:56', 'Despacho remisión REM-2026-0001 línea 17', 'REMISION', 1, 1, 18, 0.00, 11.00, 9.50, 'root', '{\"cliente_id\": \"1\", \"detalle_id\": 17, \"descripcion\": \"Test despacho\", \"remision_id\": 18, \"remision_numero\": \"REM-2026-0001\", \"capas_consumidas\": 1}', '2026-05-25 14:59:56'),
+(54, 'ENTRADA', 1.50, '2026-05-25 14:59:57', 'Anulación remisión REM-2026-0001 (reintegro de stock)', 'ANULACION', 1, NULL, 18, 0.00, 9.50, 11.00, 'root', '{\"remision_id\": 18, \"origen_estado\": \"Despachada\", \"remision_numero\": \"REM-2026-0001\", \"capas_restauradas\": 1}', '2026-05-25 14:59:57'),
+(55, 'ENTRADA', 10.00, '2026-05-25 16:04:45', 'Recepción OC #OC-022 línea 55', 'ORDEN_COMPRA', 230, 1, 41, 5000.00, 10.00, 20.00, 'root', '{\"numero_oc\": \"OC-022\", \"proveedor_id\": \"23\", \"unidad_compra\": null, \"lote_proveedor\": \"TEST-LOTE-6a14731da95e8\", \"factor_conversion\": 1, \"item_proveedor_id\": \"46\", \"precio_unit_compra\": 5000, \"item_proveedor_nombre\": \"DISPERSANTE\", \"cantidad_recibida_unidad_compra\": 10}', '2026-05-25 16:04:45'),
+(56, 'SALIDA', 1.50, '2026-05-25 16:04:48', 'Despacho remisión REM-2026-0003 línea 19', 'REMISION', 1, 1, 20, 0.00, 9.50, 8.00, 'root', '{\"cliente_id\": \"1\", \"detalle_id\": 19, \"descripcion\": \"Test despacho\", \"remision_id\": 20, \"remision_numero\": \"REM-2026-0003\", \"capas_consumidas\": 1}', '2026-05-25 16:04:48'),
+(57, 'ENTRADA', 1.50, '2026-05-25 16:04:48', 'Anulación remisión REM-2026-0003 (reintegro de stock)', 'ANULACION', 1, NULL, 20, 0.00, 9.50, 11.00, 'root', '{\"remision_id\": 20, \"origen_estado\": \"Despachada\", \"remision_numero\": \"REM-2026-0003\", \"capas_restauradas\": 1}', '2026-05-25 16:04:48'),
+(58, 'ENTRADA', 1000.00, '2026-05-27 20:42:54', 'Recepción OC #OC-002 línea 49', 'ORDEN_COMPRA', 300, 1, 37, 5040.00, 1000.00, 2000.00, 'root', '{\"numero_oc\": \"OC-002\", \"proveedor_id\": \"31\", \"unidad_compra\": \"9\", \"lote_proveedor\": \"LOT-OC37-20260527\", \"factor_conversion\": 1, \"item_proveedor_id\": \"78\", \"precio_unit_compra\": 5040, \"item_proveedor_nombre\": \"PVA RESIFLEX 610\", \"cantidad_recibida_unidad_compra\": 1000}', '2026-05-27 20:42:54'),
+(59, 'ENTRADA', 1000.00, '2026-05-27 21:00:27', 'Recepción OC #OC-002 línea 49', 'ORDEN_COMPRA', 300, 1, 37, 5040.00, 1000.00, 2000.00, 'root', '{\"numero_oc\": \"OC-002\", \"proveedor_id\": \"31\", \"unidad_compra\": \"9\", \"lote_proveedor\": \"LOT-OC37-20260527\", \"factor_conversion\": 1, \"item_proveedor_id\": \"78\", \"precio_unit_compra\": 5040, \"item_proveedor_nombre\": \"PVA RESIFLEX 610\", \"cantidad_recibida_unidad_compra\": 1000}', '2026-05-27 21:00:27');
 
 -- --------------------------------------------------------
 
@@ -2325,7 +2286,7 @@ CREATE TABLE `notificaciones` (
 --
 
 INSERT INTO `notificaciones` (`id`, `user_id`, `rol_target`, `tipo`, `titulo`, `mensaje`, `link`, `leida`, `leida_at`, `metadata`, `created_at`) VALUES
-(1, NULL, 'admin', 'factura_vencimiento', 'Factura FAC-20 en mora', 'Distribuidora Andina S.A.S · 154 días vencida · saldo $125.000', '/cartera', 0, NULL, '{\"saldo\": 125000, \"dedup_key\": \"factura-mora-1-2026-05-15\", \"dias_mora\": 154, \"id_facturas\": 1}', '2026-05-15 19:11:42');
+(1, NULL, 'admin', 'factura_vencimiento', 'Factura FAC-20 en mora', 'Distribuidora Andina S.A.S · 154 días vencida · saldo $125.000', '/cartera', 1, '2026-05-16 19:56:12', '{\"saldo\": 125000, \"dedup_key\": \"factura-mora-1-2026-05-15\", \"dias_mora\": 154, \"id_facturas\": 1}', '2026-05-15 19:11:42');
 
 -- --------------------------------------------------------
 
@@ -2335,13 +2296,13 @@ INSERT INTO `notificaciones` (`id`, `user_id`, `rol_target`, `tipo`, `titulo`, `
 
 CREATE TABLE `numeracion_documentos` (
   `id_numeracion` int UNSIGNED NOT NULL,
-  `tipo_doc` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `prefijo` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `tipo_doc` varchar(30) COLLATE utf8mb4_general_ci NOT NULL,
+  `prefijo` varchar(40) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `padding` tinyint UNSIGNED NOT NULL DEFAULT '4',
   `proximo_numero` int UNSIGNED NOT NULL DEFAULT '1',
   `anio_actual` smallint UNSIGNED DEFAULT NULL,
   `reinicia_anual` tinyint NOT NULL DEFAULT '1',
-  `resolucion_dian` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `resolucion_dian` varchar(40) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `fecha_resolucion` date DEFAULT NULL,
   `rango_min` int UNSIGNED DEFAULT NULL,
   `rango_max` int UNSIGNED DEFAULT NULL,
@@ -2349,7 +2310,7 @@ CREATE TABLE `numeracion_documentos` (
   `activo` tinyint NOT NULL DEFAULT '1',
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
-  `updated_by` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
+  `updated_by` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -2357,11 +2318,11 @@ CREATE TABLE `numeracion_documentos` (
 --
 
 INSERT INTO `numeracion_documentos` (`id_numeracion`, `tipo_doc`, `prefijo`, `padding`, `proximo_numero`, `anio_actual`, `reinicia_anual`, `resolucion_dian`, `fecha_resolucion`, `rango_min`, `rango_max`, `fecha_vigencia_hasta`, `activo`, `created_at`, `updated_at`, `updated_by`) VALUES
-(1, 'factura', 'FAC-{Y}-', 4, 1, 2026, 1, NULL, NULL, NULL, NULL, NULL, 1, '2026-05-14 18:48:00', '2026-05-14 18:48:00', 'migration'),
-(2, 'cotizacion', 'COT-{Y}-', 4, 1, 2026, 1, NULL, NULL, NULL, NULL, NULL, 1, '2026-05-14 18:48:00', '2026-05-14 18:48:00', 'migration'),
-(3, 'remision', 'REM-{Y}-', 4, 1, 2026, 1, NULL, NULL, NULL, NULL, NULL, 1, '2026-05-14 18:48:00', '2026-05-14 18:48:00', 'migration'),
-(4, 'orden_compra', 'OC-', 3, 1, NULL, 0, NULL, NULL, NULL, NULL, NULL, 1, '2026-05-14 18:48:00', '2026-05-14 18:48:00', 'migration'),
-(5, 'nota_credito', 'NC-', 3, 1, NULL, 0, NULL, NULL, NULL, NULL, NULL, 1, '2026-05-14 18:48:00', '2026-05-14 18:48:00', 'migration');
+(1, 'factura', 'FAC-{Y}-', 4, 1, 2026, 1, NULL, NULL, NULL, NULL, NULL, 1, '2026-05-25 16:05:32', '2026-05-25 16:05:32', 'migration'),
+(2, 'cotizacion', 'COT-{Y}-', 4, 1, 2026, 1, NULL, NULL, NULL, NULL, NULL, 1, '2026-05-25 16:05:32', '2026-05-25 16:05:32', 'migration'),
+(3, 'remision', 'REM-{Y}-', 4, 5, 2026, 1, NULL, NULL, NULL, NULL, NULL, 1, '2026-05-25 16:05:32', '2026-05-25 16:05:32', 'migration'),
+(4, 'orden_compra', 'OC-', 3, 4, NULL, 0, NULL, NULL, NULL, NULL, NULL, 1, '2026-05-25 16:05:32', '2026-05-27 16:38:46', 'migration'),
+(5, 'nota_credito', 'NC-', 3, 1, NULL, 0, NULL, NULL, NULL, NULL, NULL, 1, '2026-05-25 16:05:32', '2026-05-25 16:05:32', 'migration');
 
 -- --------------------------------------------------------
 
@@ -2378,10 +2339,20 @@ CREATE TABLE `ordenes_compra` (
   `fecha_esperada` date DEFAULT NULL,
   `estado` enum('Borrador','Enviada','Recibida','Cancelada') DEFAULT 'Borrador',
   `total` decimal(12,2) DEFAULT '0.00',
+  `iva_pct` decimal(5,2) DEFAULT NULL COMMENT 'Porcentaje de IVA aplicado a la OC al momento de su cierre. NULL = legacy sin IVA.',
   `observaciones` text,
   `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Volcado de datos para la tabla `ordenes_compra`
+--
+
+INSERT INTO `ordenes_compra` (`id_orden`, `numero`, `proveedor_id`, `bodegas_id`, `fecha`, `fecha_esperada`, `estado`, `total`, `iva_pct`, `observaciones`, `creado_en`, `deleted_at`) VALUES
+(36, 'OC-001', 31, 1, '2026-05-07', '2026-05-07', 'Recibida', 6564000.00, 19.00, '', '2026-05-16 15:50:09', NULL),
+(37, 'OC-002', 31, 1, '2026-05-15', '2026-05-18', 'Recibida', 5040000.00, 19.00, '', '2026-05-16 15:52:32', NULL),
+(45, 'OC-003', 30, 1, '2026-05-27', '2026-06-03', 'Enviada', 1094118.20, 19.00, 'OC de ejemplo (borrador) - 3 productos de BRENTANG', '2026-05-27 20:51:05', NULL);
 
 -- --------------------------------------------------------
 
@@ -2401,6 +2372,18 @@ CREATE TABLE `ordenes_compra_detalle` (
   `cantidad_recibida` decimal(10,2) DEFAULT '0.00',
   `recibido_en` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Volcado de datos para la tabla `ordenes_compra_detalle`
+--
+
+INSERT INTO `ordenes_compra_detalle` (`id_detalle`, `ordenes_compra_id`, `item_proveedor_id`, `item_general_id`, `descripcion`, `cantidad`, `precio_unit`, `subtotal`, `cantidad_recibida`, `recibido_en`) VALUES
+(47, 36, 78, 300, 'PVA RESIFLEX 610', 1000.00, 5040.00, 5040000.00, 1000.00, '2026-05-16 15:55:15'),
+(48, 36, 79, 301, 'PVA RESIFLEX F55M', 200.00, 7620.00, 1524000.00, 200.00, '2026-05-17 01:12:21'),
+(49, 37, 78, 300, 'PVA RESIFLEX 610', 1000.00, 5040.00, 5040000.00, 1000.00, '2026-05-27 21:00:27'),
+(57, 45, 75, 225, 'XILOL', 100.00, 5714.29, 571429.00, 0.00, NULL),
+(58, 45, 76, 244, 'ISOBUTANOL', 50.00, 5966.39, 298319.50, 0.00, NULL),
+(59, 45, 77, 245, 'BUTIL GLICOL', 30.00, 7478.99, 224369.70, 0.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -2453,8 +2436,6 @@ INSERT INTO `permisos_rol_modulo` (`id`, `rol`, `modulo`, `activo`) VALUES
 (11, 'admin', 'proveedores', 1),
 (12, 'admin', 'movimientos', 1),
 (13, 'admin', 'pagos', 1),
-(14, 'admin', 'tambores', 1),
-(15, 'admin', 'prorrateo', 1),
 (16, 'admin', 'roles', 1),
 (17, 'operador', 'panel-principal', 1),
 (18, 'operador', 'catalogo', 1),
@@ -2466,21 +2447,41 @@ INSERT INTO `permisos_rol_modulo` (`id`, `rol`, `modulo`, `activo`) VALUES
 (24, 'operador', 'proveedores', 1),
 (25, 'operador', 'movimientos', 1),
 (26, 'operador', 'pagos', 1),
-(27, 'operador', 'tambores', 1),
-(28, 'visor', 'panel-principal', 1),
-(29, 'visor', 'catalogo', 1),
-(30, 'visor', 'inventario-global', 1),
-(31, 'visor', 'formulaciones', 1),
-(32, 'visor', 'produccion', 1),
-(33, 'visor', 'rentabilidad', 1),
-(34, 'visor', 'comercial', 1),
-(35, 'visor', 'cartera', 1),
-(36, 'visor', 'movimientos', 1),
-(37, 'admin', 'trazabilidad', 1),
-(38, 'operador', 'trazabilidad', 1),
-(39, 'visor', 'trazabilidad', 1),
-(40, 'admin', 'costos', 1),
-(41, 'visor', 'costos', 1);
+(69, 'visor', 'panel-principal', 1),
+(70, 'visor', 'catalogo', 1),
+(71, 'visor', 'inventario-global', 1),
+(72, 'visor', 'formulaciones', 1),
+(73, 'visor', 'rentabilidad', 1),
+(74, 'visor', 'comercial', 1),
+(75, 'visor', 'clientes', 1),
+(76, 'visor', 'proveedores', 1),
+(77, 'visor', 'movimientos', 1),
+(115, 'admin', 'trazabilidad', 1),
+(116, 'operador', 'trazabilidad', 1),
+(117, 'visor', 'trazabilidad', 1),
+(121, 'admin', 'costos-produccion', 1),
+(122, 'operador', 'costos-produccion', 1),
+(123, 'visor', 'costos-produccion', 1),
+(124, 'admin', 'salud-sistema', 1),
+(125, 'operador', 'salud-sistema', 1),
+(126, 'visor', 'salud-sistema', 1),
+(127, 'superadmin', 'cartera', 1),
+(128, 'superadmin', 'catalogo', 1),
+(129, 'superadmin', 'clientes', 1),
+(130, 'superadmin', 'comercial', 1),
+(131, 'superadmin', 'compras', 1),
+(132, 'superadmin', 'costos-produccion', 1),
+(133, 'superadmin', 'formulaciones', 1),
+(134, 'superadmin', 'inventario-global', 1),
+(135, 'superadmin', 'movimientos', 1),
+(136, 'superadmin', 'pagos', 1),
+(137, 'superadmin', 'panel-principal', 1),
+(138, 'superadmin', 'produccion', 1),
+(139, 'superadmin', 'proveedores', 1),
+(140, 'superadmin', 'rentabilidad', 1),
+(141, 'superadmin', 'roles', 1),
+(142, 'superadmin', 'salud-sistema', 1),
+(143, 'superadmin', 'trazabilidad', 1);
 
 -- --------------------------------------------------------
 
@@ -2528,6 +2529,25 @@ CREATE TABLE `preparaciones_has_item_general` (
   `cantidad` decimal(10,2) DEFAULT NULL,
   `porcentajes` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Volcado de datos para la tabla `preparaciones_has_item_general`
+--
+
+INSERT INTO `preparaciones_has_item_general` (`preparaciones_id_preparaciones`, `item_general_id`, `cantidad`, `porcentajes`) VALUES
+(21, 22, 3.00, 1),
+(21, 37, 68.00, 13),
+(21, 142, 10.00, 2),
+(21, 225, 30.00, 3),
+(21, 226, 60.00, 19),
+(21, 231, 1.50, 0),
+(21, 232, 5.00, 1),
+(21, 236, 4.00, 1),
+(21, 244, 15.00, 3),
+(21, 251, 50.00, 9),
+(21, 252, 165.00, 31),
+(21, 261, 2.40, 0),
+(21, 269, 8.00, 1);
 
 -- --------------------------------------------------------
 
@@ -2593,7 +2613,35 @@ INSERT INTO `proveedor` (`id_proveedor`, `nombre_encargado`, `nombre_empresa`, `
 (27, 'María Gómez', 'PROQUIMICOS', '1', '', '310 3782317', '', NULL),
 (28, 'Carlos Rodríguez', 'PROCESOS Y DISOLVENTES', '1', '', '', '', NULL),
 (29, 'María Gómez', 'EVER POL', '1', '', '', '', NULL),
-(30, 'DIANA PEREZ', 'BRENTANG', '10001914855', 'Cl. 30 #15-360, Barranquilla', '', '', NULL);
+(30, 'DIANA PEREZ', 'BRENTANG', '10001914855', 'Cl. 30 #15-360, Barranquilla', '', '', NULL),
+(31, 'XIOMARA ', 'PREFLEX', '860508470-0', 'Cra 2 #56-25, CAZUCA', '3106793731', 'xpineda@preflex.com.co', NULL),
+(32, 'María Gómez', 'isGroup', '800987654-2', '', '', '', NULL),
+(33, NULL, 'distriatlantico', '900751588-5', NULL, NULL, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `refresh_tokens`
+--
+
+CREATE TABLE `refresh_tokens` (
+  `id` int UNSIGNED NOT NULL,
+  `usuario_id` int NOT NULL,
+  `token_hash` varchar(255) COLLATE utf8mb4_general_ci NOT NULL COMMENT 'Hash SHA-256 del refresh token. NUNCA el token plano.',
+  `expires_at` datetime NOT NULL,
+  `created_at` datetime NOT NULL,
+  `revoked` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `refresh_tokens`
+--
+
+INSERT INTO `refresh_tokens` (`id`, `usuario_id`, `token_hash`, `expires_at`, `created_at`, `revoked`) VALUES
+(3, 2, 'e9d5febaf1ce5966791afceed3fd1407fd7a790d09bab103635bd321bd26002b', '2026-06-03 20:36:42', '2026-05-27 20:36:42', 0),
+(4, 2, '523553bf1e83f5f1cdaefd70ddf49d82734e8cc5b3f2908e5b99c6fa5821c888', '2026-06-05 16:54:48', '2026-05-29 16:54:48', 0),
+(5, 2, '1b3424b2f8b31473a4fded36a16bea3edb64f9bebb7eb422d82687567d907de1', '2026-06-06 14:25:18', '2026-05-30 14:25:18', 0),
+(6, 2, 'b9e833fc48da19809bb6176c5704f86a4c3da38d77f92d89a1e198d3ab516fc4', '2026-06-06 14:25:30', '2026-05-30 14:25:30', 0);
 
 -- --------------------------------------------------------
 
@@ -2606,7 +2654,7 @@ CREATE TABLE `remisiones` (
   `numero` varchar(20) NOT NULL,
   `cliente_id` int NOT NULL,
   `fecha_remision` date NOT NULL,
-  `estado` enum('Pendiente','Despachada','Facturada','Anulada') NOT NULL DEFAULT 'Pendiente',
+  `estado` enum('Pendiente','Facturada','Anulada') NOT NULL DEFAULT 'Pendiente',
   `direccion_entrega` varchar(255) DEFAULT NULL,
   `observaciones` text,
   `facturas_id` int DEFAULT NULL,
@@ -2614,6 +2662,16 @@ CREATE TABLE `remisiones` (
   `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Volcado de datos para la tabla `remisiones`
+--
+
+INSERT INTO `remisiones` (`id_remisiones`, `numero`, `cliente_id`, `fecha_remision`, `estado`, `direccion_entrega`, `observaciones`, `facturas_id`, `movimiento_inventario_id`, `creado_en`, `deleted_at`) VALUES
+(18, 'REM-2026-0001', 1, '2026-05-25', 'Anulada', NULL, NULL, NULL, NULL, '2026-05-25 14:59:56', NULL),
+(19, 'REM-2026-0002', 1, '2026-05-25', 'Pendiente', NULL, NULL, NULL, NULL, '2026-05-25 14:59:57', NULL),
+(20, 'REM-2026-0003', 1, '2026-05-25', 'Anulada', NULL, NULL, NULL, NULL, '2026-05-25 16:04:47', NULL),
+(21, 'REM-2026-0004', 1, '2026-05-25', 'Pendiente', NULL, NULL, NULL, NULL, '2026-05-25 16:04:48', NULL);
 
 -- --------------------------------------------------------
 
@@ -2632,23 +2690,15 @@ CREATE TABLE `remisiones_detalle` (
   `subtotal` decimal(12,2) NOT NULL DEFAULT '0.00'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- --------------------------------------------------------
-
 --
--- Estructura de tabla para la tabla `remision_consumo_capas`
+-- Volcado de datos para la tabla `remisiones_detalle`
 --
 
-CREATE TABLE `remision_consumo_capas` (
-  `id` int NOT NULL,
-  `remision_id` int NOT NULL,
-  `remision_detalle_id` int NOT NULL,
-  `capa_id` int NOT NULL,
-  `item_general_id` int NOT NULL,
-  `cantidad_consumida` decimal(15,4) NOT NULL,
-  `costo_unitario` decimal(15,4) NOT NULL,
-  `costo_total` decimal(15,4) NOT NULL,
-  `created_at` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+INSERT INTO `remisiones_detalle` (`id_detalle`, `remisiones_id`, `item_general_id`, `bodega_id`, `descripcion`, `cantidad`, `precio_unit`, `subtotal`) VALUES
+(17, 18, 1, 1, 'Test despacho', 1.50, 10000.00, 15000.00),
+(18, 19, 1, NULL, 'Test sin stock', 999999.00, 1.00, 999999.00),
+(19, 20, 1, 1, 'Test despacho', 1.50, 10000.00, 15000.00),
+(20, 21, 1, NULL, 'Test sin stock', 999999.00, 1.00, 999999.00);
 
 -- --------------------------------------------------------
 
@@ -2671,364 +2721,6 @@ CREATE TABLE `requisiciones_compra` (
   `orden_compra_id` int UNSIGNED DEFAULT NULL,
   `fecha_creacion` datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `tambores`
---
-
-CREATE TABLE `tambores` (
-  `id_tambor` int NOT NULL,
-  `numero_tambor` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `item_general_id` int NOT NULL,
-  `bodegas_id` int NOT NULL,
-  `cantidad_inicial` decimal(10,2) NOT NULL,
-  `cantidad_actual` decimal(10,2) NOT NULL,
-  `estado` tinyint DEFAULT '0' COMMENT '0=cerrado 1=abierto 2=vacío',
-  `fecha_ingreso` date DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `tambores`
---
-
-INSERT INTO `tambores` (`id_tambor`, `numero_tambor`, `item_general_id`, `bodegas_id`, `cantidad_inicial`, `cantidad_actual`, `estado`, `fecha_ingreso`) VALUES
-(1, '1', 134, 2, 50.00, 50.00, 0, '2026-04-17'),
-(2, '2', 134, 2, 50.00, 50.00, 0, '2026-04-17'),
-(3, '3', 135, 2, 50.00, 50.00, 0, '2026-04-17'),
-(4, '4', 136, 2, 50.00, 50.00, 0, '2026-04-17'),
-(5, '5', 137, 2, 50.00, 50.00, 0, '2026-04-17'),
-(6, '6', 138, 2, 50.00, 50.00, 0, '2026-04-17'),
-(7, '8', 139, 2, 50.00, 50.00, 0, '2026-04-17'),
-(8, '9', 140, 2, 50.00, 50.00, 0, '2026-04-17'),
-(9, '10', 141, 2, 50.00, 50.00, 0, '2026-04-17'),
-(10, '10A', 194, 2, 10.00, 10.00, 0, '2026-04-17'),
-(11, '10B', 194, 2, 10.00, 10.00, 0, '2026-04-17'),
-(12, '10C', 194, 2, 10.00, 10.00, 0, '2026-04-17'),
-(13, '10D', 194, 2, 10.00, 10.00, 0, '2026-04-17'),
-(14, '10E', 194, 2, 10.00, 10.00, 0, '2026-04-17'),
-(15, '10F', 194, 2, 10.00, 10.00, 0, '2026-04-17'),
-(16, '11', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(17, '12', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(18, '13', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(19, '14', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(20, '15', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(21, '16', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(22, '17', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(23, '18', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(24, '19', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(25, '20', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(26, '21', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(27, '22', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(28, '23', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(29, '24', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(30, '25', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(31, '26', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(32, '27', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(33, '28', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(34, '29', 142, 2, 50.00, 50.00, 0, '2026-04-17'),
-(35, '30', 143, 18, 50.00, 50.00, 0, '2026-04-17'),
-(36, '30B', 143, 18, 50.00, 50.00, 0, '2026-04-17'),
-(37, '31', 144, 18, 50.00, 50.00, 0, '2026-04-17'),
-(38, '32', 145, 18, 50.00, 50.00, 0, '2026-04-17'),
-(39, '33', 146, 18, 50.00, 50.00, 0, '2026-04-17'),
-(40, '34', 147, 18, 50.00, 50.00, 0, '2026-04-17'),
-(41, '35', 189, 18, 50.00, 50.00, 0, '2026-04-17'),
-(42, '36', 148, 18, 50.00, 50.00, 0, '2026-04-17'),
-(43, '37', 149, 18, 50.00, 50.00, 0, '2026-04-17'),
-(44, '38', 150, 18, 50.00, 50.00, 0, '2026-04-17'),
-(45, '39', 151, 18, 50.00, 50.00, 0, '2026-04-17'),
-(46, '40', 152, 18, 50.00, 50.00, 0, '2026-04-17'),
-(47, '41', 134, 18, 50.00, 50.00, 0, '2026-04-17'),
-(48, '42', 134, 18, 50.00, 50.00, 0, '2026-04-17'),
-(49, '43', 153, 18, 50.00, 50.00, 0, '2026-04-17'),
-(50, '44', 154, 18, 50.00, 50.00, 0, '2026-04-17'),
-(51, '46', 156, 18, 50.00, 50.00, 0, '2026-04-17'),
-(52, '47', 158, 18, 50.00, 50.00, 0, '2026-04-17'),
-(53, '48', 159, 18, 50.00, 50.00, 0, '2026-04-17'),
-(54, '49', 190, 18, 50.00, 50.00, 0, '2026-04-17'),
-(55, '52', 159, 18, 50.00, 50.00, 0, '2026-04-17'),
-(56, '66', 174, 18, 50.00, 50.00, 0, '2026-04-17'),
-(57, '78', 219, 18, 50.00, 50.00, 0, '2026-04-17'),
-(58, '93', 163, 18, 50.00, 50.00, 0, '2026-04-17'),
-(59, '93B', 163, 18, 50.00, 50.00, 0, '2026-04-17'),
-(60, '93C', 163, 18, 50.00, 50.00, 0, '2026-04-17'),
-(61, '93D', 163, 18, 50.00, 50.00, 0, '2026-04-17'),
-(62, '116', 172, 18, 50.00, 50.00, 0, '2026-04-17'),
-(63, '132', 167, 18, 50.00, 50.00, 0, '2026-04-17'),
-(64, '139', 185, 18, 50.00, 50.00, 0, '2026-04-17'),
-(65, '143', 183, 18, 50.00, 50.00, 0, '2026-04-17'),
-(66, '150', 193, 18, 50.00, 50.00, 0, '2026-04-17'),
-(67, '152', 162, 18, 50.00, 50.00, 0, '2026-04-17'),
-(68, '154', 156, 18, 50.00, 50.00, 0, '2026-04-17'),
-(69, '154B', 156, 18, 50.00, 50.00, 0, '2026-04-17'),
-(70, '154C', 156, 18, 50.00, 50.00, 0, '2026-04-17'),
-(71, '167', 162, 18, 50.00, 50.00, 0, '2026-04-17'),
-(72, '177', 187, 18, 50.00, 50.00, 0, '2026-04-17'),
-(73, '208', 170, 18, 50.00, 50.00, 0, '2026-04-17'),
-(74, '215', 173, 18, 50.00, 50.00, 0, '2026-04-17'),
-(75, '216', 136, 18, 50.00, 50.00, 0, '2026-04-17'),
-(76, '217', 171, 18, 50.00, 50.00, 0, '2026-04-17'),
-(77, '220', 171, 18, 50.00, 50.00, 0, '2026-04-17'),
-(78, '221', 184, 18, 50.00, 50.00, 0, '2026-04-17'),
-(79, '222', 184, 18, 50.00, 50.00, 0, '2026-04-17'),
-(80, '223', 169, 18, 50.00, 50.00, 0, '2026-04-17'),
-(81, '224', 158, 18, 50.00, 50.00, 0, '2026-04-17'),
-(82, '225', 158, 18, 50.00, 50.00, 0, '2026-04-17'),
-(83, '232', 168, 18, 50.00, 50.00, 0, '2026-04-17'),
-(84, '233', 168, 18, 50.00, 50.00, 0, '2026-04-17'),
-(85, '236', 175, 18, 50.00, 50.00, 0, '2026-04-17'),
-(86, '238', 160, 18, 50.00, 50.00, 0, '2026-04-17'),
-(87, '242', 179, 18, 50.00, 50.00, 0, '2026-04-17'),
-(88, '47B', 155, 18, 50.00, 50.00, 0, '2026-04-17'),
-(89, 'ETH-18-1', 161, 18, 50.00, 50.00, 0, '2026-04-17'),
-(90, 'ETH-18-2', 161, 18, 50.00, 50.00, 0, '2026-04-17'),
-(91, 'ETH-18-3', 161, 18, 50.00, 50.00, 0, '2026-04-17'),
-(92, 'CES-18-1', 191, 18, 50.00, 50.00, 0, '2026-04-17'),
-(93, 'NGN-18-1', 192, 18, 50.00, 50.00, 0, '2026-04-17'),
-(94, 'PNC-18-1', 165, 18, 50.00, 50.00, 0, '2026-04-17'),
-(95, 'XPS-18-1', 166, 18, 50.00, 50.00, 0, '2026-04-17'),
-(96, '132B', 167, 18, 50.00, 50.00, 0, '2026-04-17'),
-(97, '132C', 167, 18, 50.00, 50.00, 0, '2026-04-17'),
-(98, '132D', 167, 18, 50.00, 50.00, 0, '2026-04-17'),
-(99, '132E', 167, 18, 50.00, 50.00, 0, '2026-04-17'),
-(100, '132F', 167, 18, 50.00, 50.00, 0, '2026-04-17'),
-(101, '232B', 164, 18, 50.00, 50.00, 0, '2026-04-17'),
-(102, '232C', 164, 18, 50.00, 50.00, 0, '2026-04-17'),
-(103, '232D', 164, 18, 50.00, 50.00, 0, '2026-04-17'),
-(104, '221C', 184, 18, 50.00, 50.00, 0, '2026-04-17'),
-(105, 'ALC-18-1', 186, 18, 50.00, 50.00, 0, '2026-04-17'),
-(106, 'ALC-18-2', 186, 18, 50.00, 50.00, 0, '2026-04-17'),
-(107, 'BPU-18-1', 177, 18, 50.00, 50.00, 0, '2026-04-17'),
-(108, 'BPU-18-2', 177, 18, 50.00, 50.00, 0, '2026-04-17'),
-(109, 'VBG-18-1', 178, 18, 50.00, 50.00, 0, '2026-04-17'),
-(110, 'VBG-18-2', 178, 18, 50.00, 50.00, 0, '2026-04-17'),
-(111, 'RBL-18-1', 181, 18, 50.00, 50.00, 0, '2026-04-17'),
-(112, 'RNJ-18-1', 182, 18, 50.00, 50.00, 0, '2026-04-17'),
-(113, 'FRJ-18-1', 180, 18, 50.00, 50.00, 0, '2026-04-17'),
-(114, '76', 162, 19, 50.00, 50.00, 0, '2026-04-17'),
-(115, '77', 162, 19, 50.00, 50.00, 0, '2026-04-17'),
-(116, '78M', 162, 19, 50.00, 50.00, 0, '2026-04-17'),
-(117, '83', 162, 19, 50.00, 50.00, 0, '2026-04-17'),
-(118, '81', 209, 19, 50.00, 50.00, 0, '2026-04-17'),
-(119, '95', 210, 19, 50.00, 50.00, 0, '2026-04-17'),
-(120, '95B', 210, 19, 50.00, 50.00, 0, '2026-04-17'),
-(121, '95C', 210, 19, 50.00, 50.00, 0, '2026-04-17'),
-(122, '95D', 210, 19, 50.00, 50.00, 0, '2026-04-17'),
-(123, '95E', 210, 19, 50.00, 50.00, 0, '2026-04-17'),
-(124, '95F', 210, 19, 50.00, 50.00, 0, '2026-04-17'),
-(125, '98', 208, 19, 50.00, 50.00, 0, '2026-04-17'),
-(126, '99', 208, 19, 50.00, 50.00, 0, '2026-04-17'),
-(127, '100', 208, 19, 50.00, 50.00, 0, '2026-04-17'),
-(128, '100B', 208, 19, 50.00, 50.00, 0, '2026-04-17'),
-(129, '101', 197, 19, 50.00, 50.00, 0, '2026-04-17'),
-(130, '105', 205, 19, 50.00, 50.00, 0, '2026-04-17'),
-(131, '105B', 205, 19, 50.00, 50.00, 0, '2026-04-17'),
-(132, '105C', 205, 19, 50.00, 50.00, 0, '2026-04-17'),
-(133, '105D', 205, 19, 50.00, 50.00, 0, '2026-04-17'),
-(134, '108', 198, 19, 50.00, 50.00, 0, '2026-04-17'),
-(135, '114', 200, 19, 50.00, 50.00, 0, '2026-04-17'),
-(136, '115', 172, 19, 50.00, 50.00, 0, '2026-04-17'),
-(137, '124', 172, 19, 50.00, 50.00, 0, '2026-04-17'),
-(138, '128', 202, 19, 50.00, 50.00, 0, '2026-04-17'),
-(139, '129', 199, 19, 50.00, 50.00, 0, '2026-04-17'),
-(140, '132M', 167, 19, 50.00, 50.00, 0, '2026-04-17'),
-(141, '135', 203, 19, 50.00, 50.00, 0, '2026-04-17'),
-(142, '136', 203, 19, 50.00, 50.00, 0, '2026-04-17'),
-(143, '136B', 203, 19, 50.00, 50.00, 0, '2026-04-17'),
-(144, '137', 206, 19, 50.00, 50.00, 0, '2026-04-17'),
-(145, '137B', 206, 19, 50.00, 50.00, 0, '2026-04-17'),
-(146, '137C', 206, 19, 50.00, 50.00, 0, '2026-04-17'),
-(147, '137D', 206, 19, 50.00, 50.00, 0, '2026-04-17'),
-(148, '141', 171, 19, 50.00, 50.00, 0, '2026-04-17'),
-(149, '149', 150, 19, 50.00, 50.00, 0, '2026-04-17'),
-(150, 'ABR-19-1', 207, 19, 50.00, 50.00, 0, '2026-04-17'),
-(151, 'ABR-19-2', 207, 19, 50.00, 50.00, 0, '2026-04-17'),
-(152, 'ABR-19-3', 207, 19, 50.00, 50.00, 0, '2026-04-17'),
-(153, 'CAT-19-1', 211, 19, 50.00, 50.00, 0, '2026-04-17'),
-(154, 'EPX-19-1', 195, 19, 50.00, 50.00, 0, '2026-04-17'),
-(155, 'PAG-19-1', 196, 19, 50.00, 50.00, 0, '2026-04-17'),
-(156, 'PAG-19-2', 196, 19, 50.00, 50.00, 0, '2026-04-17'),
-(157, 'SPH-19-1', 201, 19, 50.00, 50.00, 0, '2026-04-17'),
-(158, 'TAS-19-1', 213, 19, 50.00, 50.00, 0, '2026-04-17'),
-(159, 'VPC-19-1', 212, 19, 50.00, 50.00, 0, '2026-04-17'),
-(160, 'VPC-19-2', 212, 19, 50.00, 50.00, 0, '2026-04-17'),
-(161, 'VPC-19-3', 212, 19, 50.00, 50.00, 0, '2026-04-17'),
-(162, 'VPC-19-4', 212, 19, 50.00, 50.00, 0, '2026-04-17'),
-(163, 'VPC-19-5', 212, 19, 50.00, 50.00, 0, '2026-04-17'),
-(164, 'VPC-19-6', 212, 19, 50.00, 50.00, 0, '2026-04-17'),
-(165, 'VPC-19-7', 212, 19, 50.00, 50.00, 0, '2026-04-17'),
-(166, 'VPC-19-8', 212, 19, 50.00, 50.00, 0, '2026-04-17'),
-(167, 'ETH-P-01', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(168, 'ETH-P-02', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(169, 'ETH-P-03', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(170, 'ETH-P-04', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(171, 'ETH-P-05', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(172, 'ETH-P-06', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(173, 'ETH-P-07', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(174, 'ETH-P-08', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(175, 'ETH-P-09', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(176, 'ETH-P-10', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(177, 'ETH-P-11', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(178, 'ETH-P-12', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(179, 'ETH-P-13', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(180, 'ETH-P-14', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(181, 'ETH-P-15', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(182, 'ETH-P-16', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(183, 'ETH-P-17', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(184, 'ETH-P-18', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(185, 'ETH-P-19', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(186, 'ETH-P-20', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(187, 'ETH-P-21', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(188, 'ETH-P-22', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(189, 'ETH-P-23', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(190, 'ETH-P-24', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(191, 'ETH-P-25', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(192, 'ETH-P-26', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(193, 'ETH-P-27', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(194, 'ETH-P-28', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(195, 'ETH-P-29', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(196, 'ETH-P-30', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(197, 'ETH-P-31', 161, 21, 50.00, 50.00, 0, '2026-04-17'),
-(198, '49', 214, 21, 50.00, 50.00, 0, '2026-04-17'),
-(199, '186', 214, 21, 50.00, 50.00, 0, '2026-04-17'),
-(200, '183', 214, 21, 50.00, 50.00, 0, '2026-04-17'),
-(201, '169P', 214, 21, 50.00, 50.00, 0, '2026-04-17'),
-(202, 'SKP-P-5', 214, 21, 50.00, 50.00, 0, '2026-04-17'),
-(203, 'SKP-P-6', 214, 21, 50.00, 50.00, 0, '2026-04-17'),
-(204, 'SKP-P-7', 214, 21, 50.00, 50.00, 0, '2026-04-17'),
-(205, 'SKF-P-1', 215, 21, 50.00, 50.00, 0, '2026-04-17'),
-(206, 'SKF-P-2', 215, 21, 50.00, 50.00, 0, '2026-04-17'),
-(207, 'SKF-P-3', 215, 21, 50.00, 50.00, 0, '2026-04-17'),
-(208, 'SKF-P-4', 215, 21, 50.00, 50.00, 0, '2026-04-17'),
-(209, 'SKM-P-1', 216, 21, 50.00, 50.00, 0, '2026-04-17'),
-(210, 'SKT-P-1', 217, 21, 50.00, 50.00, 0, '2026-04-17'),
-(211, 'SKT-P-2', 217, 21, 50.00, 50.00, 0, '2026-04-17'),
-(212, 'SKT-P-3', 217, 21, 50.00, 50.00, 0, '2026-04-17'),
-(213, 'SKT-P-4', 217, 21, 50.00, 50.00, 0, '2026-04-17'),
-(214, '6', 137, 21, 50.00, 50.00, 0, '2026-04-17'),
-(215, '7', 137, 21, 50.00, 50.00, 0, '2026-04-17'),
-(216, 'SLA-P-3', 137, 21, 50.00, 50.00, 0, '2026-04-17'),
-(217, 'SLA-P-4', 137, 21, 50.00, 50.00, 0, '2026-04-17'),
-(218, 'SLA-P-5', 137, 21, 50.00, 50.00, 0, '2026-04-17'),
-(219, 'SLA-P-6', 137, 21, 50.00, 50.00, 0, '2026-04-17'),
-(220, 'SLA-P-7', 137, 21, 50.00, 50.00, 0, '2026-04-17'),
-(221, '199', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(222, '97', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(223, '262', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(224, 'FRJ-P-10', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(225, 'FRJ-P-9', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(226, 'FRJ-P-8', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(227, 'FRJ-P-7', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(228, 'FRJ-P-6', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(229, 'FRJ-P-5', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(230, 'FRJ-P-4', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(231, 'FRJ-P-3', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(232, 'FRJ-P-2', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(233, 'FRJ-P-1', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(234, 'FRJ-P-20', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(235, 'FRJ-P-19', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(236, 'FRJ-P-18', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(237, 'FRJ-P-17', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(238, 'FRJ-P-16', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(239, 'FRJ-P-15', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(240, 'FRJ-P-14', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(241, 'FRJ-P-13', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(242, 'FRJ-P-12', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(243, 'FRJ-P-11', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(244, 'FRJ-P-30', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(245, 'FRJ-P-29', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(246, 'FRJ-P-28', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(247, 'FRJ-P-27', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(248, 'FRJ-P-26', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(249, 'FRJ-P-25', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(250, 'FRJ-P-24', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(251, 'FRJ-P-23', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(252, 'FRJ-P-22', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(253, 'FRJ-P-21', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(254, 'FRJ-P-40', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(255, 'FRJ-P-39', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(256, 'FRJ-P-38', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(257, 'FRJ-P-37', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(258, 'FRJ-P-36', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(259, 'FRJ-P-35', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(260, 'FRJ-P-34', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(261, 'FRJ-P-33', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(262, 'FRJ-P-32', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(263, 'FRJ-P-31', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(264, 'FRJ-P-50', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(265, 'FRJ-P-49', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(266, 'FRJ-P-48', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(267, 'FRJ-P-47', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(268, 'FRJ-P-46', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(269, 'FRJ-P-45', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(270, 'FRJ-P-44', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(271, 'FRJ-P-43', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(272, 'FRJ-P-42', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(273, 'FRJ-P-41', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(274, 'FRJ-P-60', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(275, 'FRJ-P-59', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(276, 'FRJ-P-58', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(277, 'FRJ-P-57', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(278, 'FRJ-P-56', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(279, 'FRJ-P-55', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(280, 'FRJ-P-54', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(281, 'FRJ-P-53', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(282, 'FRJ-P-52', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(283, 'FRJ-P-51', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(284, 'FRJ-P-70', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(285, 'FRJ-P-69', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(286, 'FRJ-P-68', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(287, 'FRJ-P-67', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(288, 'FRJ-P-66', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(289, 'FRJ-P-65', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(290, 'FRJ-P-64', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(291, 'FRJ-P-63', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(292, 'FRJ-P-62', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(293, 'FRJ-P-61', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(294, 'FRJ-P-80', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(295, 'FRJ-P-79', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(296, 'FRJ-P-78', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(297, 'FRJ-P-77', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(298, 'FRJ-P-76', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(299, 'FRJ-P-75', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(300, 'FRJ-P-74', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(301, 'FRJ-P-73', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(302, 'FRJ-P-72', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(303, 'FRJ-P-71', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(304, 'FRJ-P-90', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(305, 'FRJ-P-89', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(306, 'FRJ-P-88', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(307, 'FRJ-P-87', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(308, 'FRJ-P-86', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(309, 'FRJ-P-85', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(310, 'FRJ-P-84', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(311, 'FRJ-P-83', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(312, 'FRJ-P-82', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(313, 'FRJ-P-81', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(314, 'FRJ-P-100', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(315, 'FRJ-P-99', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(316, 'FRJ-P-98', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(317, 'FRJ-P-97', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(318, 'FRJ-P-96', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(319, 'FRJ-P-95', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(320, 'FRJ-P-94', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(321, 'FRJ-P-93', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(322, 'FRJ-P-92', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(323, 'FRJ-P-91', 180, 21, 50.00, 50.00, 0, '2026-04-17'),
-(351, 'MCH-P-1', 218, 21, 50.00, 50.00, 0, '2026-04-17'),
-(352, 'MCH-P-2', 218, 21, 50.00, 50.00, 0, '2026-04-17'),
-(353, 'MCH-P-3', 218, 21, 50.00, 50.00, 0, '2026-04-17'),
-(354, 'MCH-P-4', 218, 21, 50.00, 50.00, 0, '2026-04-17'),
-(355, 'MCH-P-5', 218, 21, 50.00, 50.00, 0, '2026-04-17'),
-(356, 'MCH-P-6', 218, 21, 50.00, 50.00, 0, '2026-04-17'),
-(357, 'MCH-P-7', 218, 21, 50.00, 50.00, 0, '2026-04-17'),
-(358, 'SPL-P-1', 219, 21, 50.00, 50.00, 0, '2026-04-17'),
-(359, 'SPL-P-2', 219, 21, 50.00, 50.00, 0, '2026-04-17'),
-(360, 'LAC-P-1', 220, 21, 50.00, 50.00, 0, '2026-04-17'),
-(361, 'SVB-P-1', 221, 21, 50.00, 50.00, 0, '2026-04-17'),
-(362, 'NHS-P-1', 222, 21, 50.00, 50.00, 0, '2026-04-17');
 
 -- --------------------------------------------------------
 
@@ -3057,30 +2749,31 @@ CREATE TABLE `unidad` (
   `nombre` varchar(100) DEFAULT NULL,
   `descripcion` varchar(500) DEFAULT NULL,
   `estados` tinyint DEFAULT NULL,
-  `escala` decimal(10,5) DEFAULT NULL
+  `escala` decimal(10,5) DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Volcado de datos para la tabla `unidad`
 --
 
-INSERT INTO `unidad` (`id_unidad`, `nombre`, `descripcion`, `estados`, `escala`) VALUES
-(1, 'TAMBOR', '', 1, 50.00000),
-(2, 'CUÑETE', '', 1, 5.00000),
-(3, 'GALON', '', 1, 1.00000),
-(4, '1/2 GALON', '', 1, 0.50000),
-(5, '1/4 GALON', '', 1, 0.25000),
-(6, '1/8 GALON', '', 1, 0.12500),
-(7, '1/16 GALON', '', 1, 0.06250),
-(8, '1/32 GALON', '', 1, 0.03125),
-(9, 'KILO', '', 1, 1.00000),
-(10, 'GRAMO', '', 1, 0.00100),
-(11, 'LIBRA', '', 1, 0.45300),
-(12, 'LITRO', '', 1, 0.26417),
-(13, 'UNIDAD', NULL, NULL, 1.00000),
-(14, 'CAJA', NULL, NULL, 1.00000),
-(15, 'BULTO', NULL, NULL, 1.00000),
-(16, 'CANECA', NULL, NULL, 1.00000);
+INSERT INTO `unidad` (`id_unidad`, `nombre`, `descripcion`, `estados`, `escala`, `deleted_at`) VALUES
+(1, 'TAMBOR', '', 1, 50.00000, NULL),
+(2, 'CUÑETE', '', 1, 5.00000, NULL),
+(3, 'GALON', '', 1, 1.00000, NULL),
+(4, '1/2 GALON', '', 1, 0.50000, NULL),
+(5, '1/4 GALON', '', 1, 0.25000, NULL),
+(6, '1/8 GALON', '', 1, 0.12500, NULL),
+(7, '1/16 GALON', '', 1, 0.06250, NULL),
+(8, '1/32 GALON', '', 1, 0.03125, NULL),
+(9, 'KILO', '', 1, 1.00000, NULL),
+(10, 'GRAMO', '', 1, 0.00100, NULL),
+(11, 'LIBRA', '', 1, 0.45300, NULL),
+(12, 'LITRO', '', 1, 0.26417, NULL),
+(13, 'UNIDAD', NULL, NULL, 1.00000, NULL),
+(14, 'CAJA', NULL, NULL, 1.00000, NULL),
+(15, 'BULTO', NULL, NULL, 1.00000, NULL),
+(16, 'CANECA', NULL, NULL, 1.00000, NULL);
 
 -- --------------------------------------------------------
 
@@ -3093,15 +2786,18 @@ CREATE TABLE `usuarios` (
   `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `nombre` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `rol` enum('admin','operador','visor') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'operador'
+  `rol` enum('superadmin','admin','operador','visor') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'operador',
+  `password_must_change` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Si 1, el usuario debe cambiar password al próximo login.',
+  `token_version` int UNSIGNED NOT NULL DEFAULT '1' COMMENT 'Incrementa al cambiar rol o password — invalida tokens viejos.'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `usuarios`
 --
 
-INSERT INTO `usuarios` (`id_usuarios`, `username`, `nombre`, `password`, `rol`) VALUES
-(2, 'root', 'Jorge Herrera', '$2y$10$zcSxsrQHkHFxPddPk/.TFeeFceYqtUeb3wtlLSxfnDG4Ll5dL1Szu', 'admin');
+INSERT INTO `usuarios` (`id_usuarios`, `username`, `nombre`, `password`, `rol`, `password_must_change`, `token_version`) VALUES
+(2, 'root', 'Jorge Herrera', '$2y$10$zcSxsrQHkHFxPddPk/.TFeeFceYqtUeb3wtlLSxfnDG4Ll5dL1Szu', 'admin', 0, 1),
+(5, '1juanherrera', 'Juan Herrera', '$2y$10$gbWzSg/j.GwJHlMT9LKKMujex17dmeanFGm2myxFAyRl7f.jh/J8a', 'superadmin', 1, 1);
 
 --
 -- Índices para tablas volcadas
@@ -3112,13 +2808,15 @@ INSERT INTO `usuarios` (`id_usuarios`, `username`, `nombre`, `password`, `rol`) 
 --
 ALTER TABLE `bodegas`
   ADD PRIMARY KEY (`id_bodegas`),
-  ADD KEY `fk_bodegas_instalaciones1_idx` (`instalaciones_id`);
+  ADD KEY `fk_bodegas_instalaciones1_idx` (`instalaciones_id`),
+  ADD KEY `idx_deleted_at` (`deleted_at`);
 
 --
 -- Indices de la tabla `categoria`
 --
 ALTER TABLE `categoria`
-  ADD PRIMARY KEY (`id_categoria`);
+  ADD PRIMARY KEY (`id_categoria`),
+  ADD KEY `idx_deleted_at` (`deleted_at`);
 
 --
 -- Indices de la tabla `clientes`
@@ -3155,6 +2853,15 @@ ALTER TABLE `costos_produccion`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `id_UNIQUE` (`id`),
   ADD KEY `fk_costos_produccion_preparaciones1_idx` (`preparaciones_id`);
+
+--
+-- Indices de la tabla `costos_snapshot`
+--
+ALTER TABLE `costos_snapshot`
+  ADD PRIMARY KEY (`id_costos_snapshot`),
+  ADD UNIQUE KEY `uq_snapshot_item_fecha` (`item_general_id`,`fecha`),
+  ADD KEY `item_general_id_fecha` (`item_general_id`,`fecha`),
+  ADD KEY `fecha` (`fecha`);
 
 --
 -- Indices de la tabla `cotizaciones`
@@ -3251,7 +2958,8 @@ ALTER TABLE `historial_precios`
 --
 ALTER TABLE `instalaciones`
   ADD PRIMARY KEY (`id_instalaciones`),
-  ADD KEY `fk_instalaciones_empresa_idx` (`id_empresa`);
+  ADD KEY `fk_instalaciones_empresa_idx` (`id_empresa`),
+  ADD KEY `idx_deleted_at` (`deleted_at`);
 
 --
 -- Indices de la tabla `inventario`
@@ -3321,12 +3029,7 @@ ALTER TABLE `movimiento_inventario`
   ADD PRIMARY KEY (`id_movimiento_inventario`),
   ADD UNIQUE KEY `id_movimiento_inventario_UNIQUE` (`id_movimiento_inventario`),
   ADD KEY `fk_movimiento_item` (`item_general_id`),
-  ADD KEY `fk_movimiento_bodega` (`bodega_id`),
-  ADD KEY `idx_mov_item` (`item_general_id`),
-  ADD KEY `idx_mov_bodega` (`bodega_id`),
-  ADD KEY `idx_mov_ref` (`referencia_tipo`,`referencia_id`),
-  ADD KEY `idx_mov_fecha` (`fecha_movimiento`),
-  ADD KEY `idx_mov_tipo` (`tipo_movimiento`);
+  ADD KEY `fk_movimiento_bodega` (`bodega_id`);
 
 --
 -- Indices de la tabla `notas_credito`
@@ -3442,6 +3145,14 @@ ALTER TABLE `proveedor`
   ADD KEY `idx_proveedor_deleted_at` (`deleted_at`);
 
 --
+-- Indices de la tabla `refresh_tokens`
+--
+ALTER TABLE `refresh_tokens`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `token_hash` (`token_hash`),
+  ADD KEY `usuario_id` (`usuario_id`);
+
+--
 -- Indices de la tabla `remisiones`
 --
 ALTER TABLE `remisiones`
@@ -3461,29 +3172,12 @@ ALTER TABLE `remisiones_detalle`
   ADD KEY `idx_remdet_item` (`item_general_id`);
 
 --
--- Indices de la tabla `remision_consumo_capas`
---
-ALTER TABLE `remision_consumo_capas`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_rcc_rem` (`remision_id`),
-  ADD KEY `idx_rcc_det` (`remision_detalle_id`),
-  ADD KEY `idx_rcc_capa` (`capa_id`);
-
---
 -- Indices de la tabla `requisiciones_compra`
 --
 ALTER TABLE `requisiciones_compra`
   ADD PRIMARY KEY (`id_requisicion`),
   ADD KEY `preparacion_id` (`preparacion_id`),
   ADD KEY `estado` (`estado`);
-
---
--- Indices de la tabla `tambores`
---
-ALTER TABLE `tambores`
-  ADD PRIMARY KEY (`id_tambor`),
-  ADD KEY `fk_tambores_item` (`item_general_id`),
-  ADD KEY `fk_tambores_bodega` (`bodegas_id`);
 
 --
 -- Indices de la tabla `tambor_movimientos`
@@ -3496,7 +3190,8 @@ ALTER TABLE `tambor_movimientos`
 -- Indices de la tabla `unidad`
 --
 ALTER TABLE `unidad`
-  ADD PRIMARY KEY (`id_unidad`);
+  ADD PRIMARY KEY (`id_unidad`),
+  ADD KEY `idx_deleted_at` (`deleted_at`);
 
 --
 -- Indices de la tabla `usuarios`
@@ -3525,7 +3220,7 @@ ALTER TABLE `categoria`
 -- AUTO_INCREMENT de la tabla `clientes`
 --
 ALTER TABLE `clientes`
-  MODIFY `id_clientes` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
+  MODIFY `id_clientes` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
 -- AUTO_INCREMENT de la tabla `configuracion_sistema`
@@ -3543,13 +3238,19 @@ ALTER TABLE `costos_indirectos`
 -- AUTO_INCREMENT de la tabla `costos_item`
 --
 ALTER TABLE `costos_item`
-  MODIFY `id_costos_item` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=204;
+  MODIFY `id_costos_item` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=207;
 
 --
 -- AUTO_INCREMENT de la tabla `costos_produccion`
 --
 ALTER TABLE `costos_produccion`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `costos_snapshot`
+--
+ALTER TABLE `costos_snapshot`
+  MODIFY `id_costos_snapshot` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `cotizaciones`
@@ -3585,7 +3286,7 @@ ALTER TABLE `factories`
 -- AUTO_INCREMENT de la tabla `facturas`
 --
 ALTER TABLE `facturas`
-  MODIFY `id_facturas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_facturas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT de la tabla `facturas_detalle`
@@ -3597,13 +3298,13 @@ ALTER TABLE `facturas_detalle`
 -- AUTO_INCREMENT de la tabla `formulaciones`
 --
 ALTER TABLE `formulaciones`
-  MODIFY `id_formulaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `id_formulaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
 
 --
 -- AUTO_INCREMENT de la tabla `formulaciones_versiones`
 --
 ALTER TABLE `formulaciones_versiones`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=76;
 
 --
 -- AUTO_INCREMENT de la tabla `gestiones_cobro`
@@ -3627,55 +3328,55 @@ ALTER TABLE `instalaciones`
 -- AUTO_INCREMENT de la tabla `inventario`
 --
 ALTER TABLE `inventario`
-  MODIFY `id_inventario` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=276;
+  MODIFY `id_inventario` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=285;
 
 --
 -- AUTO_INCREMENT de la tabla `inventario_capas`
 --
 ALTER TABLE `inventario_capas`
-  MODIFY `id_capa` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=107;
+  MODIFY `id_capa` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=173;
 
 --
 -- AUTO_INCREMENT de la tabla `item_general`
 --
 ALTER TABLE `item_general`
-  MODIFY `id_item_general` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=300;
+  MODIFY `id_item_general` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=351;
 
 --
 -- AUTO_INCREMENT de la tabla `item_general_formulaciones`
 --
 ALTER TABLE `item_general_formulaciones`
-  MODIFY `id_item_general_formulaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=838;
+  MODIFY `id_item_general_formulaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=868;
 
 --
 -- AUTO_INCREMENT de la tabla `item_proveedor`
 --
 ALTER TABLE `item_proveedor`
-  MODIFY `id_item_proveedor` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=78;
+  MODIFY `id_item_proveedor` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=115;
 
 --
 -- AUTO_INCREMENT de la tabla `login_attempts`
 --
 ALTER TABLE `login_attempts`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=181;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=205;
 
 --
 -- AUTO_INCREMENT de la tabla `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=79;
 
 --
 -- AUTO_INCREMENT de la tabla `movimiento_inventario`
 --
 ALTER TABLE `movimiento_inventario`
-  MODIFY `id_movimiento_inventario` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
+  MODIFY `id_movimiento_inventario` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT de la tabla `notas_credito`
 --
 ALTER TABLE `notas_credito`
-  MODIFY `id_nota_credito` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_nota_credito` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT de la tabla `notificaciones`
@@ -3687,37 +3388,37 @@ ALTER TABLE `notificaciones`
 -- AUTO_INCREMENT de la tabla `numeracion_documentos`
 --
 ALTER TABLE `numeracion_documentos`
-  MODIFY `id_numeracion` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id_numeracion` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT de la tabla `ordenes_compra`
 --
 ALTER TABLE `ordenes_compra`
-  MODIFY `id_orden` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
+  MODIFY `id_orden` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
 
 --
 -- AUTO_INCREMENT de la tabla `ordenes_compra_detalle`
 --
 ALTER TABLE `ordenes_compra_detalle`
-  MODIFY `id_detalle` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
+  MODIFY `id_detalle` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT de la tabla `pagos_cliente`
 --
 ALTER TABLE `pagos_cliente`
-  MODIFY `id_pagos_cliente` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_pagos_cliente` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT de la tabla `permisos_rol_modulo`
 --
 ALTER TABLE `permisos_rol_modulo`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=144;
 
 --
 -- AUTO_INCREMENT de la tabla `preparaciones`
 --
 ALTER TABLE `preparaciones`
-  MODIFY `id_preparaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id_preparaciones` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- AUTO_INCREMENT de la tabla `preparaciones_costos_indirectos`
@@ -3729,49 +3430,43 @@ ALTER TABLE `preparaciones_costos_indirectos`
 -- AUTO_INCREMENT de la tabla `preparacion_consumo_capas`
 --
 ALTER TABLE `preparacion_consumo_capas`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- AUTO_INCREMENT de la tabla `produccion_insumos_detalle`
 --
 ALTER TABLE `produccion_insumos_detalle`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT de la tabla `proveedor`
 --
 ALTER TABLE `proveedor`
-  MODIFY `id_proveedor` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id_proveedor` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
+
+--
+-- AUTO_INCREMENT de la tabla `refresh_tokens`
+--
+ALTER TABLE `refresh_tokens`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `remisiones`
 --
 ALTER TABLE `remisiones`
-  MODIFY `id_remisiones` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id_remisiones` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT de la tabla `remisiones_detalle`
 --
 ALTER TABLE `remisiones_detalle`
-  MODIFY `id_detalle` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
-
---
--- AUTO_INCREMENT de la tabla `remision_consumo_capas`
---
-ALTER TABLE `remision_consumo_capas`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_detalle` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT de la tabla `requisiciones_compra`
 --
 ALTER TABLE `requisiciones_compra`
   MODIFY `id_requisicion` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- AUTO_INCREMENT de la tabla `tambores`
---
-ALTER TABLE `tambores`
-  MODIFY `id_tambor` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=363;
 
 --
 -- AUTO_INCREMENT de la tabla `tambor_movimientos`
@@ -3789,7 +3484,7 @@ ALTER TABLE `unidad`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id_usuarios` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_usuarios` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- Restricciones para tablas volcadas
@@ -3956,6 +3651,12 @@ ALTER TABLE `produccion_insumos_detalle`
   ADD CONSTRAINT `produccion_insumos_detalle_preparacion_id_foreign` FOREIGN KEY (`preparacion_id`) REFERENCES `preparaciones` (`id_preparaciones`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
+-- Filtros para la tabla `refresh_tokens`
+--
+ALTER TABLE `refresh_tokens`
+  ADD CONSTRAINT `refresh_tokens_usuario_id_foreign` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id_usuarios`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
 -- Filtros para la tabla `remisiones`
 --
 ALTER TABLE `remisiones`
@@ -3968,13 +3669,6 @@ ALTER TABLE `remisiones`
 --
 ALTER TABLE `remisiones_detalle`
   ADD CONSTRAINT `remisiones_detalle_ibfk_1` FOREIGN KEY (`remisiones_id`) REFERENCES `remisiones` (`id_remisiones`) ON DELETE CASCADE;
-
---
--- Filtros para la tabla `tambores`
---
-ALTER TABLE `tambores`
-  ADD CONSTRAINT `fk_tambores_bodega` FOREIGN KEY (`bodegas_id`) REFERENCES `bodegas` (`id_bodegas`) ON DELETE RESTRICT,
-  ADD CONSTRAINT `fk_tambores_item` FOREIGN KEY (`item_general_id`) REFERENCES `item_general` (`id_item_general`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `tambor_movimientos`
