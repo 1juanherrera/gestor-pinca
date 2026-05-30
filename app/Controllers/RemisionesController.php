@@ -441,9 +441,7 @@ class RemisionesController extends ResourceController
     // ── DELETE /remisiones/:id ────────────────────────────────────────────
     public function delete($id = null)
     {
-        if (!$this->userHasAdminAccess()) {
-            return $this->apiForbidden('No autorizado para esta acción.');
-        }
+        // Acceso por módulo (política 2026-05-30): si el usuario tiene el módulo, puede ejecutar la acción. Sin guard por rol.
 
         $existing = $this->model->find($id);
         if (!$existing) return $this->failNotFound("Remisión con ID $id no encontrada.");

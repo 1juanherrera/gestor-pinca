@@ -526,6 +526,34 @@ class FormulacionesModel extends BaseModel
               AND (ip.item_general_id IN ($placeholders) OR ip.item_general_id IS NULL)
         ", $mpIds)->getResult();
 
+        // Último precio de compra por materia prima = costo_unitario de la capa
+        // activa más reciente (mayor fecha_ingreso; desempate por id_capa DESC).
+        // Una sola query batcheada para evitar N+1. El JOIN contra MAX(fecha_ingreso)
+        // puede traer duplicados ante empate de fecha → nos quedamos con el de
+        // mayor id_capa al indexar por item_general_id.
+        $ultimoPrecioPorMp = [];
+        $capas = $this->db->query("
+            SELECT ic.item_general_id, ic.id_capa, ic.costo_unitario
+            FROM inventario_capas ic
+            INNER JOIN (
+                SELECT item_general_id, MAX(fecha_ingreso) AS maxf
+                FROM inventario_capas
+                WHERE estado = 1 AND item_general_id IN ($placeholders)
+                GROUP BY item_general_id
+            ) m ON m.item_general_id = ic.item_general_id AND m.maxf = ic.fecha_ingreso
+            WHERE ic.estado = 1
+            ORDER BY ic.id_capa DESC
+        ", $mpIds)->getResult();
+
+        foreach ($capas as $c) {
+            $cId = (int) $c->item_general_id;
+            // ORDER BY id_capa DESC → la primera fila vista por item es la de
+            // mayor id_capa, que gana ante empate de fecha. No sobrescribir.
+            if (!array_key_exists($cId, $ultimoPrecioPorMp)) {
+                $ultimoPrecioPorMp[$cId] = (float) $c->costo_unitario;
+            }
+        }
+
         $resultado = [];
 
         foreach ($materias as $mp) {
@@ -564,6 +592,7 @@ class FormulacionesModel extends BaseModel
             $resultado[$mpId] = [
                 'materia_prima_nombre' => $mpNombre,
                 'costo_estandar'       => (float) $mp->costo_estandar,
+                'ultimo_precio'        => $ultimoPrecioPorMp[$mpId] ?? null,
                 'opciones'             => $opciones,
             ];
         }

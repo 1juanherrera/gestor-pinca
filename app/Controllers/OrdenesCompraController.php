@@ -692,9 +692,7 @@ class OrdenesCompraController extends ResourceController
     // DELETE api/ordenes_compra/{id} — solo Borrador
     public function delete($id = null)
     {
-        if (!$this->userHasAdminAccess()) {
-            return $this->failForbidden('Solo administradores pueden eliminar órdenes de compra.');
-        }
+        // Acceso por módulo (política 2026-05-30): sin guard por rol.
         $orden = $this->model->detalle((int) $id);
         if (!$orden) return $this->failNotFound("Orden con ID $id no encontrada.");
         if ($orden['estado'] !== 'Borrador') {

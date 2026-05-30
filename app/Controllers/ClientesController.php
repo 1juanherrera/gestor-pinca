@@ -101,9 +101,7 @@ class ClientesController extends ResourceController
 
     public function delete($id = null)
     {
-        if (!$this->userHasAdminAccess()) {
-            return $this->apiForbidden('Solo administradores pueden eliminar clientes.');
-        }
+        // Acceso por módulo (política 2026-05-30): si el usuario tiene el módulo, puede ejecutar la acción. Sin guard por rol.
         if ($id === null) {
             return $this->apiFail('No se proporcionó un ID válido.', 422);
         }

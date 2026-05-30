@@ -132,9 +132,7 @@ class InventarioController extends ResourceController
 
     public function traspaso()
     {
-        if (!$this->userHasRole(['admin', 'superadmin', 'operador'])) {
-            return $this->apiForbidden('No autorizado para esta acción.');
-        }
+        // Acceso por módulo (política 2026-05-30): si el usuario tiene el módulo, puede ejecutar la acción. Sin guard por rol.
 
         $json = $this->request->getBody();
         $data = json_decode($json, true);
@@ -160,9 +158,7 @@ class InventarioController extends ResourceController
     // DELETE api/inventario/{item_id}/bodega/{bodega_id}
     public function removeFromBodega(int $itemId, int $bodegaId)
     {
-        if (!$this->userHasRole(['admin', 'superadmin', 'operador'])) {
-            return $this->apiForbidden('No autorizado para esta acción.');
-        }
+        // Acceso por módulo (política 2026-05-30): si el usuario tiene el módulo, puede ejecutar la acción. Sin guard por rol.
 
         $responsable = $this->getUsername();
         $motivo      = $this->request->getGet('motivo'); // opcional
@@ -188,9 +184,7 @@ class InventarioController extends ResourceController
      */
     public function ajusteManual()
     {
-        if (!$this->userHasRole(['admin', 'superadmin', 'operador'])) {
-            return $this->apiForbidden('No autorizado para esta acción.');
-        }
+        // Acceso por módulo (política 2026-05-30): si el usuario tiene el módulo, puede ejecutar la acción. Sin guard por rol.
 
         $data = json_decode($this->request->getBody(), true) ?? [];
 

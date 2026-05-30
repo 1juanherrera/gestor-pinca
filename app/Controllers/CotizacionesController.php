@@ -310,9 +310,7 @@ class CotizacionesController extends ResourceController
     // ── DELETE /cotizaciones/:id ──────────────────────────────────────────
     public function delete($id = null)
     {
-        if (!$this->userHasAdminAccess()) {
-            return $this->failForbidden('Solo administradores pueden eliminar cotizaciones.');
-        }
+        // Acceso por módulo (política 2026-05-30): sin guard por rol.
         $existing = $this->model->find($id);
         if (!$existing) return $this->failNotFound("Cotización con ID $id no encontrada.");
 

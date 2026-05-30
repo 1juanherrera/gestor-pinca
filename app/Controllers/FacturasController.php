@@ -326,16 +326,13 @@ class FacturasController extends ResourceController
     // reusando aplicarCambioEstado() (misma lógica que cambiarEstado: revierte
     // pagos/NC al anular, recalcula saldo al marcar Pagada, etc.).
     //
-    // Gateado con userHasAdminAccess() — anular en lote es sensible.
     //
     // Atomicidad: si alguna factura falla por una condición de negocio
     // (no encontrada / ya anulada) se acumula en `fallidas` y se continúa con
     // las demás; un error real de BD (SQL) hace rollback de TODO el lote.
     public function bulkCambiarEstado()
     {
-        if (!$this->userHasAdminAccess()) {
-            return $this->apiForbidden('Solo administradores pueden cambiar el estado de facturas en lote.');
-        }
+        // Acceso por módulo (política 2026-05-30): si el usuario tiene el módulo, puede ejecutar la acción. Sin guard por rol.
 
         $data   = $this->request->getJSON(true) ?? [];
         $ids    = $data['ids']    ?? null;
@@ -390,9 +387,7 @@ class FacturasController extends ResourceController
     // ── DELETE /facturas/:id ──────────────────────────────────────────────
     public function delete($id = null)
     {
-        if (!$this->userHasAdminAccess()) {
-            return $this->apiForbidden('Solo administradores pueden eliminar facturas.');
-        }
+        // Acceso por módulo (política 2026-05-30): si el usuario tiene el módulo, puede ejecutar la acción. Sin guard por rol.
         if (!$this->model->find($id)) return $this->apiNotFound("Factura con ID $id no encontrada.");
 
         $this->model->delete_table($id, 'facturas');

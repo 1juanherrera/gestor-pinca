@@ -78,9 +78,7 @@ class SincronizacionController extends ResourceController
     public function merge()
     {
         // Solo admin u operador pueden mergear items (afecta integridad histórica)
-        if (!$this->userHasRole(['admin', 'operador'])) {
-            return $this->apiForbidden('Solo administradores u operadores pueden unificar items.');
-        }
+        // Acceso por módulo (política 2026-05-30): si el usuario tiene el módulo, puede ejecutar la acción. Sin guard por rol.
 
         $data = $this->request->getJSON(true) ?? [];
 
