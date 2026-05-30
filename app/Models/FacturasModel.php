@@ -55,6 +55,13 @@ class FacturasModel extends BaseModel
 
         $total = (float) ($factura['total'] ?? 0);
 
+        // NOTA (Fix 2 — verificado 2026-05-30): `pagos_cliente` NO tiene columna
+        // de estado/anulación ni `deleted_at` (cols: fecha_pago, monto, metodo_pago,
+        // tipo, numero_referencia, observaciones, clientes_id, facturas_id,
+        // creado_en, usuario_id). Hoy un pago se elimina físicamente (DELETE), no
+        // se anula. Por lo tanto NO hay pagos "anulados" que filtrar — sumar todos
+        // los registros existentes es correcto. Si en el futuro se agrega un estado
+        // o soft-delete a pagos_cliente, agregar aquí el filtro correspondiente.
         $pagos = (float) ($this->db->table('pagos_cliente')
             ->selectSum('monto', 't')
             ->where('facturas_id', $id)

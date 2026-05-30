@@ -1584,3 +1584,23 @@ Dos proveedores cargados vía SQL transaccional (todos `unidad_compra=KILO`, `fa
 
 > **Snapshot al cierre 2026-05-29 (tarde)**: `validar:fixes` seguro (rollback global). 2 proveedores reales cargados (isGroup + distriatlantico). RBAC reforzado en mutaciones de stock (bloquea visor) + delete de remisiones (admin). Consumo MANUAL de capas valida cantidad. 4 migraciones DROP INDEX más arregladas (0 restantes). Análisis profundo reveló que **el costeo está roto por DATOS faltantes** (81% MP sin proveedor, porcentajes NULL), no por bugs — eso es carga del cliente (ver `PREGUNTAS_CLIENTE.md`). Backlog de código en `PENDIENTES.md`/`MEJORAS.md`.
 
+---
+
+## Sesión 2026-05-30 — Lote de mejoras DEV (seguridad/integridad + bulk)
+
+Tanda de mejoras del backlog que NO requerían decisión del cliente ni son de deploy. `migrate` limpio, `validar:fixes` 53/53 (modo seguro).
+
+- **6 modelos con `$allowedFields`** declarado (`FormulacionesModel`, `PreparacionesModel`, `SincronizacionModel`, `ComparadorModel`, `EmpresaModel`, `InventarioCapasModel`) — cierra mass assignment. Todos operan con query builder directo, así que no afecta sus inserts; la whitelist protege el ActiveRecord.
+- **`recibirLinea`**: el `update(estado='Recibida')` se movió DENTRO de la transacción (antes corría tras el commit → posible desincronización).
+- **`EmpresaController`**: `mime_content_type()` (deprecado PHP 8.4+) → `finfo_open/finfo_file/finfo_close`.
+- **Raw queries con soft-delete**: `BodegasModel:29`, `InstalacionesModel:31/36`, `BodegasController:28` ahora filtran `deleted_at IS NULL` (esas tablas ganaron soft-delete el 2026-05-27).
+- **Endpoint bulk** `POST /api/facturas/bulk/cambiar-estado` `{ids, estado}` (admin-only): aplica el cambio a varias facturas en UNA transacción. Refactor: la lógica de `cambiarEstado` se extrajo a helper privado `aplicarCambioEstado($db, $id, $estado)` (reusado por el endpoint individual y el bulk; reversa pagos/NC al anular, recalcularSaldo al pagar). Nueva clase `FacturaEstadoException` para mapear errores de negocio. Devuelve `{ok, msg, actualizadas, fallidas:[{id,motivo}]}`.
+- **`recalcularSaldo`**: verificado — `pagos_cliente` no tiene estado/soft-delete (se borran con DELETE físico), así que sumar todos es correcto. Sin cambio, comentado.
+- **Paginación**: los 4 candidatos (`InventarioController::global`, `CostosIndirectos`, `Remisiones`, `Cotizaciones`) NO aceptan `?limit=` ni paginan — devuelven el array completo que el frontend espera. Agregar cap rompería el contrato. **No-aplica** (conservador).
+
+> Coupling frontend: `cambiarEstado` individual ahora mapea errores desde `FacturaEstadoException` (mismo shape de respuesta). El bulk con `estado:'Anulada'` es destructivo (borra pagos, anula NC del lote) — el frontend confirma antes.
+
+---
+
+> **Snapshot al cierre 2026-05-30**: Lote de hardening DEV aplicado — allowedFields en 6 modelos, recibirLinea atómico, finfo en upload, raw queries con soft-delete, endpoint bulk de facturas con helper reutilizable. `validar:fixes` 53/53. Sin items de producción tocados (por pedido del dueño). Backlog restante: features grandes (real-time, email, /v1/, Redis), RBAC en docs comerciales (necesita matriz rol→acción), 3 decisiones de UX, y la **carga de datos del cliente** que desbloquea el costeo (ver `PREGUNTAS_CLIENTE.md`).
+

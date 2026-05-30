@@ -56,14 +56,14 @@ El análisis de integridad de la BD (2026-05-29) reveló que **el costeo del sis
 ### Frontend
 
 - [ ] **Notificaciones real-time** (WebSockets/SSE en lugar de polling 30s).
-- [ ] **Búsqueda con debounce en drawers grandes** (selects de cliente/bodega/items con 100+ entradas) — pattern uno-a-uno por drawer.
+- [x] ~~**Búsqueda con debounce en drawers grandes**~~ — ✅ 2026-05-30: SearchSelect de Cotizacion/RemisionForm debouncea ~200ms. (selects de cliente/bodega/items con 100+ entradas) — pattern uno-a-uno por drawer.
 - [ ] **Audit visual de dark mode (verificación final del usuario)**. El audit estático cerró todos los anti-patrones conocidos (backdrops, botones Export, chips translúcidos). Falta la confirmación visual abriendo cada módulo en dark — si aparece algo, es un `text-white` sobre fondo nuevo que se escapó.
-- [ ] **Replicar bulk actions** en `CotizacionesTab` y `OrdenesTab` (patrón ya documentado en `FacturasTable.jsx`).
-- [ ] **Endpoint backend bulk dedicado** para cambios de estado masivos (`POST /facturas/bulk/cambiar-estado`) — hoy se hacen N requests paralelos con `Promise.allSettled`.
-- [ ] **recharts en chunk eager** — `vite.config.js` lo agrupa con lucide-react en `vendor-ui`, así entra en el bundle inicial aunque solo se use en Dashboard/Rentabilidad/CostosProduccion. Sacarlo a su propio chunk lazy.
-- [ ] **~30 hooks con rutas hardcodeadas** en vez de `API_ROUTES` (`useBodegas`, `useClientes`, `useCotizaciones`, `useFactura`, `useItem`, etc.). Migrar para que cambios de ruta backend no rompan silenciosamente.
-- [ ] **Modal sin focus-trap** (`src/shared/Modal.jsx`) — sin autofocus, Tab escapa al fondo, no restaura foco al cerrar. A11y/teclado.
-- [ ] **Ocultar acciones de inventario por rol** — espejo del RBAC backend: el visor ahora recibe 403 en traspaso/ajuste/remove; ocultar esos botones en la UI para que no los vea.
+- [x] ~~**Replicar bulk actions** en CotizacionesTab y OrdenesTab~~ — ✅ 2026-05-30. (patrón ya documentado en `FacturasTable.jsx`).
+- [x] ~~**Endpoint bulk de facturas**~~ — ✅ 2026-05-30: `POST /facturas/bulk/cambiar-estado`. Falta migrar el frontend de Facturas a usarlo (hoy N requests). (`POST /facturas/bulk/cambiar-estado`) — hoy se hacen N requests paralelos con `Promise.allSettled`.
+- [x] ~~**recharts en chunk eager**~~ — ✅ 2026-05-30: `vendor-charts` propio, vendor-ui 426→44 KB. — `vite.config.js` lo agrupa con lucide-react en `vendor-ui`, así entra en el bundle inicial aunque solo se use en Dashboard/Rentabilidad/CostosProduccion. Sacarlo a su propio chunk lazy.
+- [ ] **~15 hooks con rutas hardcodeadas restantes** (Cartera, Configuracion, Movimientos, Auditoria, etc.). 2026-05-30 se migraron 9 de alto tráfico a API_ROUTES. en vez de `API_ROUTES` (`useBodegas`, `useClientes`, `useCotizaciones`, `useFactura`, `useItem`, etc.). Migrar para que cambios de ruta backend no rompan silenciosamente.
+- [x] ~~**Modal sin focus-trap**~~ — ✅ 2026-05-30: focus-trap en Modal.jsx y Drawer.jsx. (`src/shared/Modal.jsx`) — sin autofocus, Tab escapa al fondo, no restaura foco al cerrar. A11y/teclado.
+- [x] ~~**Ocultar acciones de inventario por rol**~~ — ✅ 2026-05-30: DataTable + InventarioGlobalPage ocultan a visor. — espejo del RBAC backend: el visor ahora recibe 403 en traspaso/ajuste/remove; ocultar esos botones en la UI para que no los vea.
 
 ---
 
@@ -82,16 +82,16 @@ El análisis de integridad de la BD (2026-05-29) reveló que **el costeo del sis
 ### Frontend
 
 - [ ] **Sort en headers de tablas virtualizadas** (`react-window` v2 modo virtual). Rare path (>200 filas), no urgente.
-- [ ] **`CapasStockPanel`: 3 efectos que llaman callbacks del padre** sin memoizar (los warnings ESLint reales). Riesgo de re-render en cascada si el padre recrea las callbacks. `useCallback` en el padre + incluir en deps.
+- [x] ~~**CapasStockPanel: callbacks del padre sin memoizar**~~ — ✅ 2026-05-30: useCallback en preparationModal + deps en effects. sin memoizar (los warnings ESLint reales). Riesgo de re-render en cascada si el padre recrea las callbacks. `useCallback` en el padre + incluir en deps.
 - [ ] **Smoke-test después de migración de errores**: los controllers que cambiaron shape de error (`{status, error, messages}` → `{ok, msg}`) podrían afectar UX en módulos que inspeccionan `.messages.error`. `apiClient.js` tiene fallback global (toasts OK); revisar handlers específicos. `useCatalogo` ya se arregló.
 
 ### Backend (más del análisis 2026-05-29)
 
 - [ ] **JWT con fallback débil** (`JwtFilter.php:26` `?? 'miClaveSuperSecreta'`). Deploy-only pero código vivo. Cambiar a `throw` si `TOKEN_SECRET` vacío (como ya hace `UsuarioController`).
-- [ ] **6 modelos sin `$allowedFields`** (`FormulacionesModel`, `PreparacionesModel`, `SincronizacionModel`, `ComparadorModel`, `EmpresaModel`, `InventarioCapasModel`) — mass assignment potencial vía insert directo. Declarar allowedFields o usar arrays explícitos.
+- [x] ~~**6 modelos sin `$allowedFields`**~~ — ✅ 2026-05-30: declarados en los 6. (`FormulacionesModel`, `PreparacionesModel`, `SincronizacionModel`, `ComparadorModel`, `EmpresaModel`, `InventarioCapasModel`) — mass assignment potencial vía insert directo. Declarar allowedFields o usar arrays explícitos.
 - [ ] **`recalcularSaldo` suma pagos sin filtrar anulados** (`FacturasModel.php:58`). Hoy `pagos_cliente` no tiene soft-delete (bajo riesgo); filtrar explícitamente si se agrega anulación de pagos.
-- [ ] **`recibirLinea` marca estado con `$this->model->update()` fuera de la transacción** (`OrdenesCompraController.php:446`). Mover dentro del lock para evitar desincronización si el commit falla parcialmente.
-- [ ] **`EmpresaController` usa `mime_content_type()`** (deprecado PHP 8.4+). Reemplazar por `finfo_file`.
+- [x] ~~**`recibirLinea` update fuera de transacción**~~ — ✅ 2026-05-30: movido dentro del bloque transaccional. (`OrdenesCompraController.php:446`). Mover dentro del lock para evitar desincronización si el commit falla parcialmente.
+- [x] ~~**`EmpresaController` mime_content_type deprecado**~~ — ✅ 2026-05-30: finfo_file. (deprecado PHP 8.4+). Reemplazar por `finfo_file`.
 
 ---
 

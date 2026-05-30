@@ -28,13 +28,13 @@ class InstalacionesModel extends BaseModel
             return $this->instalaciones_with_bodegas();
         } else {
             // Retornar solo la instalación específica con bodegas
-            $sql = 'SELECT * FROM instalaciones WHERE id_instalaciones = ?';
+            $sql = 'SELECT * FROM instalaciones WHERE id_instalaciones = ? AND deleted_at IS NULL';
             $instalacion = $this->db->query($sql, [$id_instalacion])->getRowArray();
 
             if ($instalacion) {
                 $sql1 = 'SELECT id_bodegas, nombre, descripcion, estado
                         FROM bodegas
-                        WHERE instalaciones_id = ?';
+                        WHERE instalaciones_id = ? AND deleted_at IS NULL';
                 $bodegas = $this->db->query($sql1, [$id_instalacion])->getResultArray();
 
                 return [

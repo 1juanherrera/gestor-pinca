@@ -7,6 +7,21 @@ use Exception;
 
 class FormulacionesModel extends BaseModel
 {
+    // Mass-assignment whitelist para la tabla `formulaciones`.
+    // Nota: este modelo NO declara $table y opera casi todo con query builder
+    // directo (`$this->db->query(...)` y `$this->db->table('...')`), no con el
+    // ActiveRecord del propio modelo. Declarar $allowedFields no cambia esos
+    // inserts/updates manuales; solo protege un eventual save()/insert() del
+    // modelo contra mass-assignment de columnas arbitrarias.
+    protected $allowedFields = [
+        'item_general_id',
+        'nombre',
+        'descripcion',
+        'estado',
+        'defecto',
+        'version_actual',
+    ];
+
     public function __construct()
     {
         parent::__construct();

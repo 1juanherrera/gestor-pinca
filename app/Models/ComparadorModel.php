@@ -4,6 +4,13 @@ namespace App\Models;
 
 class ComparadorModel extends BaseModel
 {
+    // Mass-assignment whitelist. Este modelo es 100% de SOLO LECTURA:
+    // no declara $table y todas sus consultas son SELECT vía query builder
+    // directo. No usa el ActiveRecord del modelo para escribir, así que
+    // $allowedFields aquí es defensivo (cubre un eventual save()/insert()).
+    // Documentado: no rompe nada porque no hay escrituras vía el modelo.
+    protected $allowedFields = [];
+
     public function __construct()
     {
         parent::__construct();

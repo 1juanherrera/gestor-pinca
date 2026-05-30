@@ -26,7 +26,10 @@ class BodegasController extends ResourceController
         $bodegas = $db->query(
             'SELECT b.*, i.nombre AS sede_nombre
              FROM bodegas b
-             LEFT JOIN instalaciones i ON i.id_instalaciones = b.instalaciones_id
+             LEFT JOIN instalaciones i
+                ON i.id_instalaciones = b.instalaciones_id
+               AND i.deleted_at IS NULL
+             WHERE b.deleted_at IS NULL
              ORDER BY i.nombre, b.nombre'
         )->getResultArray();
         return $this->respond($bodegas);

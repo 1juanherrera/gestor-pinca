@@ -225,68 +225,7 @@ class FacturasController extends ResourceController
         $db->transBegin();
 
         try {
-            // Lock pesimista sobre la factura. FOR UPDATE garantiza que ninguna
-            // otra transacción pueda leer/escribir este registro hasta el commit.
-            $factura = $db->query(
-                'SELECT id_facturas, estado, total FROM facturas
-                 WHERE id_facturas = ? AND deleted_at IS NULL
-                 FOR UPDATE',
-                [$id]
-            )->getRowArray();
-
-            if (!$factura) {
-                $db->transRollback();
-                return $this->apiNotFound("Factura con ID $id no encontrada.");
-            }
-
-            $estadoActual = $factura['estado'];
-
-            // Anulada es terminal. No se puede salir de ahí.
-            if ($estadoActual === 'Anulada' && $estado !== 'Anulada') {
-                $db->transRollback();
-                return $this->apiFail('La factura ya está anulada. No se puede cambiar a otro estado.', 409);
-            }
-
-            if ($estado === 'Anulada') {
-                // Revertir pagos y NC para que cartera no quede inconsistente.
-                $pagosBorrados = $db->table('pagos_cliente')
-                    ->where('facturas_id', $id)
-                    ->countAllResults(false);
-                $db->table('pagos_cliente')->where('facturas_id', $id)->delete();
-
-                $ncAnuladas = $db->table('notas_credito')
-                    ->where('facturas_id', $id)
-                    ->where('estado', 'Activa')
-                    ->countAllResults(false);
-                $db->table('notas_credito')
-                    ->where('facturas_id', $id)
-                    ->where('estado', 'Activa')
-                    ->update(['estado' => 'Anulada']);
-
-                $db->table('facturas')
-                    ->where('id_facturas', $id)
-                    ->update([
-                        'estado'          => 'Anulada',
-                        'saldo_pendiente' => $factura['total'],
-                    ]);
-
-                $username = $this->request->usuario->username ?? 'sistema';
-                log_message('info', "[FACTURA_ANULADA] id={$id} por {$username} — pagos revertidos={$pagosBorrados}, NC anuladas={$ncAnuladas}");
-
-            } elseif ($estado === 'Pagada') {
-                // Recalcula primero para verificar que realmente está pagada;
-                // recalcularSaldo respeta el lock vigente.
-                $this->model->recalcularSaldo((int) $id);
-                $db->table('facturas')
-                    ->where('id_facturas', $id)
-                    ->update(['estado' => 'Pagada', 'saldo_pendiente' => 0]);
-
-            } else {
-                $db->table('facturas')
-                    ->where('id_facturas', $id)
-                    ->update(['estado' => $estado]);
-            }
-
+            $this->aplicarCambioEstado($db, (int) $id, $estado);
             $db->transCommit();
 
             return $this->respond([
@@ -295,9 +234,156 @@ class FacturasController extends ResourceController
                 'data'    => $this->model->get($id, 'facturas'),
             ]);
 
+        } catch (FacturaEstadoException $e) {
+            $db->transRollback();
+            // Errores "de negocio" (no encontrada / terminal) traen su status.
+            return $e->getCode() === 404
+                ? $this->apiNotFound($e->getMessage())
+                : $this->apiFail($e->getMessage(), $e->getCode() ?: 400);
         } catch (\Exception $e) {
             $db->transRollback();
             return $this->apiFail($e->getMessage(), 400);
+        }
+    }
+
+    /**
+     * Aplica el cambio de estado de UNA factura dentro de una transacción ya abierta.
+     *
+     * Reusado por cambiarEstado() (1 factura) y bulkCambiarEstado() (N facturas).
+     * NO abre ni cierra transacciones — el caller controla begin/commit/rollback.
+     * Lanza FacturaEstadoException (code 404 / 409 / 400) ante condiciones de negocio.
+     *
+     * Lógica idéntica a la original: lock FOR UPDATE, anulación revierte pagos +
+     * marca NC como Anulada, Pagada recalcula saldo, resto solo cambia estado.
+     */
+    private function aplicarCambioEstado(\CodeIgniter\Database\BaseConnection $db, int $id, string $estado): void
+    {
+        // Lock pesimista sobre la factura. FOR UPDATE garantiza que ninguna
+        // otra transacción pueda leer/escribir este registro hasta el commit.
+        $factura = $db->query(
+            'SELECT id_facturas, estado, total FROM facturas
+             WHERE id_facturas = ? AND deleted_at IS NULL
+             FOR UPDATE',
+            [$id]
+        )->getRowArray();
+
+        if (!$factura) {
+            throw new FacturaEstadoException("Factura con ID $id no encontrada.", 404);
+        }
+
+        $estadoActual = $factura['estado'];
+
+        // Anulada es terminal. No se puede salir de ahí.
+        if ($estadoActual === 'Anulada' && $estado !== 'Anulada') {
+            throw new FacturaEstadoException('La factura ya está anulada. No se puede cambiar a otro estado.', 409);
+        }
+
+        if ($estado === 'Anulada') {
+            // Revertir pagos y NC para que cartera no quede inconsistente.
+            $pagosBorrados = $db->table('pagos_cliente')
+                ->where('facturas_id', $id)
+                ->countAllResults(false);
+            $db->table('pagos_cliente')->where('facturas_id', $id)->delete();
+
+            $ncAnuladas = $db->table('notas_credito')
+                ->where('facturas_id', $id)
+                ->where('estado', 'Activa')
+                ->countAllResults(false);
+            $db->table('notas_credito')
+                ->where('facturas_id', $id)
+                ->where('estado', 'Activa')
+                ->update(['estado' => 'Anulada']);
+
+            $db->table('facturas')
+                ->where('id_facturas', $id)
+                ->update([
+                    'estado'          => 'Anulada',
+                    'saldo_pendiente' => $factura['total'],
+                ]);
+
+            $username = $this->request->usuario->username ?? 'sistema';
+            log_message('info', "[FACTURA_ANULADA] id={$id} por {$username} — pagos revertidos={$pagosBorrados}, NC anuladas={$ncAnuladas}");
+
+        } elseif ($estado === 'Pagada') {
+            // Recalcula primero para verificar que realmente está pagada;
+            // recalcularSaldo respeta el lock vigente.
+            $this->model->recalcularSaldo($id);
+            $db->table('facturas')
+                ->where('id_facturas', $id)
+                ->update(['estado' => 'Pagada', 'saldo_pendiente' => 0]);
+
+        } else {
+            $db->table('facturas')
+                ->where('id_facturas', $id)
+                ->update(['estado' => $estado]);
+        }
+    }
+
+    // ── POST /facturas/bulk/cambiar-estado ────────────────────────────────
+    // Body: { ids: [int,...], estado: 'Anulada' | 'Pagada' | ... }
+    //
+    // Aplica el cambio de estado a varias facturas en UNA sola transacción,
+    // reusando aplicarCambioEstado() (misma lógica que cambiarEstado: revierte
+    // pagos/NC al anular, recalcula saldo al marcar Pagada, etc.).
+    //
+    // Gateado con userHasAdminAccess() — anular en lote es sensible.
+    //
+    // Atomicidad: si alguna factura falla por una condición de negocio
+    // (no encontrada / ya anulada) se acumula en `fallidas` y se continúa con
+    // las demás; un error real de BD (SQL) hace rollback de TODO el lote.
+    public function bulkCambiarEstado()
+    {
+        if (!$this->userHasAdminAccess()) {
+            return $this->apiForbidden('Solo administradores pueden cambiar el estado de facturas en lote.');
+        }
+
+        $data   = $this->request->getJSON(true) ?? [];
+        $ids    = $data['ids']    ?? null;
+        $estado = $data['estado'] ?? null;
+
+        $permitidos = ['Pendiente', 'Pagada', 'Parcial', 'Vencida', 'Anulada'];
+        if (!$estado || !in_array($estado, $permitidos, true)) {
+            return $this->apiFail('Estado no válido. Permitidos: ' . implode(', ', $permitidos), 400);
+        }
+        if (!is_array($ids) || empty($ids)) {
+            return $this->apiValidationError(['ids' => 'Debe enviar al menos un id de factura.']);
+        }
+
+        // Normalizar a enteros únicos positivos.
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), fn($v) => $v > 0)));
+        if (empty($ids)) {
+            return $this->apiValidationError(['ids' => 'Los ids enviados no son válidos.']);
+        }
+
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        $actualizadas = 0;
+        $fallidas     = [];
+
+        try {
+            foreach ($ids as $id) {
+                try {
+                    $this->aplicarCambioEstado($db, $id, $estado);
+                    $actualizadas++;
+                } catch (FacturaEstadoException $e) {
+                    // Condición de negocio (no encontrada / terminal): se reporta
+                    // y se continúa. NO hace rollback del lote completo.
+                    $fallidas[] = ['id' => $id, 'motivo' => $e->getMessage()];
+                }
+            }
+
+            $db->transCommit();
+
+            return $this->apiSuccessFlat([
+                'actualizadas' => $actualizadas,
+                'fallidas'     => $fallidas,
+            ], "Se actualizaron $actualizadas factura(s) a $estado.");
+
+        } catch (\Exception $e) {
+            // Error real de BD → rollback de todo el lote.
+            $db->transRollback();
+            return $this->apiFail('Error al procesar el lote: ' . $e->getMessage(), 400);
         }
     }
 
@@ -314,4 +400,13 @@ class FacturasController extends ResourceController
 
         return $this->respondDeleted(['message' => "Factura $id eliminada"]);
     }
+}
+
+/**
+ * Excepción de negocio para transiciones de estado de factura.
+ * El `code` transporta el status HTTP sugerido (404 no encontrada, 409 terminal,
+ * 400 genérico) para que el caller lo mapee a la respuesta adecuada.
+ */
+class FacturaEstadoException extends \Exception
+{
 }

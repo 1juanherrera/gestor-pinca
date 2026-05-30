@@ -7,6 +7,27 @@ class InventarioCapasModel extends BaseModel
     protected $table      = 'inventario_capas';
     protected $primaryKey = 'id_capa';
 
+    // Mass-assignment whitelist para la tabla `inventario_capas`.
+    // Nota: crearCapa()/consumos/restaurar operan con query builder directo
+    // (`$this->db->table('inventario_capas')->insert()/update()`), por lo que
+    // $allowedFields NO filtra esos statements (no usan el ActiveRecord del
+    // modelo). Se declara como defensa de mass-assignment para un eventual
+    // save()/insert()/update() del propio modelo. Columnas reales referenciadas
+    // por el código del modelo.
+    protected $allowedFields = [
+        'item_general_id',
+        'bodegas_id',
+        'proveedor_id',
+        'unidad_compra_id',
+        'cantidad_original',
+        'cantidad_disponible',
+        'costo_unitario',
+        'lote_proveedor',
+        'orden_compra_id',
+        'fecha_ingreso',
+        'estado',
+    ];
+
     public function __construct()
     {
         parent::__construct();

@@ -120,7 +120,10 @@ class EmpresaController extends ResourceController
         $abs = FCPATH . ltrim($logoPath, '/');
         if (!is_file($abs)) return $this->respond(['ok' => true, 'logo' => null]);
 
-        $mime = mime_content_type($abs) ?: 'image/png';
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime  = finfo_file($finfo, $abs);
+        finfo_close($finfo);
+        $mime = $mime ?: 'image/png';
         $b64  = base64_encode(file_get_contents($abs));
 
         return $this->respond([

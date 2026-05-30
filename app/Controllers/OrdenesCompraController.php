@@ -438,13 +438,19 @@ class OrdenesCompraController extends ResourceController
                   AND recibido_en IS NULL
             ', [$idOrden])->getRow()->total;
 
+            // Marcar la OC como Recibida DENTRO de la transacción (atómico).
+            // Antes este UPDATE corría tras transComplete(): si el proceso moría
+            // entre el commit de la línea y el update de estado, la OC quedaba con
+            // todas las líneas recibidas pero en estado Enviada. Al moverlo aquí,
+            // el cambio de estado se commitea junto con la recepción de la línea.
+            if ($pendientes === 0) {
+                $db->table('ordenes_compra')
+                    ->where('id_orden', (int) $idOrden)
+                    ->update(['estado' => 'Recibida']);
+            }
+
             $db->transComplete();
             if (!$db->transStatus()) throw new \Exception('Error al confirmar la transacción.');
-
-            // Solo marcar Recibida si no queda ninguna línea pendiente
-            if ($pendientes === 0) {
-                $this->model->update((int) $idOrden, ['estado' => 'Recibida']);
-            }
 
             return $this->respond(['mensaje' => 'Línea recibida correctamente']);
 

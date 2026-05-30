@@ -52,9 +52,9 @@ Todas las rutas son `/api/...`. Pendiente cuando aparezca consumidor externo. Re
 
 `JwtFilter.php:26` `?? 'miClaveSuperSecreta'`. Si `TOKEN_SECRET` no carga, valida tokens con secreto público = bypass de auth. Cambiar a `throw`. Deploy-only pero código vivo.
 
-### 9. Mass assignment en 6 modelos — ❌ ABIERTO
+### 9. Mass assignment en 6 modelos — ✅ RESUELTO 2026-05-30
 
-`FormulacionesModel`, `PreparacionesModel`, `SincronizacionModel`, `ComparadorModel`, `EmpresaModel`, `InventarioCapasModel` sin `$allowedFields`. Insertan vía `db->table()->insert($data)` directo sin whitelist. Declarar allowedFields o usar arrays explícitos.
+Los 6 (`FormulacionesModel`, `PreparacionesModel`, `SincronizacionModel`, `ComparadorModel`, `EmpresaModel`, `InventarioCapasModel`) ahora declaran `$allowedFields` con sus columnas reales. Operan con query builder directo, así que la whitelist protege el ActiveRecord sin afectar inserts existentes.
 
 ### 10. Consumo MANUAL de capas — ✅ RESUELTO 2026-05-29 (tarde)
 

@@ -26,7 +26,7 @@ class BodegasModel extends BaseModel
     {
         if ($id_bodega === null) return null;
 
-        $bodega = $this->db->query('SELECT * FROM bodegas WHERE id_bodegas = ?', [$id_bodega])->getRow();
+        $bodega = $this->db->query('SELECT * FROM bodegas WHERE id_bodegas = ? AND deleted_at IS NULL', [$id_bodega])->getRow();
 
         if ($bodega) {
             $perPage = (int)$perPage;

@@ -132,6 +132,7 @@ $routes->group('api', function ($routes) {
     $routes->get('facturas/(:num)/abonos', 'FacturasController::abonos/$1');
     $routes->get('facturas/(:num)/remision', 'FacturasController::remision/$1');
     $routes->post('facturas', 'FacturasController::create');
+    $routes->post('facturas/bulk/cambiar-estado', 'FacturasController::bulkCambiarEstado');
     $routes->put('facturas/(:num)', 'FacturasController::update/$1');
     $routes->patch('facturas/(:num)/estado', 'FacturasController::cambiarEstado/$1');
     $routes->delete('facturas/(:num)', 'FacturasController::delete/$1');

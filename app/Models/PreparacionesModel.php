@@ -8,6 +8,24 @@ use App\Models\InventarioCapasModel;
 
 class PreparacionesModel extends BaseModel
 {
+    // Mass-assignment whitelist para la tabla `preparaciones`.
+    // Nota: este modelo NO declara $table y hace todos sus inserts/updates con
+    // query builder directo (raw SQL + `$this->db->table('...')`), incluyendo
+    // inserts cross-table (preparaciones_has_item_general, preparaciones_costos_indirectos,
+    // produccion_insumos_detalle). $allowedFields no afecta esos statements; solo
+    // protege un eventual save()/insert() del propio modelo contra mass-assignment.
+    protected $allowedFields = [
+        'fecha_creacion',
+        'fecha_inicio',
+        'fecha_fin',
+        'cantidad',
+        'observaciones',
+        'estado',
+        'item_general_id',
+        'formulacion_version_id',
+        'unidad_id',
+    ];
+
     public function __construct()
     {
         parent::__construct();

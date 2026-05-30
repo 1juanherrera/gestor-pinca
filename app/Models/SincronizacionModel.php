@@ -6,6 +6,18 @@ class SincronizacionModel extends BaseModel
     protected $table      = 'item_general';
     protected $primaryKey = 'id_item_general';
 
+    // Mass-assignment whitelist para la tabla natural `item_general`.
+    // Este modelo es de solo-lectura/auditoría: opera todo con query builder
+    // directo y solo hace UPDATEs puntuales de `nombre` (merge → prefijo [MERGED]).
+    // $allowedFields protege un eventual save()/insert()/update() del modelo.
+    // Subconjunto conservador de columnas de item_general realmente escritas aquí.
+    protected $allowedFields = [
+        'nombre',
+        'codigo',
+        'tipo',
+        'categoria_id',
+    ];
+
     public function __construct()
     {
         parent::__construct();
