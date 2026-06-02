@@ -129,4 +129,129 @@ class SincronizacionController extends ResourceController
             return $this->apiFail($e->getMessage(), 400);
         }
     }
+
+    // ── Deduplicación asistida por IA ───────────────────────────────────────
+
+    /** GET /sincronizacion/ia/clusters?estado=&confianza=&tipo= */
+    public function iaClusters()
+    {
+        $estado    = $this->request->getGet('estado');
+        $confianza = $this->request->getGet('confianza');
+        $tipo      = $this->request->getGet('tipo');
+        try {
+            return $this->respond($this->model->listarClusters(
+                $estado ?: null,
+                $confianza ?: null,
+                ($tipo !== null && $tipo !== '') ? (int) $tipo : null,
+            ));
+        } catch (\Throwable $e) {
+            log_message('error', '[Sinc::iaClusters] ' . $e->getMessage());
+            return $this->apiFail('Error al listar clusters.', 500);
+        }
+    }
+
+    /** GET /sincronizacion/ia/clusters/:id */
+    public function iaCluster($id = null)
+    {
+        $cluster = $this->model->detalleCluster((int) $id);
+        if (!$cluster) return $this->apiNotFound('Cluster no encontrado.');
+        return $this->respond($cluster);
+    }
+
+    /** PATCH /sincronizacion/ia/clusters/:id */
+    public function iaActualizarCluster($id = null)
+    {
+        $data = $this->request->getJSON(true) ?? [];
+        try {
+            $this->model->actualizarCluster((int) $id, $data);
+            return $this->respond(['message' => 'Cluster actualizado.', 'cluster' => $this->model->detalleCluster((int) $id)]);
+        } catch (\Throwable $e) {
+            return $this->apiFail($e->getMessage(), 400);
+        }
+    }
+
+    /** PATCH /sincronizacion/ia/cluster-items/:id  body {rol} */
+    public function iaMoverItem($id = null)
+    {
+        $data = $this->request->getJSON(true) ?? [];
+        $rol  = $data['rol'] ?? '';
+        try {
+            $this->model->moverItem((int) $id, $rol);
+            return $this->respond(['message' => 'Miembro actualizado.']);
+        } catch (\Throwable $e) {
+            return $this->apiFail($e->getMessage(), 400);
+        }
+    }
+
+    /** POST /sincronizacion/ia/clusters/:id/fusionar */
+    public function iaFusionarGrupo($id = null)
+    {
+        try {
+            $result = $this->model->fusionarCluster((int) $id, $this->getUsername());
+            log_message('info', sprintf(
+                '[MERGE_CLUSTER] Usuario "%s" fusionó cluster #%d (%d ítems → keep #%d)',
+                $this->getUsername(), (int) $id, $result['fusionados'], $result['keep_id']
+            ));
+            return $this->respond(['message' => 'Grupo fusionado correctamente.', 'detalle' => $result]);
+        } catch (\Throwable $e) {
+            log_message('error', '[Sinc::iaFusionarGrupo] ' . $e->getMessage());
+            return $this->apiFail($e->getMessage(), 400);
+        }
+    }
+
+    /** POST /sincronizacion/ia/clusters/:id/descartar */
+    public function iaDescartarCluster($id = null)
+    {
+        $this->model->descartarCluster((int) $id);
+        return $this->respond(['message' => 'Grupo descartado.']);
+    }
+
+    /** GET /sincronizacion/ia/verificar/:keepId */
+    public function iaVerificar($keepId = null)
+    {
+        return $this->respond($this->model->verificarPostMerge((int) $keepId));
+    }
+
+    /** POST /sincronizacion/ia/auditoria/:id/revertir */
+    public function iaRevertir($id = null)
+    {
+        try {
+            $result = $this->model->revertirMerge((int) $id, $this->getUsername());
+            log_message('info', sprintf('[MERGE_UNDO] Usuario "%s" revirtió auditoría #%d', $this->getUsername(), (int) $id));
+            return $this->respond(['message' => 'Fusión revertida (parcial).', 'detalle' => $result]);
+        } catch (\Throwable $e) {
+            return $this->apiFail($e->getMessage(), 400);
+        }
+    }
+
+    /**
+     * POST /sincronizacion/ia/clasificar  body {tipo?}
+     * Dispara la clasificación química con IA y guarda los clusters propuestos.
+     * Si no hay ANTHROPIC_API_KEY, responde 400 indicando usar el modo offline (command).
+     */
+    public function iaClasificar()
+    {
+        $data = $this->request->getJSON(true) ?? [];
+        $tipo = isset($data['tipo']) && $data['tipo'] !== '' ? (int) $data['tipo'] : null;
+
+        try {
+            $dataset = $this->model->datasetParaClasificacion($tipo);
+            if (empty($dataset)) {
+                return $this->apiFail('No hay materias primas/insumos para clasificar.', 400);
+            }
+
+            $service  = new \App\Services\ClasificadorQuimicoService();
+            $lote     = 'IA-' . date('YmdHis');
+            $clusters = $service->clasificar($dataset);
+            $res      = $this->model->guardarSugerencias($clusters, $lote, $service->modelo());
+
+            log_message('info', sprintf('[IA_CLASIFICAR] Usuario "%s" clasificó %d ítems → %d clusters (lote %s)',
+                $this->getUsername(), count($dataset), $res['clusters_creados'], $lote));
+
+            return $this->respond(['message' => 'Clasificación completada.', 'detalle' => $res]);
+        } catch (\Throwable $e) {
+            log_message('error', '[Sinc::iaClasificar] ' . $e->getMessage());
+            return $this->apiFail($e->getMessage(), 400);
+        }
+    }
 }

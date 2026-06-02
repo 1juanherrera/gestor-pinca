@@ -272,6 +272,17 @@ $routes->group('api', function ($routes) {
     $routes->get('sincronizacion/huerfanos',   'SincronizacionController::huerfanos');
     $routes->post('sincronizacion/merge',      'SincronizacionController::merge');
 
+    // Deduplicación asistida por IA (clusters de identidad química)
+    $routes->post('sincronizacion/ia/clasificar',                  'SincronizacionController::iaClasificar');
+    $routes->get('sincronizacion/ia/clusters',                     'SincronizacionController::iaClusters');
+    $routes->get('sincronizacion/ia/clusters/(:num)',              'SincronizacionController::iaCluster/$1');
+    $routes->patch('sincronizacion/ia/clusters/(:num)',            'SincronizacionController::iaActualizarCluster/$1');
+    $routes->post('sincronizacion/ia/clusters/(:num)/fusionar',    'SincronizacionController::iaFusionarGrupo/$1');
+    $routes->post('sincronizacion/ia/clusters/(:num)/descartar',   'SincronizacionController::iaDescartarCluster/$1');
+    $routes->patch('sincronizacion/ia/cluster-items/(:num)',       'SincronizacionController::iaMoverItem/$1');
+    $routes->get('sincronizacion/ia/verificar/(:num)',             'SincronizacionController::iaVerificar/$1');
+    $routes->post('sincronizacion/ia/auditoria/(:num)/revertir',   'SincronizacionController::iaRevertir/$1');
+
     // BÚSQUEDA GLOBAL (Cmd+K palette)
     $routes->get('search', 'SearchController::search');
 
