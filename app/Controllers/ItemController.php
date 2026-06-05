@@ -147,7 +147,43 @@ class ItemController extends ResourceController
         if (!$this->model->find($id)) {
             return $this->apiNotFound("Item con ID $id no encontrado.");
         }
-        $this->model->delete($id);
+
+        // Chequear dependencias para devolver un 409 claro en vez de un 500 por FK.
+        $db  = \Config\Database::connect();
+        $iid = (int) $id;
+        $bloqueos = [];
+
+        $stock = (float) ($db->table('inventario_capas')
+            ->selectSum('cantidad_disponible', 'total')
+            ->where('item_general_id', $iid)->where('estado', 1)
+            ->get()->getRow()->total ?? 0);
+        if ($stock > 0.0001) $bloqueos[] = "tiene {$stock} de stock activo";
+
+        if ($db->tableExists('item_general_formulaciones')) {
+            $usos = $db->table('item_general_formulaciones')->where('item_general_id', $iid)->countAllResults();
+            if ($usos > 0) $bloqueos[] = "se usa como ingrediente en {$usos} fórmula(s)";
+        }
+        $tieneFormula = $db->table('formulaciones')
+            ->where('item_general_id', $iid)->where('deleted_at', null)->countAllResults();
+        if ($tieneFormula > 0) $bloqueos[] = "tiene {$tieneFormula} fórmula(s) propia(s)";
+
+        if (!empty($bloqueos)) {
+            return $this->apiFail(
+                "No se puede eliminar el ítem #{$id}: " . implode(', ', $bloqueos) .
+                ". Quitá esas dependencias o usá Sincronización → Merge para unificarlo.",
+                409
+            );
+        }
+
+        try {
+            $this->model->delete($id);
+        } catch (\Throwable $e) {
+            log_message('error', "[DELETE_ITEM] FK/constraint id={$id}: " . $e->getMessage());
+            return $this->apiFail(
+                "No se puede eliminar el ítem #{$id} porque está referenciado por otros registros.",
+                409
+            );
+        }
         log_message('info', "[DELETE_ITEM] usuario={$this->getUsername()} id={$id}");
         return $this->respondDeleted(['mensaje' => "Item $id eliminado"]);
     }

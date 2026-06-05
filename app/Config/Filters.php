@@ -35,6 +35,7 @@ class Filters extends BaseFilters
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
         'jwt'           => \App\Filters\JwtFilter::class,
+        'rbac'          => \App\Filters\RbacFilter::class,
     ];
 
     /**
@@ -72,6 +73,8 @@ class Filters extends BaseFilters
         'before' => [
             'cors',
             'jwt' => ['except' => ['api/login', 'api/crear', 'api/health', 'api/auth/refresh']],
+            // RBAC corre DESPUÉS de jwt (necesita $request->usuario). Mismo except.
+            'rbac' => ['except' => ['api/login', 'api/crear', 'api/health', 'api/auth/refresh']],
         ],
         'after'  => ['secureheaders'],
     ];

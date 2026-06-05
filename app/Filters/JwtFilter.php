@@ -23,7 +23,17 @@ class JwtFilter implements FilterInterface
         }
 
         $token = str_replace('Bearer ', '', $token);
-        $secretKey = $_ENV['TOKEN_SECRET'] ?? 'miClaveSuperSecreta';
+
+        // El secret DEBE venir de .env. Sin fallback débil: si no está configurado,
+        // rechazamos en vez de validar tokens firmados con un secreto público
+        // (que sería un bypass total de autenticación en un deploy mal configurado).
+        $secretKey = $_ENV['TOKEN_SECRET'] ?? getenv('TOKEN_SECRET') ?: '';
+        if (empty($secretKey) || $secretKey === 'miClaveSuperSecreta') {
+            log_message('critical', '[JwtFilter] TOKEN_SECRET no configurado o usando el valor por defecto.');
+            return Services::response()
+                ->setJSON(['ok' => false, 'msg' => 'Error de configuración del servidor.'])
+                ->setStatusCode(500);
+        }
 
         try {
             $decoded = JWT::decode($token, new Key($secretKey, 'HS256'));

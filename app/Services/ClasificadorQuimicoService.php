@@ -192,7 +192,7 @@ TXT;
                     'headers'     => array_merge(['content-type' => 'application/json'], $headers),
                     'body'        => json_encode($body),
                     'http_errors' => false,
-                    'timeout'     => 180,
+                    'timeout'     => 90,
                 ]);
                 $status = $resp->getStatusCode();
                 $json   = json_decode($resp->getBody(), true);

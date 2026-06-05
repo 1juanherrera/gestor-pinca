@@ -1,6 +1,6 @@
 # MEJORAS.md — Backend Pinca
 
-> Mejoras técnicas identificadas y todavía pendientes. **Última limpieza 2026-05-29**. Items resueltos eliminados de esta lista (su histórico vive en `CLAUDE.md` por sesión). El backlog operativo con checkboxes vive en `PENDIENTES.md`.
+> Mejoras técnicas identificadas y todavía pendientes. **Última limpieza 2026-06-05** (resueltos: RBAC #7, JWT fallback #8; actualizada integridad de datos). Items resueltos eliminados de esta lista (su histórico vive en `CLAUDE.md` por sesión). El backlog operativo con checkboxes vive en `PENDIENTES.md`.
 
 ---
 
@@ -42,15 +42,13 @@ Todas las rutas son `/api/...`. Pendiente cuando aparezca consumidor externo. Re
 
 ## P2 — Seguridad de aplicación (del análisis 2026-05-29)
 
-### 7. RBAC en mutaciones — ⚠️ PARCIAL
+### 7. RBAC en mutaciones — ✅ RESUELTO (05-30 tarde + 06-03)
 
-**Resuelto**: mutaciones de stock gateadas — `InventarioController::traspaso/ajusteManual/removeFromBodega` (operador+, bloquea visor), `RemisionesController::delete` (admin-only).
+Política definida con el cliente: **control por módulo, no por acción**. Guards por rol quitados de operación; admin-only conservado en config (Auditoría/Configuración/Empresa/Numeración) y superadmin en Roles. Complemento 06-03: **`RbacFilter`** — el `visor` es solo-lectura global (403 en POST/PUT/PATCH/DELETE, whitelist mi-password/logout). Merge de Sincronización + endpoints IA: admin-only (impacto en integridad histórica).
 
-**Falta**: create/update/cambiarEstado de documentos comerciales (Facturas, OC, Remisiones, Cotizaciones, Preparaciones) — hoy un visor puede crearlos/recibir OC/producir. Necesita matriz rol→acción del cliente (`PREGUNTAS_CLIENTE.md` #21).
+### 8. JWT con fallback débil — ✅ RESUELTO 2026-06-03
 
-### 8. JWT con fallback débil — ❌ ABIERTO (deploy)
-
-`JwtFilter.php:26` `?? 'miClaveSuperSecreta'`. Si `TOKEN_SECRET` no carga, valida tokens con secreto público = bypass de auth. Cambiar a `throw`. Deploy-only pero código vivo.
+`JwtFilter` ya no tiene fallback: si `TOKEN_SECRET` está vacío o es `'miClaveSuperSecreta'` → log critical + 500 `'Error de configuración del servidor'`. El bypass de auth por deploy mal configurado quedó eliminado.
 
 ### 9. Mass assignment en 6 modelos — ✅ RESUELTO 2026-05-30
 
@@ -68,7 +66,7 @@ Del análisis de la BD 2026-05-29 — **el costeo no es confiable por falta de d
 - 81% de MP (153/189) sin proveedor vinculado.
 - `porcentaje` NULL en las 57 fórmulas (campo sin usar).
 - 60% de fórmulas con ingredientes sin precio, 91% de capas con costo $0.
-- 35 item_proveedor huérfanos, 6 pares de duplicados, 4 FKs colgadas (ids 35-38, datos de prueba).
+- ~~6 pares de duplicados~~ ✅ mergeados 05-30; ~~4 FKs colgadas~~ ✅ borradas 05-30. Huérfanos restantes: limpiar con **Sugerencias IA** (06-02). Desde 06-03 hay FKs reales en `item_proveedor` y la BOM → no se generan colgados nuevos.
 
 Detalle y plan en `PENDIENTES.md § 🔴 PRIORIDAD` + `PREGUNTAS_CLIENTE.md`.
 
@@ -118,8 +116,8 @@ Detectadas en sesión 2026-05-29 al agregar soft-deletes a `bodegas/instalacione
 🚀 P1 #2 — Security headers (SecurityHeadersFilter)
 🚀 P1 #3 — Credenciales DB de producción
 🚀 CORS_ALLOWED_ORIGIN al dominio real (hoy http://localhost:5173)
-🚀 JwtFilter sin fallback débil (lanzar excepción como UsuarioController)
-🚀 MIME validation real en upload de logo (finfo_file en lugar de mime_content_type)
+✅ JwtFilter sin fallback débil — resuelto 2026-06-03 (ya no es item de deploy)
+✅ MIME validation (finfo_file) — resuelto 2026-05-30
 🚀 backup-auto.sh debe incluir tar.gz de /public/uploads/
 🚀 Procedimiento de restore documentado
 ```

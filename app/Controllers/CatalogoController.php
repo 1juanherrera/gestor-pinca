@@ -15,7 +15,7 @@ class CatalogoController extends ResourceController
     protected $modelName = CatalogoModel::class;
 
     private const RULES_BASE = [
-        'nombre'        => 'required|max_length[36]',
+        'nombre'        => 'required|max_length[100]',
         'codigo'        => 'permit_empty|max_length[10]',
         'tipo'          => 'permit_empty',
         'categoria_id'  => 'permit_empty|integer',

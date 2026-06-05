@@ -1,6 +1,6 @@
 # PENDIENTES — Backlog del Sistema PINCA
 
-> **Última limpieza 2026-05-29 (tarde)**. Solo quedan items abiertos. Lo resuelto vive como histórico en `CLAUDE.md` (backend y frontend) por sesión. Los detalles técnicos de algunos items están en `MEJORAS.md`.
+> **Última limpieza 2026-06-05** (marcados los resueltos de las sesiones 05-30 tarde, 06-02 y 06-03). Lo resuelto vive como histórico en `CLAUDE.md` (backend y frontend) por sesión. Los detalles técnicos de algunos items están en `MEJORAS.md`.
 >
 > El bloque **🚀 Deploy / Producción** está separado porque el dueño del proyecto pidió no considerarlo todavía.
 
@@ -14,9 +14,9 @@ El análisis de integridad de la BD (2026-05-29) reveló que **el costeo del sis
 - [ ] **`porcentaje` NULL en las 57 fórmulas** (682 filas de ingredientes, 0 con valor). El campo está sin usar. → definir si el costeo usa cantidad o porcentaje, y poblarlo.
 - [ ] **60% de fórmulas (34/57) con ingredientes sin precio** → costo subvaluado. Se resuelve al vincular proveedores.
 - [ ] **91% de capas activas (90/99) con costo $0** → valuación de inventario irreal. Se corrige con recepciones reales de OC (que setean costo) o `recalcularPromedioPonderado`.
-- [ ] **35 item_proveedor huérfanos** (sin `item_general_id`) → vincular o limpiar vía módulo Sincronización.
-- [ ] **6 pares de duplicados de catálogo** (BENTOCLAY BP 184, CHEMOSPERSE 77, DIOXIDO SULFATO 2196, EDAPLAN/LANSPERSE, ETANOL 96%, MICROTALC C20) → fusionar con el merge de Sincronización.
-- [ ] **4 FKs colgadas**: item_proveedor ids 35-38 apuntan a proveedores inexistentes (8 y 2) — datos de prueba viejos, además con IVA mal (~1.14). → borrar.
+- [ ] **item_proveedor huérfanos** (sin `item_general_id`) → vincular o limpiar vía Sincronización. Desde 06-02 hay herramienta nueva: **Sugerencias IA** (clusters por identidad química + fusión en lote). Desde 06-03 hay FK real con `ON DELETE SET NULL` — no se generan huérfanos colgados nuevos.
+- [x] ~~**6 pares de duplicados de catálogo**~~ — ✅ 2026-05-30 (tarde): mergeados vía SQL (BENTOCLAY, CHEMOSPERSE, DIOXIDO SULFATO, EDAPLAN/LANSPERSE, ETANOL 96%, MICROTALC C20).
+- [x] ~~**4 FKs colgadas** (item_proveedor ids 35-38)~~ — ✅ 2026-05-30 (tarde): borradas con su historial. Además 06-03 agregó FKs reales a `item_proveedor` y `item_general_formulaciones` (migración `AddMissingForeignKeys`) → este tipo de corrupción ya no puede repetirse.
 
 > Estos NO se arreglan inventando datos. Las respuestas del cliente (`PREGUNTAS_CLIENTE.md`) los desbloquean.
 
@@ -36,8 +36,8 @@ El análisis de integridad de la BD (2026-05-29) reveló que **el costeo del sis
   - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
 - [ ] **Backup `/uploads/` incluido**. El script `backups/backup-auto.sh` hoy solo respalda la BD. Agregar `tar -czf` de `pinca_backend/public/uploads/` con la misma rotación.
 - [ ] **Procedimiento de restore documentado**. README corto explicando cómo restaurar un dump SQL + copiar uploads de vuelta.
-- [ ] **`JwtFilter` sin fallback débil**. Hoy si `TOKEN_SECRET` está vacío, cae a `'miClaveSuperSecreta'`. Cambiar a `throw new Exception` como ya hace `UsuarioController`.
-- [ ] **MIME validation real en upload de logo**. `EmpresaController.php:121` usa `mime_content_type()` (deprecated PHP 9). Reemplazar por `finfo_file(finfo_open(FILEINFO_MIME_TYPE), $abs)`.
+- [x] ~~**`JwtFilter` sin fallback débil**~~ — ✅ resuelto 2026-06-03 (ya no es item de deploy: rechaza con 500 si `TOKEN_SECRET` falta).
+- [x] ~~**MIME validation real en upload de logo**~~ — ✅ resuelto 2026-05-30 (`finfo_file`).
 - [ ] **`display_errors = 0`** en `production.php` ya está OK (confirmar antes de deploy).
 
 ---
@@ -50,7 +50,7 @@ El análisis de integridad de la BD (2026-05-29) reveló que **el costeo del sis
 - [ ] **Migrar respuestas de éxito a `ApiResponse`** en controllers comerciales (`Facturas`, `Remisiones`, `PagosCliente`, `NotasCredito`, `Formulaciones`, `Catalogo`, `ItemProveedor`, `Preparaciones`, `Inventario`) — sus respuestas hoy usan shape `{status, message, data}` o `respond([])` plano. Migrar **cambia el contrato del frontend** — requiere coordinación.
 - [ ] **Anulación de factura por email al cliente** — requiere infra de email (SMTP/SES/SendGrid).
 - [ ] **Cache de configuración en Redis**. Hoy `Cfg::` cachea per-request. Migrar cuando la carga crezca.
-- [ ] **RBAC en create/update/cambiarEstado de documentos comerciales** (`Facturas`, `OC`, `Remisiones`, `Cotizaciones`, `Preparaciones`). Hoy un `visor` puede crear facturas, recibir OC y producir. Falta una **matriz rol→acción** definida con el cliente (ver `PREGUNTAS_CLIENTE.md` #21). Ya se gatearon las mutaciones de stock (traspaso/ajuste/remove → operador+; remisiones delete → admin).
+- [x] ~~**RBAC en create/update/cambiarEstado de documentos comerciales**~~ — ✅ resuelto en dos partes: 2026-05-30 (tarde) el cliente definió **control por MÓDULO, no por acción** (se quitaron los guards por rol en operación; admin-only solo en config: Auditoría/Configuración/Empresa/Numeración, superadmin en Roles). 2026-06-03 se agregó **`RbacFilter`**: el `visor` es solo-lectura global (403 en cualquier POST/PUT/PATCH/DELETE salvo mi-password/logout). El merge de Sincronización + endpoints IA quedaron admin-only por su impacto en integridad.
 - [x] ~~**Fix `php spark validar:fixes`**~~ — ✅ resuelto 2026-05-29 (tarde). Transacción global con rollback garantizado. Ahora es seguro contra la BD real. Flag `--commit` para persistir a propósito.
 
 ### Frontend
@@ -63,7 +63,7 @@ El análisis de integridad de la BD (2026-05-29) reveló que **el costeo del sis
 - [x] ~~**recharts en chunk eager**~~ — ✅ 2026-05-30: `vendor-charts` propio, vendor-ui 426→44 KB. — `vite.config.js` lo agrupa con lucide-react en `vendor-ui`, así entra en el bundle inicial aunque solo se use en Dashboard/Rentabilidad/CostosProduccion. Sacarlo a su propio chunk lazy.
 - [ ] **~15 hooks con rutas hardcodeadas restantes** (Cartera, Configuracion, Movimientos, Auditoria, etc.). 2026-05-30 se migraron 9 de alto tráfico a API_ROUTES. en vez de `API_ROUTES` (`useBodegas`, `useClientes`, `useCotizaciones`, `useFactura`, `useItem`, etc.). Migrar para que cambios de ruta backend no rompan silenciosamente.
 - [x] ~~**Modal sin focus-trap**~~ — ✅ 2026-05-30: focus-trap en Modal.jsx y Drawer.jsx. (`src/shared/Modal.jsx`) — sin autofocus, Tab escapa al fondo, no restaura foco al cerrar. A11y/teclado.
-- [x] ~~**Ocultar acciones de inventario por rol**~~ — ✅ 2026-05-30: DataTable + InventarioGlobalPage ocultan a visor. — espejo del RBAC backend: el visor ahora recibe 403 en traspaso/ajuste/remove; ocultar esos botones en la UI para que no los vea.
+- [x] ~~**Ocultar acciones de inventario por rol**~~ — ⚠️ REVERTIDO 2026-05-30 (tarde) por decisión del cliente (control por módulo, no por rol). Cubierto desde 2026-06-03 por `RbacFilter` backend: el visor recibe 403 con mensaje claro ("Tu rol es de solo lectura") en cualquier mutación — la UI no oculta botones.
 
 ---
 
@@ -87,7 +87,7 @@ El análisis de integridad de la BD (2026-05-29) reveló que **el costeo del sis
 
 ### Backend (más del análisis 2026-05-29)
 
-- [ ] **JWT con fallback débil** (`JwtFilter.php:26` `?? 'miClaveSuperSecreta'`). Deploy-only pero código vivo. Cambiar a `throw` si `TOKEN_SECRET` vacío (como ya hace `UsuarioController`).
+- [x] ~~**JWT con fallback débil**~~ — ✅ 2026-06-03: `JwtFilter` rechaza con 500 + log critical si `TOKEN_SECRET` está vacío o es el valor por defecto. Ya no existe el fallback `'miClaveSuperSecreta'`.
 - [x] ~~**6 modelos sin `$allowedFields`**~~ — ✅ 2026-05-30: declarados en los 6. (`FormulacionesModel`, `PreparacionesModel`, `SincronizacionModel`, `ComparadorModel`, `EmpresaModel`, `InventarioCapasModel`) — mass assignment potencial vía insert directo. Declarar allowedFields o usar arrays explícitos.
 - [ ] **`recalcularSaldo` suma pagos sin filtrar anulados** (`FacturasModel.php:58`). Hoy `pagos_cliente` no tiene soft-delete (bajo riesgo); filtrar explícitamente si se agrega anulación de pagos.
 - [x] ~~**`recibirLinea` update fuera de transacción**~~ — ✅ 2026-05-30: movido dentro del bloque transaccional. (`OrdenesCompraController.php:446`). Mover dentro del lock para evitar desincronización si el commit falla parcialmente.
@@ -104,10 +104,8 @@ El análisis de integridad de la BD (2026-05-29) reveló que **el costeo del sis
 ## 🎨 Decisiones de UX pendientes
 
 - [ ] **Modo de costo en formulaciones**: hoy hay toggle Costo real / Costo lista. Si después de un mes de uso real el usuario rara vez usa "Costo lista", borrar el toggle y dejar solo el real. Si lo usa seguido, mantener.
-- [ ] **Simulación pura de prorrateo (caso pre-OC)**. Hoy el flujo de prorrateo está dentro del OrdenDrawer (requiere OC creada). Si el usuario necesita simular antes de comprometerse:
-  - Opción 1 (simple): toggle "Solo simular / Confirmar recepción" en `RecibirProrrateoModal`. Si solo simular: no se crea inventario, no se modifica OC, solo se muestran los números.
-  - Opción 2 (más involucrada): mini-calculator widget en el header de Compras.
-- [ ] **Columna "Último precio" en formulaciones**. Algunos contadores prefieren ver el precio de la última recepción (la capa más reciente) en vez del promedio ponderado. Si se necesita, agregar como columna extra (no reemplazar el principal).
+- [x] ~~**Simulación pura de prorrateo (caso pre-OC)**~~ — ✅ 2026-05-30 (tarde): `CalculadoraProrrateo.jsx` — simulación pura sin OC, abierta desde el header de Compras (la "Opción 2").
+- [x] ~~**Columna "Último precio" en formulaciones**~~ — ✅ 2026-05-30 (tarde): backend devuelve `ultimo_precio` por ingrediente (capa activa más reciente, sin N+1) y `FormulacionesTable` lo muestra como columna extra.
 
 ---
 

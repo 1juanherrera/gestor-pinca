@@ -77,8 +77,10 @@ class SincronizacionController extends ResourceController
 
     public function merge()
     {
-        // Solo admin u operador pueden mergear items (afecta integridad histórica)
-        // Acceso por módulo (política 2026-05-30): si el usuario tiene el módulo, puede ejecutar la acción. Sin guard por rol.
+        // Fusionar items reapunta FKs y soft-deletea catálogo → solo admin/superadmin.
+        if (!$this->userHasAdminAccess()) {
+            return $this->apiForbidden('Solo un administrador puede unificar materias primas.');
+        }
 
         $data = $this->request->getJSON(true) ?? [];
 
@@ -161,6 +163,7 @@ class SincronizacionController extends ResourceController
     /** PATCH /sincronizacion/ia/clusters/:id */
     public function iaActualizarCluster($id = null)
     {
+        if (!$this->userHasAdminAccess()) return $this->apiForbidden('Solo un administrador puede editar sugerencias.');
         $data = $this->request->getJSON(true) ?? [];
         try {
             $this->model->actualizarCluster((int) $id, $data);
@@ -173,6 +176,7 @@ class SincronizacionController extends ResourceController
     /** PATCH /sincronizacion/ia/cluster-items/:id  body {rol} */
     public function iaMoverItem($id = null)
     {
+        if (!$this->userHasAdminAccess()) return $this->apiForbidden('Solo un administrador puede editar sugerencias.');
         $data = $this->request->getJSON(true) ?? [];
         $rol  = $data['rol'] ?? '';
         try {
@@ -186,6 +190,7 @@ class SincronizacionController extends ResourceController
     /** POST /sincronizacion/ia/clusters/:id/fusionar */
     public function iaFusionarGrupo($id = null)
     {
+        if (!$this->userHasAdminAccess()) return $this->apiForbidden('Solo un administrador puede fusionar grupos.');
         try {
             $result = $this->model->fusionarCluster((int) $id, $this->getUsername());
             log_message('info', sprintf(
@@ -202,6 +207,7 @@ class SincronizacionController extends ResourceController
     /** POST /sincronizacion/ia/clusters/:id/descartar */
     public function iaDescartarCluster($id = null)
     {
+        if (!$this->userHasAdminAccess()) return $this->apiForbidden('Solo un administrador puede descartar grupos.');
         $this->model->descartarCluster((int) $id);
         return $this->respond(['message' => 'Grupo descartado.']);
     }
@@ -215,6 +221,7 @@ class SincronizacionController extends ResourceController
     /** POST /sincronizacion/ia/auditoria/:id/revertir */
     public function iaRevertir($id = null)
     {
+        if (!$this->userHasAdminAccess()) return $this->apiForbidden('Solo un administrador puede revertir fusiones.');
         try {
             $result = $this->model->revertirMerge((int) $id, $this->getUsername());
             log_message('info', sprintf('[MERGE_UNDO] Usuario "%s" revirtió auditoría #%d', $this->getUsername(), (int) $id));
@@ -231,6 +238,7 @@ class SincronizacionController extends ResourceController
      */
     public function iaClasificar()
     {
+        if (!$this->userHasAdminAccess()) return $this->apiForbidden('Solo un administrador puede ejecutar la clasificación con IA.');
         $data = $this->request->getJSON(true) ?? [];
         $tipo = isset($data['tipo']) && $data['tipo'] !== '' ? (int) $data['tipo'] : null;
 

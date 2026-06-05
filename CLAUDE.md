@@ -1,8 +1,8 @@
 # CLAUDE.md
 
-> **Última actualización**: 2026-05-29 (tarde: análisis profundo del sistema + fixes de seguridad/integridad + validar:fixes seguro + carga proveedores isGroup/distriatlantico). Ver §"Sesión 2026-05-29 (tarde)".
-> **Penúltima**: 2026-05-29 (mañana: ApiResponse propagation total + OpenAPI + soft-deletes + 5ª migración DROP INDEX).
-> Backend en estado funcional con seguridad activa (JWT global + RBAC + rol superadmin + token_version + logout server-side + refresh token rotativo) + **API documentada en Swagger UI** + **shape de error unificado en 33 controllers**. Ver §"Sesión 2026-05-29 — ApiResponse propagation total + OpenAPI + soft-deletes" para lo más reciente. `migrate` limpio. **NO correr `php spark validar:fixes` contra la base real** — muta datos.
+> **Última actualización**: 2026-06-05 (documenta sesiones 06-01→06-03: RbacFilter visor read-only + JwtFilter sin fallback débil + FKs faltantes + delete con 409). Ver §"Sesión 2026-06-03".
+> **Penúltima**: 2026-06-02 (deduplicación de materias primas asistida por IA — clusters, merge N→1, auditoría, UNDO). Ver §"Sesión 2026-06-01/02".
+> Backend en estado funcional con seguridad activa (JWT global sin fallback + RbacFilter visor read-only + RBAC por módulo + rol superadmin + token_version + logout server-side + refresh token rotativo) + **API documentada en Swagger UI** + **shape de error unificado en 33 controllers** + **FKs reales en item_proveedor y BOM**. `migrate` limpio. `php spark validar:fixes` es SEGURO (rollback global desde 2026-05-29).
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -1603,4 +1603,119 @@ Tanda de mejoras del backlog que NO requerían decisión del cliente ni son de d
 ---
 
 > **Snapshot al cierre 2026-05-30**: Lote de hardening DEV aplicado — allowedFields en 6 modelos, recibirLinea atómico, finfo en upload, raw queries con soft-delete, endpoint bulk de facturas con helper reutilizable. `validar:fixes` 53/53. Sin items de producción tocados (por pedido del dueño). Backlog restante: features grandes (real-time, email, /v1/, Redis), RBAC en docs comerciales (necesita matriz rol→acción), 3 decisiones de UX, y la **carga de datos del cliente** que desbloquea el costeo (ver `PREGUNTAS_CLIENTE.md`).
+
+---
+
+## Sesión 2026-05-30 (tarde) — RBAC por módulo (decisión del cliente) + último precio + limpieza de datos
+
+Commit `5559b75`. Segunda tanda del día, coordinada con frontend.
+
+### RBAC: decisión del cliente — control por MÓDULO, no por acción
+
+El cliente definió la política de permisos: **si un usuario tiene acceso al módulo, puede ejecutar las acciones del módulo**. Esto cerró el item "matriz rol→acción" del backlog:
+
+- **Quitados** los guards por rol en operación: `InventarioController::traspaso/ajusteManual/removeFromBodega`, deletes de Facturas/Clientes/OCs/Cotizaciones/Remisiones, bulk de facturas, merge de Sincronización.
+- **Conservados** los admin-only de configuración: Auditoría, Configuración, Empresa, Numeración. Superadmin en Roles.
+- (Nota: la sesión 06-03 complementa esto con `RbacFilter` — el **visor** queda read-only a nivel filtro global, y el merge de Sincronización volvió a ser admin-only por su impacto en integridad histórica. Ver §"Sesión 2026-06-03".)
+
+### Último precio por ingrediente en formulaciones
+
+`FormulacionesModel::get_opciones_proveedor_formulacion` ahora devuelve `ultimo_precio` por ingrediente (costo de la capa activa más reciente, query batcheada sin N+1). El frontend lo muestra como columna en `FormulacionesTable` — cierra la decisión de UX "columna último precio" (pregunta #9 de `PREGUNTAS_CLIENTE.md`).
+
+### Limpieza de datos (SQL directo, no código)
+
+Del bloque 🔴 de `PENDIENTES.md`:
+- ✅ **4 FKs colgadas borradas** (item_proveedor ids 35-38 + su historial — datos de prueba).
+- ✅ **6 pares de duplicados de catálogo mergeados**.
+- ✅ Bodega principal vaciada (capas + legacy).
+- `allowedFields` también declarado en `RequisicionesCompraModel` (7º modelo).
+- Backups previos en `backups/*_2026-05-2x.sql`.
+
+---
+
+## Sesión 2026-06-01/02 — Deduplicación de materias primas asistida por IA
+
+Commit `4b11872`. Feature grande nueva en el módulo Sincronización: detectar y fusionar duplicados de catálogo usando un LLM que agrupa por **identidad química** (no solo similitud de string).
+
+### Tablas nuevas (migraciones `2026-06-01-000001/000002`)
+
+- `item_sync_clusters` — grupos sugeridos: nombre base propuesto, razonamiento del modelo, confianza, estado (pendiente/fusionado/descartado).
+- `item_sync_cluster_items` — miembros de cada grupo con `rol` (keep/merge/excluido).
+- `item_sync_auditoria` — registro de cada fusión ejecutada (quién, cuándo, qué items, snapshot) → habilita UNDO.
+
+### `ClasificadorQuimicoService` (`app/Services/`)
+
+Cliente LLM con **autodetección de provider** (Gemini o Claude según API key en `.env` — ver `.env.example`). Prompt de clasificación química; timeout 90s (bajado de 180 en sesión 06-03). Comando spark: `php spark sync:clasificar` (modos online/offline).
+
+### Merge ampliado (`SincronizacionModel`)
+
+- **Fusión en lote N→1 atómica** (`fusionarCluster`): combina capas/stock de todos los duplicados al keep, recalcula costo promedio ponderado, renombra al nombre base sugerido.
+- `verificarPostMerge` — chequeo de consistencia post-fusión (no bloqueante).
+- `revertirMerge` — UNDO parcial desde la auditoría.
+
+### Endpoints nuevos `/api/sincronizacion/ia/*`
+
+```
+POST  /sincronizacion/ia/clasificar          (ejecuta la clasificación IA)
+GET   /sincronizacion/ia/clusters            (lista grupos sugeridos)
+PATCH /sincronizacion/ia/clusters/:id        (editar nombre base / keep)
+PATCH /sincronizacion/ia/cluster-items/:id   (mover item de rol)
+POST  /sincronizacion/ia/clusters/:id/fusionar
+POST  /sincronizacion/ia/clusters/:id/descartar
+GET   /sincronizacion/ia/auditoria
+POST  /sincronizacion/ia/auditoria/:id/revertir
+```
+
+(Desde la sesión 06-03 todos los endpoints mutadores de IA + el merge clásico requieren `userHasAdminAccess()`.)
+
+### Otros
+
+- Limpieza de backups SQL redundantes del repo (~19k líneas; se conserva `tambores_pre_drop`).
+- Frontend acompañó con la pestaña "Sugerencias IA" en Sincronización (ver CLAUDE.md frontend §29).
+
+---
+
+## Sesión 2026-06-03 — RbacFilter visor read-only + JWT sin fallback + FKs faltantes + delete con 409
+
+(Documentada el 2026-06-05.) Lote de seguridad/integridad que complementa la política RBAC por módulo.
+
+### `RbacFilter` nuevo (`app/Filters/RbacFilter.php`)
+
+El rol **visor es de SOLO LECTURA a nivel global**:
+- Registrado en `Filters.php` DESPUÉS de `jwt` (necesita `$request->usuario`), mismo `except` (login/crear/health/refresh).
+- Bloquea POST/PUT/PATCH/DELETE para `rol=visor` con 403 `{ok:false, msg:'Tu rol (visor) es de solo lectura…'}`.
+- Whitelist: `usuarios/mi-password` y `auth/logout` (su propia cuenta).
+- operador/admin/superadmin no se ven afectados.
+
+Esto cierra el RBAC pendiente sin necesidad de matriz por acción: módulo controla el acceso, el filtro garantiza que el visor nunca mute.
+
+### `JwtFilter` sin fallback débil — RESUELTO (era item de deploy, ya no existe el riesgo)
+
+`?? 'miClaveSuperSecreta'` eliminado. Si `TOKEN_SECRET` está vacío o es el valor por defecto → log critical + 500 `'Error de configuración del servidor'`. Ya no es posible validar tokens con secreto público.
+
+### Migración `2026-06-03-000001_AddMissingForeignKeys`
+
+`item_proveedor` no tenía NINGUNA FK (raíz de los huérfanos históricos) e `item_general_formulaciones` (BOM) tampoco. Agregadas 4 FKs (verificado: 0 huérfanos al aplicar, idempotente vía INFORMATION_SCHEMA):
+- `item_proveedor.item_general_id` → SET NULL (queda "pendiente", no rota)
+- `item_proveedor.proveedor_id` → RESTRICT
+- `igf.formulaciones_id` → CASCADE
+- `igf.item_general_id` → RESTRICT (no borrar un ítem usado como ingrediente)
+
+### Migración `2026-06-01-000003_WidenItemGeneralFichaTecnica`
+
+Columnas de ficha técnica de `item_general` estaban diminutas (`ph` varchar(1), `color` varchar(3)…) → "Data too long" al editar MP desde Catálogo. Las 9 ampliadas a varchar(50). También `CatalogoController` `nombre` max_length 36→100.
+
+### `ItemController::delete` — 409 claro en vez de 500 por FK
+
+Antes de borrar chequea: stock activo en capas, uso como ingrediente en fórmulas, fórmulas propias. Si hay dependencias → 409 con el motivo detallado y sugerencia de usar el merge de Sincronización. Catch de FK como red de seguridad (también 409). El frontend muestra el motivo real (toast en `useItem.js`).
+
+### Otros
+
+- Merge + endpoints mutadores de IA en `SincronizacionController` → `userHasAdminAccess()` (la fusión reapunta FKs y soft-deletea catálogo; demasiado destructivo para la política por módulo).
+- `ClasificadorQuimicoService` timeout 180→90s.
+- Backup pre-cambios: `backups/manual_pinca_2026-06-03_09-31-34.sql`.
+
+---
+
+> **Snapshot al cierre 2026-06-03 (doc 2026-06-05)**: Seguridad redondeada — visor read-only por filtro global, JWT sin fallback débil (riesgo de deploy eliminado en DEV), integridad referencial real en item_proveedor y BOM, deletes con errores accionables. La deduplicación IA (06-02) da herramienta para limpiar los huérfanos/duplicados restantes con criterio del cliente. Backlog restante: features grandes (real-time, email, /v1/, Redis, éxitos→ApiResponse), 1 decisión de UX (toggle costo real/lista), y la **carga de datos del cliente** (ver `PREGUNTAS_CLIENTE.md`).
 
