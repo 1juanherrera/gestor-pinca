@@ -37,6 +37,10 @@ class CostosIndirectosController extends ResourceController
         if (empty($data['nombre']) || empty($data['categoria'])) {
             return $this->apiFail('nombre y categoria son obligatorios.', 422);
         }
+        // valor_mensual alimenta SUM(valor_mensual) en resumen(): debe ser numérico >= 0.
+        if (isset($data['valor_mensual']) && (!is_numeric($data['valor_mensual']) || (float) $data['valor_mensual'] < 0)) {
+            return $this->apiFail('valor_mensual debe ser un número mayor o igual a 0.', 422);
+        }
         $data['fecha_actualizacion'] = date('Y-m-d');
         $data['activo'] = 1;
         $id = $this->model->insert($data);
@@ -50,6 +54,9 @@ class CostosIndirectosController extends ResourceController
         if (!$row) return $this->apiNotFound("Costo indirecto #$id no encontrado.");
 
         $data = $this->request->getJSON(true);
+        if (isset($data['valor_mensual']) && (!is_numeric($data['valor_mensual']) || (float) $data['valor_mensual'] < 0)) {
+            return $this->apiFail('valor_mensual debe ser un número mayor o igual a 0.', 422);
+        }
         $data['fecha_actualizacion'] = date('Y-m-d');
         $this->model->update($id, $data);
         return $this->respond(['mensaje' => "Costo indirecto #$id actualizado"]);

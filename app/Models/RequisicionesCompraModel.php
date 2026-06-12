@@ -474,7 +474,11 @@ class RequisicionesCompraModel extends BaseModel
             $total = 0;
 
             foreach ($reqs as $r) {
-                $precio   = (float) ($r->item_proveedor_id ? $r->precio_ip : ($r->precio_unitario ?? 0));
+                // Honra el precio APROBADO en la requisición (rc.precio_unitario). Solo cae al precio
+                // actual del proveedor (precio_ip) si la requisición no guardó uno. Antes usaba siempre
+                // el precio actual → un cambio de precio entre aprobación y conversión alteraba la OC.
+                $precioReq = (float) ($r->precio_unitario ?? 0);
+                $precio    = $precioReq > 0 ? $precioReq : (float) ($r->precio_ip ?? 0);
                 $subtotal = round($r->cantidad_solicitada * $precio, 2);
                 $total   += $subtotal;
 

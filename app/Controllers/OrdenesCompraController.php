@@ -175,11 +175,16 @@ class OrdenesCompraController extends ResourceController
 
         try {
             $lineas = $data['lineas'] ?? null;
-            unset($data['lineas']);
+
+            // Whitelist: solo campos editables en Borrador. `estado` (lo cambia cambiarEstado() con
+            // su máquina de estados + FOR UPDATE), `numero` (correlativa DIAN inmutable) y `total`
+            // (se recalcula desde las líneas) NUNCA se aceptan por aquí — evita mass assignment.
+            $camposEditables = ['proveedor_id', 'bodegas_id', 'fecha', 'fecha_esperada', 'observaciones', 'iva_pct'];
+            $cabecera = array_intersect_key($data, array_flip($camposEditables));
 
             // Actualizar cabecera
-            if (!empty($data)) {
-                $this->model->update((int) $id, $data);
+            if (!empty($cabecera)) {
+                $this->model->update((int) $id, $cabecera);
             }
 
             // Reemplazar líneas si se envían

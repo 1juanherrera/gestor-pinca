@@ -29,44 +29,89 @@ class InventarioModel extends Model
         $destino  = (int)   $data['bodega_destino_id'];
         $cantidad = (float) $data['cantidad'];
 
-        if ($origen === $destino) {
+        if ($origen === $destino || $cantidad <= 0) {
             return false;
         }
 
         $this->db->transBegin();
 
         try {
-            $stockOrigen = $this->db->table('inventario')
-                ->where(['item_general_id' => $itemId, 'bodegas_id' => $origen])
-                ->get()->getRow();
+            // ── Validación + movimiento sobre inventario_capas (fuente de verdad de stock/costo) ──
+            // Capas activas del origen en orden FIFO, lockeadas (FOR UPDATE) para evitar consumo concurrente.
+            $capasOrigen = $this->db->query(
+                'SELECT * FROM inventario_capas
+                  WHERE item_general_id = ? AND bodegas_id = ? AND estado = 1 AND cantidad_disponible > 0
+                  ORDER BY fecha_ingreso ASC, id_capa ASC FOR UPDATE',
+                [$itemId, $origen]
+            )->getResultArray();
 
-            if (!$stockOrigen || $stockOrigen->cantidad < $cantidad) {
+            $saldoOrigenAntes = array_sum(array_map(static fn($c) => (float) $c['cantidad_disponible'], $capasOrigen));
+
+            if ($saldoOrigenAntes + 0.0001 < $cantidad) {
                 $this->db->transRollback();
-                return false;
+                return false; // stock insuficiente en el origen (según capas, la fuente de verdad)
             }
 
-            $saldoOrigenAntes  = (float) $stockOrigen->cantidad;
-            $saldoOrigenDespues = $saldoOrigenAntes - $cantidad;
+            // Stock del destino ANTES (solo para metadata del audit).
+            $saldoDestinoAntes = (float) ($this->db->query(
+                'SELECT COALESCE(SUM(cantidad_disponible), 0) AS s FROM inventario_capas
+                  WHERE item_general_id = ? AND bodegas_id = ? AND estado = 1',
+                [$itemId, $destino]
+            )->getRow()->s ?? 0);
 
-            // Descontar en origen
+            // Mover capas FIFO origen → destino, preservando costo/lote/proveedor/fecha.
+            $restante = $cantidad;
+            foreach ($capasOrigen as $capa) {
+                if ($restante <= 0.0001) break;
+                $disp  = (float) $capa['cantidad_disponible'];
+                $mover = min($restante, $disp);
+
+                if ($mover >= $disp - 0.0001) {
+                    // Capa completa: solo cambia de bodega.
+                    $this->db->query('UPDATE inventario_capas SET bodegas_id = ? WHERE id_capa = ?',
+                        [(int) $destino, (int) $capa['id_capa']]);
+                } else {
+                    // Parcial: reduce la del origen y crea una NUEVA en destino con el mismo costo/lote.
+                    $this->db->query('UPDATE inventario_capas SET cantidad_disponible = cantidad_disponible - ? WHERE id_capa = ?',
+                        [$mover, (int) $capa['id_capa']]);
+                    $this->db->table('inventario_capas')->insert([
+                        'item_general_id'     => $itemId,
+                        'bodegas_id'          => $destino,
+                        'proveedor_id'        => $capa['proveedor_id'],
+                        'item_proveedor_id'   => $capa['item_proveedor_id'],
+                        'orden_compra_id'     => $capa['orden_compra_id'],
+                        'cantidad_original'   => $mover,
+                        'cantidad_disponible' => $mover,
+                        'costo_unitario'      => $capa['costo_unitario'],
+                        'unidad_compra_id'    => $capa['unidad_compra_id'],
+                        'factor_conversion'   => $capa['factor_conversion'],
+                        'precio_compra'       => $capa['precio_compra'],
+                        'fecha_ingreso'       => $capa['fecha_ingreso'],
+                        'lote_proveedor'      => $capa['lote_proveedor'],
+                        'observaciones'       => $capa['observaciones'],
+                        'estado'              => 1,
+                    ]);
+                }
+                $restante -= $mover;
+            }
+
+            $saldoOrigenDespues  = $saldoOrigenAntes - $cantidad;
+            $saldoDestinoDespues = $saldoDestinoAntes + $cantidad;
+
+            // ── Mantener la tabla legacy `inventario` en sync (best-effort, backward-compat) ──
             $this->db->query(
-                'UPDATE inventario SET cantidad = cantidad - ?
+                'UPDATE inventario SET cantidad = GREATEST(cantidad - ?, 0)
                   WHERE item_general_id = ? AND bodegas_id = ?',
                 [(float) $cantidad, (int) $itemId, (int) $origen]
             );
-
             $this->db->table('inventario')
                 ->where(['item_general_id' => $itemId, 'bodegas_id' => $origen])
                 ->where('cantidad', 0)
                 ->delete();
 
-            // Sumar en destino
             $checkDestino = $this->db->table('inventario')
                 ->where(['item_general_id' => $itemId, 'bodegas_id' => $destino])
                 ->get()->getRow();
-
-            $saldoDestinoAntes = $checkDestino ? (float) $checkDestino->cantidad : 0;
-
             if ($checkDestino) {
                 $this->db->query(
                     'UPDATE inventario SET cantidad = cantidad + ?
@@ -82,8 +127,6 @@ class InventarioModel extends Model
                     'tipo'            => 1,
                 ]);
             }
-
-            $saldoDestinoDespues = $saldoDestinoAntes + $cantidad;
 
             // Datos auxiliares para metadata
             $bodegaOrigen  = $this->db->table('bodegas')->where('id_bodegas', $origen)->get()->getRow();

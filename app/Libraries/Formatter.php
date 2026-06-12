@@ -17,11 +17,11 @@ class Formatter
         return $formateado;
     }
 
-    public static function parseCOP($valor) 
+    public static function parseCOP($valor)
     {
-        $numero = str_replace(['$', '.', ' '], '', $valor);
-        $numero = str_replace(',', '.', $numero);
-        return (float)$numero;
+        // Delega en fromCOP, que es la versión robusta: respeta valores ya numéricos
+        // (un float 1234.56 ya no se corrompe a 123456) y enteros sin separadores.
+        return self::fromCOP($valor);
     }
 
     public static function toThousands($number, $decimals = 2, $dec_point = '.', $thousands_sep = ',')

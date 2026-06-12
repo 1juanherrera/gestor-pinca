@@ -37,10 +37,12 @@ class EmpresaController extends ResourceController
         if (empty($empresa)) return $this->apiNotFound('No se encontró el registro de empresa.');
 
         $idEmpresa = $empresa[0]['id_empresa'];
+        // `logo_path` NO va aquí: solo debe escribirse vía uploadLogo()/deleteLogo() con ruta
+        // controlada. Aceptarlo en el payload permitía path traversal (leer/borrar archivos del server).
         $allowed   = [
             'nit', 'razon_social', 'descripcion', 'ciudad', 'direccion',
             'telefono', 'celular', 'pagina_web', 'email',
-            'locale', 'moneda', 'logo_path',
+            'locale', 'moneda',
         ];
         $update = array_intersect_key($data, array_flip($allowed));
 

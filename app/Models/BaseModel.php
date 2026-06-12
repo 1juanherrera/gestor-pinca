@@ -43,7 +43,11 @@ class BaseModel extends Model
         if ($this->tieneSoftDelete($table)) {
             $this->where("{$table}.deleted_at IS NULL");
         }
-        return $this->findAll();
+        // withDeleted() desactiva el scope automático de soft-delete de CI4 (que usa $this->table +
+        // $deletedField). Acá $this->table puede ser una tabla SIN deleted_at (p.ej. *_detalle), y el
+        // scope automático generaba "Unknown column '<tabla>.deleted_at'" → 500. El filtro real lo
+        // hace el $this->where de arriba solo cuando la tabla sí tiene la columna.
+        return $this->withDeleted()->findAll();
     }
 
     // OBTENER UNO — también filtra soft-deleted (find devuelve null si está borrado)
@@ -60,7 +64,9 @@ class BaseModel extends Model
                 ->get()->getRowArray();
             return $row ?: null;
         }
-        return $this->find($id);
+        // Tabla sin deleted_at: withDeleted() evita que CI4 agregue el filtro automático (que
+        // rompería con "Unknown column deleted_at" si el modelo tiene useSoftDeletes=true).
+        return $this->withDeleted()->find($id);
     }
 
     /**

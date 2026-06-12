@@ -50,12 +50,15 @@
         <const name="CONFIGPATH" value="./app/Config/"/>
         <!-- Directory containing the front controller (index.php) -->
         <const name="PUBLICPATH" value="./public/"/>
-        <!-- Database para tests: usa la MISMA MySQL real (evita SQLite vacío sin migrations).
-             Los tests que escriben usan transacciones que rollback al final, así que la BD
-             queda limpia. Para tests que afectan tablas no transaccionales (login_attempts),
-             el setUp() limpia explícitamente. -->
+        <!-- Database para tests: BD SEPARADA (copia de la real). Los tests usan $refresh=false y
+             escriben con transacciones que rollback, pero las migraciones de soporte (factories) y
+             cualquier DDL NO hacen rollback → corromperían el esquema. Usar una copia protege la BD
+             real. Recrear la copia cuando haga falta:
+               mysql -uroot -p<pass> -h127.0.0.1 -e "DROP DATABASE IF EXISTS gestorpincadb_test;
+                 CREATE DATABASE gestorpincadb_test; GRANT ALL ON gestorpincadb_test.* TO 'user'@'%';"
+               mysqldump ... gestorpincadb | mysql ... gestorpincadb_test -->
         <env name="database.tests.hostname" value="db"/>
-        <env name="database.tests.database" value="gestorpincadb"/>
+        <env name="database.tests.database" value="gestorpincadb_test"/>
         <env name="database.tests.username" value="user"/>
         <env name="database.tests.password" value="password"/>
         <env name="database.tests.DBDriver" value="MySQLi"/>

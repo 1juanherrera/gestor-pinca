@@ -110,7 +110,7 @@ class ConfiguracionController extends ResourceController
         $errores   = [];
 
         foreach ($configs as $clave => $valor) {
-            $ok = $this->model->set($clave, $valor, $usuario);
+            $ok = $this->model->guardar($clave, $valor, $usuario);
             if ($ok) $aplicados[] = $clave;
             else     $errores[]   = $clave;
         }

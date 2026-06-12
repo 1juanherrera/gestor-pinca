@@ -147,7 +147,15 @@ class RemisionesController extends ResourceController
                 throw new \Exception('No se puede editar una remisión anulada');
             }
 
-            $this->model->update_table($id, $data, 'remisiones');
+            // Whitelist: `estado` NUNCA por aquí (solo vía cambiarEstado(), que descuenta/restaura
+            // stock). Permitirlo dejaba marcar "Despachada" sin mover inventario = stock descuadrado.
+            // `numero`/`facturas_id`/`movimiento_inventario_id` tampoco son editables manualmente.
+            $camposEditables = ['cliente_id', 'fecha_remision', 'direccion_entrega', 'observaciones'];
+            $cabecera = array_intersect_key($data, array_flip($camposEditables));
+
+            if (!empty($cabecera)) {
+                $this->model->update_table($id, $cabecera, 'remisiones');
+            }
 
             return $this->respond([
                 'status'  => 200,
@@ -173,15 +181,27 @@ class RemisionesController extends ResourceController
             return $this->fail('Estado no válido. Permitidos: ' . implode(', ', $permitidos), 400);
         }
 
-        $existing = $this->model->find($id);
-        if (!$existing) return $this->failNotFound("Remisión con ID $id no encontrada.");
-
-        // Anuladas no pueden cambiar (terminal)
-        if ($existing['estado'] === 'Anulada') {
-            return $this->fail('No se puede cambiar el estado de una remisión anulada', 400);
-        }
-
+        $db = \Config\Database::connect();
+        $db->transBegin();
         try {
+            // Lock pesimista de la fila + re-lectura del estado BAJO el lock: serializa cambios de
+            // estado concurrentes. Sin esto, dos requests "Despachada" en paralelo veían ambos
+            // estado=Pendiente y descontaban el stock dos veces (doble descuento por race).
+            $existing = $db->query(
+                'SELECT * FROM remisiones WHERE id_remisiones = ? AND deleted_at IS NULL FOR UPDATE',
+                [$id]
+            )->getRowArray();
+
+            if (!$existing) {
+                $db->transRollback();
+                return $this->failNotFound("Remisión con ID $id no encontrada.");
+            }
+            // Anuladas no pueden cambiar (terminal)
+            if ($existing['estado'] === 'Anulada') {
+                $db->transRollback();
+                return $this->fail('No se puede cambiar el estado de una remisión anulada', 400);
+            }
+
             // ── Pendiente → Despachada: descontar stock por cada línea ──────
             if ($estado === 'Despachada' && $existing['estado'] !== 'Despachada') {
                 $this->descontarStockDespacho((int) $id);
@@ -192,7 +212,12 @@ class RemisionesController extends ResourceController
                 $this->restaurarStockAnulacion((int) $id);
             }
 
+            // Cambio de estado DENTRO de la misma transacción que el movimiento de stock (atómico):
+            // si una parte falla, se revierte todo y un reintento no produce doble descuento.
             $this->model->update_table($id, ['estado' => $estado], 'remisiones');
+
+            $db->transCommit();
+            if (!$db->transStatus()) throw new \Exception('Error al confirmar la transacción');
 
             return $this->respond([
                 'status'  => 200,
@@ -200,7 +225,8 @@ class RemisionesController extends ResourceController
                 'data'    => $this->model->get_remision_by_id((int) $id),
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            $db->transRollback();
             return $this->fail($e->getMessage(), 400);
         }
     }
@@ -228,7 +254,8 @@ class RemisionesController extends ResourceController
         $remision = $db->table('remisiones')->where('id_remisiones', $remisionId)->get()->getRowArray();
         $responsable = $this->getUsername();
 
-        $db->transBegin();
+        // SIN transacción propia: corre dentro de la que abre cambiarEstado, así el descuento de stock
+        // y el cambio de estado quedan en UNA sola transacción (1 nivel de anidamiento, como el original).
         try {
             foreach ($lineas as $linea) {
                 $itemId   = (int) $linea['item_general_id'];
@@ -298,11 +325,10 @@ class RemisionesController extends ResourceController
                 ]);
             }
 
-            $db->transCommit();
+            // Sin transCommit: el commit lo hace cambiarEstado al cerrar su transacción.
         } catch (\Throwable $e) {
-            $db->transRollback();
-            // Limpiar consumos parciales si quedaron registrados antes del fallo
-            $capasMod->restaurarCapasRemision($remisionId);
+            // El rollback lo hace el catch de cambiarEstado (que posee la transacción); acá solo
+            // re-lanzamos para abortar. Los consumos parciales se revierten con el rollback global.
             throw $e;
         }
     }

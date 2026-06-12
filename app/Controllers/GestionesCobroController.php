@@ -65,7 +65,7 @@ class GestionesCobroController extends ResourceController
         }
 
         $tiposValidos = ['llamada', 'email', 'visita', 'whatsapp'];
-        if (!in_array($data['tipo'], $tiposValidos)) {
+        if (!in_array($data['tipo'], $tiposValidos, true)) {
             return $this->apiFail("El tipo debe ser uno de: " . implode(', ', $tiposValidos), 400);
         }
 

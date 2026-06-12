@@ -56,6 +56,27 @@ class NumeracionController extends ResourceController
         $payload['updated_at'] = date('Y-m-d H:i:s');
         $payload['updated_by'] = $this->getUsername();
 
+        // Integridad de folios fiscales: proximo_numero no puede retroceder (reissuing = folios
+        // DUPLICADOS) ni salirse del rango DIAN. padding debe ser >= 1.
+        if (array_key_exists('proximo_numero', $payload)) {
+            $nuevoProximo = (int) $payload['proximo_numero'];
+            $actual       = (int) $existente['proximo_numero'];
+            if ($nuevoProximo < $actual) {
+                return $this->apiFail("`proximo_numero` ($nuevoProximo) no puede ser menor al actual ($actual): generaría folios duplicados.", 422);
+            }
+            $rangoMin = $payload['rango_min'] ?? $existente['rango_min'] ?? null;
+            $rangoMax = $payload['rango_max'] ?? $existente['rango_max'] ?? null;
+            if (!empty($rangoMin) && $nuevoProximo < (int) $rangoMin) {
+                return $this->apiFail("`proximo_numero` ($nuevoProximo) está por debajo de `rango_min`.", 422);
+            }
+            if (!empty($rangoMax) && $nuevoProximo > (int) $rangoMax) {
+                return $this->apiFail("`proximo_numero` ($nuevoProximo) excede `rango_max`.", 422);
+            }
+        }
+        if (array_key_exists('padding', $payload) && (int) $payload['padding'] < 1) {
+            return $this->apiFail('`padding` debe ser un entero >= 1.', 422);
+        }
+
         $db = db_connect();
         $db->transBegin();
         try {

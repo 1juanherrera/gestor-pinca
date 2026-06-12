@@ -192,7 +192,7 @@ class ItemModel extends BaseModel
                 'secado'           => $data['secado'] ?? null,
                 'cubrimiento'      => $data['cubrimiento'] ?? null,
                 'molienda'         => $data['molienda'] ?? null,
-                'ph'               => substr($data['ph'] ?? '', 0, 1),   
+                'ph'               => $data['ph'] ?? null,
                 'poder_tintoreo'   => $data['poder_tintoreo'] ?? null,
                 'unidad_id'        => $data['unidad_id'] ?? null,
                 'costo_produccion' => $data['costo_unitario'] ?? 0
@@ -293,10 +293,23 @@ class ItemModel extends BaseModel
             }
 
             // 2. Actualizar ITEM_GENERAL
+            // Mapeo de tipo consistente con create_full_item: acepta etiqueta textual o valor numérico.
+            $tipoRaw = $data['tipo'] ?? null;
+            if (is_numeric($tipoRaw)) {
+                $tipoMapeado = (int) $tipoRaw;
+            } else {
+                $tipoMapeado = 0;
+                if ($tipoRaw === 'MATERIA PRIMA') {
+                    $tipoMapeado = 1;
+                } elseif ($tipoRaw === 'INSUMO') {
+                    $tipoMapeado = 2;
+                }
+            }
+
             $itemData = [
                 'nombre'           => $data['nombre'],
                 'codigo'           => substr($data['codigo'] ?? '', 0, 10),
-                'tipo'             => $data['tipo'],
+                'tipo'             => $tipoMapeado,
                 'categoria_id'     => $data['categoria_id'] ?? null,
                 'viscosidad'       => $data['viscosidad'] ?? null,
                 'p_g'              => $data['p_g'] ?? null,

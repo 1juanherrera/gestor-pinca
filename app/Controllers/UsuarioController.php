@@ -294,15 +294,24 @@ class UsuarioController extends BaseController
             ->get()->getResultArray();
         $modulos = array_column($modulosRows, 'modulo');
 
+        // token_version FRESCO de BD: sin esto, el JWT re-emitido cae al default 1 y JwtFilter
+        // invalida la sesión (401) de cualquier usuario cuyo token_version sea >1 (cambió password,
+        // hizo logout o le cambiaron el rol). Mismo campo que login/refresh/cambiarPassword.
+        $tokenVersion = (int) ($db->table('usuarios')
+            ->select('token_version')
+            ->where('id_usuarios', $userId)
+            ->get()->getRow()->token_version ?? 1);
+
         $payload = [
             'iat'  => time(),
             'exp'  => time() + $jwtHoras * 3600,
             'data' => [
-                'id'       => $userId,
-                'username' => $this->request->usuario->username,
-                'nombre'   => $nombre ?: null,
-                'rol'      => $this->request->usuario->rol,
-                'modulos'  => $modulos,
+                'id'            => $userId,
+                'username'      => $this->request->usuario->username,
+                'nombre'        => $nombre ?: null,
+                'rol'           => $this->request->usuario->rol,
+                'modulos'       => $modulos,
+                'token_version' => $tokenVersion,
             ],
         ];
         $token = JWT::encode($payload, (string) $secretKey, 'HS256');

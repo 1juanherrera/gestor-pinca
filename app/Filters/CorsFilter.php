@@ -9,7 +9,17 @@ class CorsFilter implements FilterInterface
 {
     private function allowedOrigin(): string
     {
-        return $_ENV['CORS_ALLOWED_ORIGIN'] ?? '*';
+        // Lee de $_ENV y getenv() (no todos los entornos populan $_ENV).
+        $origin = $_ENV['CORS_ALLOWED_ORIGIN'] ?? getenv('CORS_ALLOWED_ORIGIN') ?: '';
+
+        if ($origin === '' || $origin === false) {
+            // Fail-closed: NUNCA caer a '*' (abriría la API autenticada a cualquier sitio).
+            // Se usa el origen de desarrollo documentado como valor restrictivo por defecto.
+            log_message('critical', '[CorsFilter] CORS_ALLOWED_ORIGIN no definido; usando origen restrictivo por defecto.');
+            return 'http://localhost:5173';
+        }
+
+        return $origin;
     }
 
     public function before(RequestInterface $request, $arguments = null)

@@ -92,7 +92,12 @@ class NotasCreditoController extends ResourceController
             $facturaId = (int)   $data['facturas_id'];
 
             $facturaModel = new FacturasModel();
-            $factura      = $facturaModel->find($facturaId);
+            // Lock pesimista de la factura: serializa NC/pagos concurrentes sobre la misma factura.
+            // Sin esto, dos NC en paralelo leen el mismo saldo y entre ambas pueden exceder el total.
+            $factura = $db->query(
+                'SELECT * FROM facturas WHERE id_facturas = ? AND deleted_at IS NULL FOR UPDATE',
+                [$facturaId]
+            )->getRowArray();
 
             if (!$factura)
                 throw new \Exception('La factura indicada no existe');
@@ -102,6 +107,9 @@ class NotasCreditoController extends ResourceController
 
             if ($factura['estado'] === 'Pagada')
                 throw new \Exception('No se puede crear una nota crédito sobre una factura ya pagada');
+
+            if ($factura['estado'] === 'Anulada')
+                throw new \Exception('No se puede crear una nota crédito sobre una factura anulada');
 
             if ($monto > (float) $factura['saldo_pendiente'])
                 throw new \Exception("El monto ($monto) supera el saldo pendiente ({$factura['saldo_pendiente']})");

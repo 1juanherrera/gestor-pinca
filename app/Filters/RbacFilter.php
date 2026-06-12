@@ -38,9 +38,11 @@ class RbacFilter implements FilterInterface
             return; // solo restringimos al visor
         }
 
-        $path = $request->getUri()->getPath();
+        // Comparación por límite de segmento: igualdad exacta o sufijo "/<ruta>".
+        // Evita el bypass de str_contains (p.ej. 'auth/logout-all-sessions' ya NO matchea 'auth/logout').
+        $path = trim($request->getUri()->getPath(), '/');
         foreach (self::WHITELIST as $allowed) {
-            if (str_contains($path, $allowed)) return;
+            if ($path === $allowed || str_ends_with($path, '/' . $allowed)) return;
         }
 
         return Services::response()

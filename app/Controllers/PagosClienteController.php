@@ -90,7 +90,12 @@ class PagosClienteController extends ResourceController
             $facturaId = $data['facturas_id'] ?? null;
 
             if ($facturaId) {
-                $factura = (new FacturasModel())->find($facturaId);
+                // Lock pesimista de la fila para serializar pagos concurrentes a la misma factura
+                // (sin esto, dos pagos en paralelo leen el mismo saldo y sobrepagan — race condition).
+                $factura = $db->query(
+                    'SELECT * FROM facturas WHERE id_facturas = ? AND deleted_at IS NULL FOR UPDATE',
+                    [$facturaId]
+                )->getRowArray();
 
                 if (!$factura)
                     throw new \Exception('La factura indicada no existe');
@@ -100,6 +105,11 @@ class PagosClienteController extends ResourceController
 
                 if ($factura['estado'] === 'Pagada')
                     throw new \Exception('La factura ya está completamente pagada');
+
+                // Una factura anulada no debe recibir pagos: recalcularSaldo retorna temprano para
+                // 'Anulada', así que el pago quedaría huérfano sin recalcular el saldo.
+                if ($factura['estado'] === 'Anulada')
+                    throw new \Exception('No se puede registrar un pago sobre una factura anulada');
 
                 $saldo = (float) $factura['saldo_pendiente'];
                 if ($monto > $saldo)
@@ -141,11 +151,16 @@ class PagosClienteController extends ResourceController
         $db->transStart();
 
         try {
-            $facturaId = $data['facturas_id'] ?? $existing['facturas_id'] ?? null;
-            $monto     = isset($data['monto']) ? (float) $data['monto'] : (float) $existing['monto'];
+            $facturaId       = $data['facturas_id'] ?? $existing['facturas_id'] ?? null;
+            $facturaOriginal = $existing['facturas_id'] ?? null; // factura previa (antes de reasignar)
+            $monto           = isset($data['monto']) ? (float) $data['monto'] : (float) $existing['monto'];
 
             if ($facturaId) {
-                $factura   = (new FacturasModel())->find($facturaId);
+                // Lock pesimista (mismo motivo que en create): evita sobrepago por pagos concurrentes.
+                $factura = $db->query(
+                    'SELECT * FROM facturas WHERE id_facturas = ? AND deleted_at IS NULL FOR UPDATE',
+                    [$facturaId]
+                )->getRowArray();
 
                 if (!$factura)
                     throw new \Exception('La factura indicada no existe');
@@ -161,7 +176,14 @@ class PagosClienteController extends ResourceController
 
             $this->model->update_table($id, $data, 'pagos_cliente');
 
+            // Recalcular la factura DESTINO (la nueva o la misma).
             if ($facturaId) (new FacturasModel())->recalcularSaldo((int) $facturaId);
+
+            // Si el pago se reasignó a otra factura (o se desvinculó), recalcular también la ORIGINAL:
+            // de lo contrario quedaría con el saldo reducido por un pago que ya no le pertenece.
+            if ($facturaOriginal && (int) $facturaOriginal !== (int) $facturaId) {
+                (new FacturasModel())->recalcularSaldo((int) $facturaOriginal);
+            }
 
             $db->transComplete();
             if (!$db->transStatus()) throw new \Exception('Error al confirmar la transacción');

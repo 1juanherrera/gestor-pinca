@@ -120,24 +120,39 @@ class CotizacionesController extends ResourceController
             $data['observaciones']     = $data['observaciones']     ?? null ?: null;
             $data['facturas_id']       = $data['facturas_id']       ?? null ?: null;
 
+            // Recalcular totales en el SERVIDOR — no confiar en los montos del cliente.
+            // subtotal de línea = round(cantidad × precio_unit × (1 − descuento_pct/100)) a pesos
+            // ENTEROS (COP), idéntico al Math.round() del frontend (CotizacionForm.jsx:191) para que
+            // el total guardado coincida con el mostrado.
+            // total = subtotal − descuento + impuestos − retención (misma fórmula que CotizacionForm:238;
+            // descuento/impuestos/retención de cabecera son montos que define el usuario).
+            $lineasCalc   = [];
+            $subtotalCalc = 0.0;
+            foreach ($items as $item) {
+                $cantidad = (float) ($item['cantidad']      ?? 0);
+                $precio   = (float) ($item['precio_unit']   ?? 0);
+                $descPct  = (float) ($item['descuento_pct'] ?? 0);
+                $subLinea = round($cantidad * $precio * (1 - $descPct / 100), 0);
+                $subtotalCalc += $subLinea;
+                $lineasCalc[] = [$item['descripcion'] ?? '', $cantidad, $precio, $descPct, $subLinea];
+            }
+            $descuentoHdr = (float) ($data['descuento']  ?? 0);
+            $impuestosHdr = (float) ($data['impuestos']  ?? 0);
+            $retencionHdr = (float) ($data['retencion']  ?? 0);
+            $data['subtotal'] = $subtotalCalc;
+            $data['total']    = round($subtotalCalc - $descuentoHdr + $impuestosHdr - $retencionHdr, 0);
+
             $id = $this->model->create_table($data, 'cotizaciones');
             if (!$id) throw new \Exception(implode(', ', $this->model->errors()));
 
             // Insertar ítems con query directa para evitar conflictos de allowedFields
-            if (!empty($items)) {
-                foreach ($items as $item) {
+            if (!empty($lineasCalc)) {
+                foreach ($lineasCalc as $linea) {
                     $db->query(
                         "INSERT INTO cotizaciones_detalle
                             (cotizaciones_id, descripcion, cantidad, precio_unit, descuento_pct, subtotal)
                          VALUES (?, ?, ?, ?, ?, ?)",
-                        [
-                            $id,
-                            $item['descripcion']   ?? '',
-                            (float) ($item['cantidad']      ?? 0),
-                            (float) ($item['precio_unit']   ?? 0),
-                            (float) ($item['descuento_pct'] ?? 0),
-                            (float) ($item['subtotal']      ?? 0),
-                        ]
+                        [$id, $linea[0], $linea[1], $linea[2], $linea[3], $linea[4]]
                     );
                 }
             }

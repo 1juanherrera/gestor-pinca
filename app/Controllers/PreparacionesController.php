@@ -103,12 +103,14 @@ class PreparacionesController extends BaseController
             ", [$prepId])->getResultArray();
 
             $notif = new \App\Models\NotificacionModel();
+            $umbralCritico = \App\Helpers\Cfg::n('stock_critico_dias', 7);
             foreach ($criticas as $mp) {
                 $stock      = (float) $mp['stock'];
                 $consumo30  = (float) $mp['consumo_30d'];
                 $diario     = $consumo30 > 0 ? $consumo30 / 30 : 0;
-                $diasRest   = $diario > 0 ? (int) round($stock / $diario) : null;
-                if ($diasRest !== null && $diasRest < 7) {
+                // floor(): conservador — nunca sobreestima los días de cobertura restantes.
+                $diasRest   = $diario > 0 ? (int) floor($stock / $diario) : null;
+                if ($diasRest !== null && $diasRest < $umbralCritico) {
                     $notif->crear([
                         'tipo'       => \App\Models\NotificacionModel::TIPO_MP_CRITICA,
                         'titulo'     => "Stock crítico: {$mp['nombre']}",
