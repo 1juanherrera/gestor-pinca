@@ -262,4 +262,90 @@ class SincronizacionController extends ResourceController
             return $this->apiFail($e->getMessage(), 400);
         }
     }
+
+    /**
+     * GET /api/sincronizacion/uso-formulas/:itemId
+     * Preview: fórmulas que usan la materia (para el reemplazo manual).
+     */
+    public function usoEnFormulas($itemId = null)
+    {
+        $id = (int) $itemId;
+        if ($id <= 0) return $this->apiFail('itemId inválido.', 400);
+        // ?to=<id> opcional: marca qué fórmulas YA tienen el reemplazo (se consolidarán).
+        $to = (int) $this->request->getGet('to');
+        $db = \Config\Database::connect();
+        $stock = (float) ($db->query(
+            'SELECT COALESCE(SUM(cantidad_disponible),0) s FROM inventario_capas WHERE item_general_id = ? AND estado = 1 AND cantidad_disponible > 0',
+            [$id]
+        )->getRow()->s ?? 0);
+        return $this->respond([
+            'item_id'      => $id,
+            'origen_stock' => $stock,
+            'formulas'     => $this->model->formulasQueUsan($id, $to > 0 ? $to : null),
+        ]);
+    }
+
+    /**
+     * POST /api/sincronizacion/reemplazar-formula
+     * Body: { from_item_id, to_item_id, formulacion_ids?: number[] }
+     * Reemplaza la materia A por B en el BOM (buscar y reemplazar). Solo admin.
+     */
+    public function reemplazarFormula()
+    {
+        // Modifica el BOM de fórmulas y puede soft-deletear el catálogo → solo admin/superadmin.
+        if (!$this->userHasAdminAccess()) {
+            return $this->apiForbidden('Solo un administrador puede reemplazar materias en fórmulas.');
+        }
+
+        $data   = $this->request->getJSON(true) ?? [];
+        $fromId = isset($data['from_item_id']) ? (int) $data['from_item_id'] : 0;
+        $toId   = isset($data['to_item_id'])   ? (int) $data['to_item_id']   : 0;
+        $formIds = (isset($data['formulacion_ids']) && is_array($data['formulacion_ids']))
+            ? $data['formulacion_ids'] : null;
+
+        if ($fromId <= 0 || $toId <= 0) {
+            return $this->apiFail('from_item_id y to_item_id son requeridos.', 400);
+        }
+
+        try {
+            $result = $this->model->reemplazarEnFormulas($fromId, $toId, $formIds, $this->getUsername());
+            log_message('info', sprintf(
+                '[REEMPLAZO_FORMULA] Usuario "%s" (rol: %s) reemplazó MP #%d → #%d en %d fórmula(s)%s',
+                $this->getUsername(), $this->getUserRol(), $fromId, $toId,
+                $result['formulas_afectadas'], $result['origen_eliminada'] ? ' (origen eliminada)' : ''
+            ));
+            return $this->respond($result);
+        } catch (\InvalidArgumentException $e) {
+            return $this->apiFail($e->getMessage(), 422);
+        } catch (\Throwable $e) {
+            log_message('error', '[Sinc::reemplazarFormula] ' . $e->getMessage());
+            return $this->apiFail($e->getMessage(), 400);
+        }
+    }
+
+    /** GET /api/sincronizacion/reemplazos — historial de reemplazos (para deshacer). */
+    public function historialReemplazos()
+    {
+        return $this->respond(['reemplazos' => $this->model->historialReemplazos()]);
+    }
+
+    /** POST /api/sincronizacion/reemplazos/:id/revertir — deshace un reemplazo. Solo admin. */
+    public function revertirReemplazo($id = null)
+    {
+        if (!$this->userHasAdminAccess()) {
+            return $this->apiForbidden('Solo un administrador puede deshacer un reemplazo.');
+        }
+        $logId = (int) $id;
+        if ($logId <= 0) return $this->apiFail('id inválido.', 400);
+        try {
+            $result = $this->model->revertirReemplazo($logId, $this->getUsername());
+            log_message('info', sprintf('[REEMPLAZO_REVERT] Usuario "%s" deshizo el reemplazo #%d', $this->getUsername(), $logId));
+            return $this->respond($result);
+        } catch (\InvalidArgumentException $e) {
+            return $this->apiFail($e->getMessage(), 422);
+        } catch (\Throwable $e) {
+            log_message('error', '[Sinc::revertirReemplazo] ' . $e->getMessage());
+            return $this->apiFail($e->getMessage(), 400);
+        }
+    }
 }

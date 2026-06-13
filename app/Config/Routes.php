@@ -271,6 +271,11 @@ $routes->group('api', function ($routes) {
     $routes->get('sincronizacion/duplicados',  'SincronizacionController::duplicados');
     $routes->get('sincronizacion/huerfanos',   'SincronizacionController::huerfanos');
     $routes->post('sincronizacion/merge',      'SincronizacionController::merge');
+    // Reemplazo manual de materia prima en fórmulas (buscar y reemplazar A→B en el BOM)
+    $routes->get('sincronizacion/uso-formulas/(:num)', 'SincronizacionController::usoEnFormulas/$1');
+    $routes->post('sincronizacion/reemplazar-formula', 'SincronizacionController::reemplazarFormula');
+    $routes->get('sincronizacion/reemplazos', 'SincronizacionController::historialReemplazos');
+    $routes->post('sincronizacion/reemplazos/(:num)/revertir', 'SincronizacionController::revertirReemplazo/$1');
 
     // Deduplicación asistida por IA (clusters de identidad química)
     $routes->post('sincronizacion/ia/clasificar',                  'SincronizacionController::iaClasificar');

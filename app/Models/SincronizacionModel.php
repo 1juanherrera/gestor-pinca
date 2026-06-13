@@ -1202,4 +1202,251 @@ class SincronizacionModel extends BaseModel
             throw $e;
         }
     }
+
+    /**
+     * Preview: formulaciones que usan un item como ingrediente (para el reemplazo manual).
+     * Agrupa por fórmula distinta (la data tiene filas BOM duplicadas) y enriquece con:
+     * producto + código, estado, cantidad total de la MP, su costo unitario y el costo en la fórmula,
+     * cantidad de ingredientes de la receta, y —si se pasa $toId— si la fórmula YA tiene el reemplazo
+     * (se consolidará) o no (se repuntará).
+     */
+    public function formulasQueUsan(int $itemId, ?int $toId = null): array
+    {
+        $tieneReemplazo = $toId
+            ? "EXISTS(SELECT 1 FROM item_general_formulaciones b
+                       WHERE b.formulaciones_id = igf.formulaciones_id AND b.item_general_id = ?)"
+            : '0';
+        $bind = $toId ? [$toId, $itemId] : [$itemId];
+
+        return $this->db->query("
+            SELECT igf.formulaciones_id,
+                   MAX(f.nombre)            AS formula_nombre,
+                   MAX(f.estado)            AS formula_estado,
+                   MAX(p.nombre)            AS producto_nombre,
+                   MAX(p.codigo)            AS producto_codigo,
+                   SUM(igf.cantidad)        AS cantidad,
+                   MAX(ci.costo_unitario)   AS costo_unitario,
+                   ROUND(SUM(igf.cantidad) * COALESCE(MAX(ci.costo_unitario), 0), 2) AS costo_en_formula,
+                   (SELECT COUNT(*) FROM item_general_formulaciones t
+                     WHERE t.formulaciones_id = igf.formulaciones_id) AS ingredientes,
+                   {$tieneReemplazo}        AS tiene_reemplazo
+            FROM item_general_formulaciones igf
+            JOIN formulaciones f ON f.id_formulaciones = igf.formulaciones_id
+            LEFT JOIN item_general p ON p.id_item_general = f.item_general_id
+            LEFT JOIN costos_item ci ON ci.item_general_id = igf.item_general_id
+            WHERE igf.item_general_id = ?
+            GROUP BY igf.formulaciones_id
+            ORDER BY MAX(p.nombre)
+        ", $bind)->getResultArray();
+    }
+
+    /**
+     * Reemplazo manual tipo "buscar y reemplazar" de una materia prima en el BOM de fórmulas.
+     * Reemplaza A ($fromId) por B ($toId) en item_general_formulaciones.
+     *  - $formulacionIds null/vacío → TODAS las fórmulas que usan A. Con ids → solo esas.
+     *  - Si una fórmula ya tiene A y B → consolida (suma cantidad/porcentaje en B, borra la fila de A).
+     *  - Tras el reemplazo, si A queda SIN uso en ninguna fórmula y SIN stock activo → soft-delete de A.
+     * Solo toca el BOM (A y B son materiales distintos; NO se tocan capas/costos/inventario).
+     */
+    public function reemplazarEnFormulas(int $fromId, int $toId, ?array $formulacionIds = null, string $usuario = 'sistema'): array
+    {
+        if ($fromId === $toId) {
+            throw new \InvalidArgumentException('La materia origen y la de reemplazo no pueden ser la misma.');
+        }
+        $from = $this->db->table('item_general')->where('id_item_general', $fromId)->get()->getRowArray();
+        $to   = $this->db->table('item_general')->where('id_item_general', $toId)->get()->getRowArray();
+        if (!$from) throw new \InvalidArgumentException('La materia origen no existe.');
+        if (!$to)   throw new \InvalidArgumentException('La materia de reemplazo no existe.');
+
+        // Scope de fórmulas (solo enteros positivos); null = todas.
+        $scope = null;
+        if (is_array($formulacionIds) && count($formulacionIds) > 0) {
+            $scope = array_values(array_unique(array_filter(array_map('intval', $formulacionIds), fn($x) => $x > 0)));
+            if (empty($scope)) $scope = null;
+        }
+
+        $this->db->transBegin();
+        try {
+            // A prueba de duplicados: agrupo por fórmula DISTINTA y sumo todas las filas de A
+            // (la data puede tener el mismo ingrediente repetido). Por cada fórmula, dejo UNA sola
+            // fila de B con la cantidad sumada (merge si B ya existía, insert si no), y borro las de A.
+            $grpSql  = 'SELECT formulaciones_id, SUM(cantidad) AS sc, SUM(porcentaje) AS sp
+                        FROM item_general_formulaciones WHERE item_general_id = ?';
+            $grpBind = [$fromId];
+            if ($scope !== null) {
+                $grpSql .= ' AND formulaciones_id IN (' . implode(',', array_fill(0, count($scope), '?')) . ')';
+                $grpBind = array_merge($grpBind, $scope);
+            }
+            $grpSql .= ' GROUP BY formulaciones_id';
+            $formulas = $this->db->query($grpSql, $grpBind)->getResultArray();
+
+            // Snapshot del BOM (A y B en las fórmulas afectadas) ANTES de mutar → permite DESHACER.
+            $afectadasIds = array_map(static fn($f) => (int) $f['formulaciones_id'], $formulas);
+            $snapshot = [];
+            if (!empty($afectadasIds)) {
+                $ph = implode(',', array_fill(0, count($afectadasIds), '?'));
+                $snapshot = $this->db->query(
+                    "SELECT formulaciones_id, item_general_id, cantidad, porcentaje
+                     FROM item_general_formulaciones
+                     WHERE item_general_id IN (?, ?) AND formulaciones_id IN ($ph)",
+                    array_merge([$fromId, $toId], $afectadasIds)
+                )->getResultArray();
+            }
+
+            $consolidadas = 0;
+            $repuntadas   = 0;
+            foreach ($formulas as $f) {
+                $fid  = (int) $f['formulaciones_id'];
+                $sumC = (float) $f['sc'];
+                $sumP = (float) $f['sp'];
+
+                // Borrar todas las filas de A en esta fórmula (incluye duplicados).
+                $this->db->table('item_general_formulaciones')
+                    ->where('formulaciones_id', $fid)->where('item_general_id', $fromId)->delete();
+
+                // ¿B ya está en esta fórmula? (toma una sola fila si hay duplicados de B).
+                $bRow = $this->db->table('item_general_formulaciones')
+                    ->where('formulaciones_id', $fid)->where('item_general_id', $toId)
+                    ->orderBy('id_item_general_formulaciones', 'ASC')->get(1)->getRowArray();
+
+                if ($bRow) {
+                    $this->db->table('item_general_formulaciones')
+                        ->where('id_item_general_formulaciones', $bRow['id_item_general_formulaciones'])
+                        ->update([
+                            'cantidad'   => (float) $bRow['cantidad']   + $sumC,
+                            'porcentaje' => (float) $bRow['porcentaje'] + $sumP,
+                        ]);
+                    $consolidadas++;
+                } else {
+                    $this->db->table('item_general_formulaciones')->insert([
+                        'formulaciones_id' => $fid,
+                        'item_general_id'  => $toId,
+                        'cantidad'         => $sumC,
+                        'porcentaje'       => $sumP,
+                    ]);
+                    $repuntadas++;
+                }
+            }
+
+            // 3. Soft-delete de A si quedó sin uso (ni fórmulas ni stock activo).
+            $usoRestante = (int) ($this->db->query(
+                'SELECT COUNT(*) c FROM item_general_formulaciones WHERE item_general_id = ?', [$fromId]
+            )->getRow()->c ?? 0);
+            $stockActivo = (int) ($this->db->query(
+                'SELECT COUNT(*) c FROM inventario_capas WHERE item_general_id = ? AND estado = 1 AND cantidad_disponible > 0',
+                [$fromId]
+            )->getRow()->c ?? 0);
+            $aEliminada = false;
+            if ($usoRestante === 0 && $stockActivo === 0) {
+                $this->db->table('item_general')
+                    ->where('id_item_general', $fromId)
+                    ->update(['deleted_at' => date('Y-m-d H:i:s')]);
+                $aEliminada = true;
+            }
+
+            // 4. Registrar el log con el snapshot (para deshacer).
+            $logId = null;
+            if (!empty($afectadasIds)) {
+                $this->db->table('item_reemplazo_log')->insert([
+                    'from_item_id'       => $fromId,
+                    'to_item_id'         => $toId,
+                    'from_nombre'        => mb_substr((string) ($from['nombre'] ?? ''), 0, 150),
+                    'to_nombre'          => mb_substr((string) ($to['nombre'] ?? ''), 0, 150),
+                    'formulas_afectadas' => $consolidadas + $repuntadas,
+                    'origen_eliminada'   => $aEliminada ? 1 : 0,
+                    'snapshot'           => json_encode($snapshot),
+                    'usuario'            => mb_substr($usuario, 0, 100),
+                    'revertido'          => 0,
+                    'created_at'         => date('Y-m-d H:i:s'),
+                ]);
+                $logId = $this->db->insertID();
+            }
+
+            $this->db->transCommit();
+
+            return [
+                'ok'                  => true,
+                'log_id'              => $logId,
+                'consolidadas'        => $consolidadas,
+                'repuntadas'          => $repuntadas,
+                'formulas_afectadas'  => $consolidadas + $repuntadas,
+                'origen_eliminada'    => $aEliminada,
+                'origen_uso_restante' => $usoRestante,
+                'origen_stock_activo' => $stockActivo,
+                'msg' => "Reemplazo aplicado: {$repuntadas} repuntada(s), {$consolidadas} consolidada(s)"
+                    . ($aEliminada ? '. La materia origen quedó sin uso y se marcó como eliminada.' : '.'),
+            ];
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            throw $e;
+        }
+    }
+
+    /** Últimos reemplazos aplicados (para el historial / deshacer). */
+    public function historialReemplazos(int $limit = 20): array
+    {
+        return $this->db->table('item_reemplazo_log')
+            ->select('id, from_item_id, to_item_id, from_nombre, to_nombre, formulas_afectadas, origen_eliminada, usuario, revertido, created_at, revertido_at')
+            ->orderBy('created_at', 'DESC')->orderBy('id', 'DESC')
+            ->limit($limit)->get()->getResultArray();
+    }
+
+    /**
+     * Deshace un reemplazo: restaura el BOM (A y B en las fórmulas afectadas) desde el snapshot
+     * y des-elimina A si había quedado soft-deleted. Restaura al estado previo de A/B en esas fórmulas.
+     */
+    public function revertirReemplazo(int $logId, string $usuario = 'sistema'): array
+    {
+        $log = $this->db->table('item_reemplazo_log')->where('id', $logId)->get()->getRowArray();
+        if (!$log)                       throw new \InvalidArgumentException('Reemplazo no encontrado.');
+        if ((int) $log['revertido'] === 1) throw new \InvalidArgumentException('Este reemplazo ya fue deshecho.');
+
+        $fromId = (int) $log['from_item_id'];
+        $toId   = (int) $log['to_item_id'];
+        $snapshot = json_decode($log['snapshot'] ?? '[]', true) ?: [];
+        $afectadas = array_values(array_unique(array_map(static fn($r) => (int) $r['formulaciones_id'], $snapshot)));
+
+        $this->db->transBegin();
+        try {
+            if (!empty($afectadas)) {
+                $ph = implode(',', array_fill(0, count($afectadas), '?'));
+                // Borrar el estado ACTUAL de A y B en las fórmulas afectadas...
+                $this->db->query(
+                    "DELETE FROM item_general_formulaciones
+                     WHERE item_general_id IN (?, ?) AND formulaciones_id IN ($ph)",
+                    array_merge([$fromId, $toId], $afectadas)
+                );
+                // ...y restaurar exactamente las filas del snapshot.
+                foreach ($snapshot as $r) {
+                    $this->db->table('item_general_formulaciones')->insert([
+                        'formulaciones_id' => (int) $r['formulaciones_id'],
+                        'item_general_id'  => (int) $r['item_general_id'],
+                        'cantidad'         => $r['cantidad'],
+                        'porcentaje'       => $r['porcentaje'],
+                    ]);
+                }
+            }
+
+            // Des-eliminar A si se había soft-deleteado.
+            if ((int) $log['origen_eliminada'] === 1) {
+                $this->db->table('item_general')->where('id_item_general', $fromId)->update(['deleted_at' => null]);
+            }
+
+            $this->db->table('item_reemplazo_log')->where('id', $logId)->update([
+                'revertido'    => 1,
+                'revertido_at' => date('Y-m-d H:i:s'),
+                'usuario'      => mb_substr($usuario, 0, 100),
+            ]);
+
+            $this->db->transCommit();
+            return [
+                'ok'  => true,
+                'msg' => "Reemplazo deshecho: restauradas {$log['formulas_afectadas']} fórmula(s)"
+                    . ((int) $log['origen_eliminada'] === 1 ? " y se restauró «{$log['from_nombre']}»." : '.'),
+            ];
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            throw $e;
+        }
+    }
 }
