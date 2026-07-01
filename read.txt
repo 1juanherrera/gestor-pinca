@@ -3,3 +3,13 @@ En inventario total me salen las unidades diferentes revisar detenidamente "sé 
 debo crear una vista o seccion nueva donde se pueda ver el costo final de mi producto a producir, como en mi vista formulaciones 
 pero solo mostrando el resultado final, obviamente teniendo en cuenta que todas sus materias primas tengan sus respectivo precio de 
 proveedor ya que sin eso no serviría y sería erroneo el resultado final
+
+
+corregir problema dispersante lansperse - en agua y en aceite. tengo varios, unificar
+
+DISPERSANTE AGUA SOLO EN VINILO
+
+
+el epoxico lleva 4 galones a comparacion de los demas en cuñete que son 5
+
+catalizados, formula aparte con costo en tabla de costos en todas las formulas de epoxicos

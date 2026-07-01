@@ -25,7 +25,7 @@ class CostosItemController extends ResourceController
         }
 
         // Filtrar solo campos permitidos
-        $allowedFields = ['envase', 'etiqueta', 'bandeja', 'plastico', 'costo_mod', 'porcentaje_utilidad'];
+        $allowedFields = ['envase', 'etiqueta', 'bandeja', 'plastico', 'costo_mod', 'porcentaje_utilidad', 'volumen'];
         $dataToSave = array_intersect_key($data, array_flip($allowedFields));
 
         if (empty($dataToSave)) {

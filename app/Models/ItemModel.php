@@ -79,7 +79,14 @@ class ItemModel extends BaseModel
                 NULL                AS id_item_proveedor,
                 ig.nombre,
                 ig.codigo,
-                COALESCE(ci.costo_unitario, 0) AS costo_unitario,
+                COALESCE(
+                    NULLIF(ci.costo_unitario, 0),
+                    (SELECT MIN(ip2.precio_unitario / GREATEST(ip2.factor_conversion, 1))
+                     FROM item_proveedor ip2
+                     WHERE ip2.item_general_id = ig.id_item_general
+                       AND ip2.deleted_at IS NULL),
+                    0
+                ) AS costo_unitario,
                 'inventario'        AS fuente,
                 NULL                AS proveedor_nombre,
                 1                   AS comprado

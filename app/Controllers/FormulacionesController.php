@@ -19,6 +19,7 @@ class FormulacionesController extends ResourceController
         'item_general_id'                  => 'required|integer|greater_than[0]',
         'nombre'                           => 'permit_empty|max_length[100]',
         'descripcion'                      => 'permit_empty|max_length[500]',
+        'volumen'                          => 'permit_empty|decimal|greater_than[0]',
         'materias_primas'                  => 'required',
         'materias_primas.*.materia_prima_id' => 'required|integer|greater_than[0]',
         'materias_primas.*.cantidad'       => 'required|decimal|greater_than[0]',

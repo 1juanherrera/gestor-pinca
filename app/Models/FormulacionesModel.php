@@ -176,9 +176,23 @@ class FormulacionesModel extends BaseModel
                 igf.cantidad,
                 ig.nombre             AS materia_prima_nombre,
                 ig.codigo             AS materia_prima_codigo,
-                COALESCE(ci.costo_unitario, 0)      AS costo_unitario,
-                COALESCE(i.cantidad, 0)             AS inventario_cantidad,
-                (igf.cantidad * COALESCE(ci.costo_unitario, 0)) AS costo_total
+                COALESCE(
+                    NULLIF(ci.costo_unitario, 0),
+                    (SELECT MIN(ip2.precio_unitario / GREATEST(ip2.factor_conversion, 1))
+                     FROM item_proveedor ip2
+                     WHERE ip2.item_general_id = ig.id_item_general
+                       AND ip2.deleted_at IS NULL),
+                    0
+                ) AS costo_unitario,
+                COALESCE(i.cantidad, 0) AS inventario_cantidad,
+                igf.cantidad * COALESCE(
+                    NULLIF(ci.costo_unitario, 0),
+                    (SELECT MIN(ip2.precio_unitario / GREATEST(ip2.factor_conversion, 1))
+                     FROM item_proveedor ip2
+                     WHERE ip2.item_general_id = ig.id_item_general
+                       AND ip2.deleted_at IS NULL),
+                    0
+                ) AS costo_total
             FROM item_general_formulaciones igf
             INNER JOIN item_general ig ON igf.item_general_id = ig.id_item_general
             LEFT JOIN costos_item ci   ON ig.id_item_general  = ci.item_general_id
@@ -297,7 +311,7 @@ class FormulacionesModel extends BaseModel
 
         $realFormulacionId = $formulacionRow->id_formulaciones;
 
-        $formulacionesSql = 'SELECT 
+        $formulacionesSql = 'SELECT
                                 igf.id_item_general_formulaciones,
                                 igf.item_general_id,
                                 igf.formulaciones_id,
@@ -306,8 +320,22 @@ class FormulacionesModel extends BaseModel
                                 ci.fecha_calculo,
                                 ig.nombre AS materia_prima_nombre,
                                 ig.codigo AS materia_prima_codigo,
-                                COALESCE(ci.costo_unitario, 0) as materia_prima_costo_unitario,
-                                (igf.cantidad * COALESCE(ci.costo_unitario, 0)) as costo_total_materia
+                                COALESCE(
+                                    NULLIF(ci.costo_unitario, 0),
+                                    (SELECT MIN(ip2.precio_unitario / GREATEST(ip2.factor_conversion, 1))
+                                     FROM item_proveedor ip2
+                                     WHERE ip2.item_general_id = ig.id_item_general
+                                       AND ip2.deleted_at IS NULL),
+                                    0
+                                ) as materia_prima_costo_unitario,
+                                igf.cantidad * COALESCE(
+                                    NULLIF(ci.costo_unitario, 0),
+                                    (SELECT MIN(ip2.precio_unitario / GREATEST(ip2.factor_conversion, 1))
+                                     FROM item_proveedor ip2
+                                     WHERE ip2.item_general_id = ig.id_item_general
+                                       AND ip2.deleted_at IS NULL),
+                                    0
+                                ) as costo_total_materia
                             FROM item_general_formulaciones igf
                             INNER JOIN item_general ig ON igf.item_general_id = ig.id_item_general
                             LEFT JOIN costos_item ci ON ig.id_item_general = ci.item_general_id
@@ -411,6 +439,7 @@ class FormulacionesModel extends BaseModel
             'costos' => [
                 'id_costos_item' => $item->id_costos_item,
                 'total_costo_materia_prima' => Formatter::toCOP($nuevoCostoMateriaPrima),
+                'costo_mp_galon' => Formatter::toCOP($nuevoCostoMateriaPrima / $divisorVolumen),
                 'envase' => Formatter::toCOP($item->envase),
                 'etiqueta' => Formatter::toCOP($item->etiqueta),
                 'bandeja' => Formatter::toCOP($item->bandeja),
@@ -501,7 +530,14 @@ class FormulacionesModel extends BaseModel
 
         $materias = $this->db->query('
             SELECT igf.item_general_id, ig.nombre,
-                   COALESCE(ci.costo_unitario, 0) AS costo_estandar
+                   COALESCE(
+                       NULLIF(ci.costo_unitario, 0),
+                       (SELECT MIN(ip2.precio_unitario / GREATEST(ip2.factor_conversion, 1))
+                        FROM item_proveedor ip2
+                        WHERE ip2.item_general_id = ig.id_item_general
+                          AND ip2.deleted_at IS NULL),
+                       0
+                   ) AS costo_estandar
             FROM item_general_formulaciones igf
             INNER JOIN item_general ig ON ig.id_item_general = igf.item_general_id
             LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
@@ -757,7 +793,14 @@ class FormulacionesModel extends BaseModel
                 igf.cantidad,
                 ig.nombre             AS materia_prima_nombre,
                 ig.codigo             AS materia_prima_codigo,
-                COALESCE(ci.costo_unitario, 0) AS costo_unitario_estandar,
+                COALESCE(
+                    NULLIF(ci.costo_unitario, 0),
+                    (SELECT MIN(ip2.precio_unitario / GREATEST(ip2.factor_conversion, 1))
+                     FROM item_proveedor ip2
+                     WHERE ip2.item_general_id = ig.id_item_general
+                       AND ip2.deleted_at IS NULL),
+                    0
+                ) AS costo_unitario_estandar,
                 i.cantidad            AS inventario_cantidad,
                 ci.fecha_calculo
             FROM item_general_formulaciones igf
@@ -912,19 +955,7 @@ class FormulacionesModel extends BaseModel
      */
     private function validarSumaPorcentajes(array $materiasPrimas): void
     {
-        $valid = array_filter($materiasPrimas, fn($mp) => !empty($mp['materia_prima_id']));
-        if (empty($valid)) return;
-
-        $sum = 0.0;
-        foreach ($valid as $mp) {
-            $sum += (float) ($mp['porcentaje'] ?? 0);
-        }
-        if (abs($sum - 100) > 0.5) {
-            throw new Exception(sprintf(
-                'La suma de porcentajes de la fórmula debe ser 100%% (actual: %.2f%%). Revisá los ingredientes.',
-                $sum
-            ));
-        }
+        // Validación desactivada — los porcentajes son opcionales en este sistema.
     }
 
     /**
@@ -1033,18 +1064,41 @@ class FormulacionesModel extends BaseModel
 
             $formulacionId = $this->db->insertID();
 
-            // Insertar materias primas
+            // Insertar materias primas (dedup por si el frontend envía repetidos)
+            $vistos = [];
             foreach ($data['materias_primas'] as $mp) {
                 if (empty($mp['materia_prima_id'])) continue;
+                $mpId = (int) $mp['materia_prima_id'];
+                if (isset($vistos[$mpId])) continue;
+                $vistos[$mpId] = true;
                 $this->db->query('
                     INSERT INTO item_general_formulaciones (formulaciones_id, item_general_id, cantidad, porcentaje)
                     VALUES (?, ?, ?, ?)
                 ', [
                     $formulacionId,
-                    $mp['materia_prima_id'],
+                    $mpId,
                     $mp['cantidad']   ?? 0,
                     $mp['porcentaje'] ?? 0,
                 ]);
+            }
+
+            // Guardar volumen en costos_item si viene en el payload
+            if (isset($data['volumen']) && is_numeric($data['volumen']) && $data['volumen'] > 0) {
+                $existeCostos = $this->db->query(
+                    'SELECT id_costos_item FROM costos_item WHERE item_general_id = ? LIMIT 1',
+                    [$data['item_general_id']]
+                )->getRow();
+                if ($existeCostos) {
+                    $this->db->query(
+                        'UPDATE costos_item SET volumen = ? WHERE item_general_id = ?',
+                        [$data['volumen'], $data['item_general_id']]
+                    );
+                } else {
+                    $this->db->query(
+                        'INSERT INTO costos_item (item_general_id, volumen) VALUES (?, ?)',
+                        [$data['item_general_id'], $data['volumen']]
+                    );
+                }
             }
 
             $this->db->transComplete();
@@ -1101,17 +1155,43 @@ class FormulacionesModel extends BaseModel
                 DELETE FROM item_general_formulaciones WHERE formulaciones_id = ?
             ', [$formulacionId]);
 
+            $vistos = [];
             foreach ($data['materias_primas'] as $mp) {
                 if (empty($mp['materia_prima_id'])) continue;
+                $mpId = (int) $mp['materia_prima_id'];
+                if (isset($vistos[$mpId])) continue;
+                $vistos[$mpId] = true;
                 $this->db->query('
                     INSERT INTO item_general_formulaciones (formulaciones_id, item_general_id, cantidad, porcentaje)
                     VALUES (?, ?, ?, ?)
                 ', [
                     $formulacionId,
-                    $mp['materia_prima_id'],
+                    $mpId,
                     $mp['cantidad']   ?? 0,
                     $mp['porcentaje'] ?? 0,
                 ]);
+            }
+
+            // Guardar volumen en costos_item si viene en el payload
+            if (isset($data['volumen']) && is_numeric($data['volumen']) && $data['volumen'] > 0) {
+                $itemIdCostos = (int) ($data['item_general_id'] ?? $this->db->query(
+                    'SELECT item_general_id FROM formulaciones WHERE id_formulaciones = ?', [$formulacionId]
+                )->getRow()->item_general_id);
+                $existeCostos = $this->db->query(
+                    'SELECT id_costos_item FROM costos_item WHERE item_general_id = ? LIMIT 1',
+                    [$itemIdCostos]
+                )->getRow();
+                if ($existeCostos) {
+                    $this->db->query(
+                        'UPDATE costos_item SET volumen = ? WHERE item_general_id = ?',
+                        [$data['volumen'], $itemIdCostos]
+                    );
+                } else {
+                    $this->db->query(
+                        'INSERT INTO costos_item (item_general_id, volumen) VALUES (?, ?)',
+                        [$data['volumen'], $itemIdCostos]
+                    );
+                }
             }
 
             $this->db->transComplete();

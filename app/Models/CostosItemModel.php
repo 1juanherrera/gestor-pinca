@@ -13,6 +13,7 @@ class CostosItemModel extends BaseModel
         "plastico",
         "costo_mod",
         "porcentaje_utilidad",
+        "volumen",
     ];
 
     public function __construct(){

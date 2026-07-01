@@ -189,8 +189,8 @@ class CatalogoModel extends BaseModel
                 'molienda'            => $data['molienda'] ?? null,
                 'ph'                  => $data['ph'] ?? null,
                 'poder_tintoreo'      => $data['poder_tintoreo'] ?? null,
-                'unidad_id'           => $data['unidad_id'] ?? null,
-                'unidad_almacenaje_id'=> $data['unidad_almacenaje_id'] ?? null,
+                'unidad_id'           => !empty($data['unidad_id']) ? (int) $data['unidad_id'] : null,
+                'unidad_almacenaje_id'=> !empty($data['unidad_almacenaje_id']) ? (int) $data['unidad_almacenaje_id'] : null,
                 'costo_produccion'    => 0,
             ];
 
@@ -263,8 +263,8 @@ class CatalogoModel extends BaseModel
             'molienda'            => $data['molienda'] ?? null,
             'ph'                  => $data['ph'] ?? null,
             'poder_tintoreo'      => $data['poder_tintoreo'] ?? null,
-            'unidad_id'           => $data['unidad_id'] ?? null,
-            'unidad_almacenaje_id'=> $data['unidad_almacenaje_id'] ?? null,
+            'unidad_id'           => !empty($data['unidad_id']) ? (int) $data['unidad_id'] : null,
+            'unidad_almacenaje_id'=> !empty($data['unidad_almacenaje_id']) ? (int) $data['unidad_almacenaje_id'] : null,
         ];
 
         $this->db->table('item_general')
