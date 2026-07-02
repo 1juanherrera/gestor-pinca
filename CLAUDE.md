@@ -1,7 +1,8 @@
 # CLAUDE.md
 
-> **Última actualización**: 2026-06-05 (documenta sesiones 06-01→06-03: RbacFilter visor read-only + JwtFilter sin fallback débil + FKs faltantes + delete con 409). Ver §"Sesión 2026-06-03".
-> **Penúltima**: 2026-06-02 (deduplicación de materias primas asistida por IA — clusters, merge N→1, auditoría, UNDO). Ver §"Sesión 2026-06-01/02".
+> **Última actualización**: 2026-07-02 (auditoría MP: 54/57 vinculadas, 3 restantes). Ver §"Sesión 2026-07-02".
+> **Anterior**: 2026-06-05 (documenta sesiones 06-01→06-03: RbacFilter visor read-only + JwtFilter sin fallback débil + FKs faltantes + delete con 409). Ver §"Sesión 2026-06-03".
+> **2026-06-02**: deduplicación de materias primas asistida por IA — clusters, merge N→1, auditoría, UNDO. Ver §"Sesión 2026-06-01/02".
 > Backend en estado funcional con seguridad activa (JWT global sin fallback + RbacFilter visor read-only + RBAC por módulo + rol superadmin + token_version + logout server-side + refresh token rotativo) + **API documentada en Swagger UI** + **shape de error unificado en 33 controllers** + **FKs reales en item_proveedor y BOM**. `migrate` limpio. `php spark validar:fixes` es SEGURO (rollback global desde 2026-05-29).
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -1718,4 +1719,47 @@ Antes de borrar chequea: stock activo en capas, uso como ingrediente en fórmula
 ---
 
 > **Snapshot al cierre 2026-06-03 (doc 2026-06-05)**: Seguridad redondeada — visor read-only por filtro global, JWT sin fallback débil (riesgo de deploy eliminado en DEV), integridad referencial real en item_proveedor y BOM, deletes con errores accionables. La deduplicación IA (06-02) da herramienta para limpiar los huérfanos/duplicados restantes con criterio del cliente. Backlog restante: features grandes (real-time, email, /v1/, Redis, éxitos→ApiResponse), 1 decisión de UX (toggle costo real/lista), y la **carga de datos del cliente** (ver `PREGUNTAS_CLIENTE.md`).
+
+---
+
+## Sesión 2026-07-02 — Auditoría de materias primas (datos)
+
+### Vinculaciones MP ↔ proveedores (operaciones directas en DB)
+
+Sesión de auditoría manual para vincular materias primas usadas en formulaciones a sus proveedores correctos. Operaciones ejecutadas directamente sobre la DB (no por código de backend):
+
+- **Vinculación ANTIPIEL → ADIMON 84**: INSERT en `item_proveedor` (AQUATERRA S.A.S., id_proveedor=35, precio $12,000 + IVA 19%, unidad KILO) apuntando a `item_general` id 86.
+- Varias otras vinculaciones realizadas desde la interfaz web por el usuario.
+
+### Estado de la auditoría MP
+
+| Métrica | Valor |
+|---|---|
+| MP sin proveedor al inicio (originales) | 57 |
+| MP resueltas | **54** |
+| MP pendientes | **3** |
+
+**MP restantes sin proveedor** (usadas en formulaciones activas):
+1. **EDAPLAN 915** (código ADI010) — 6 fórmulas, costo ref $22,700/kg
+2. **CELITE 499** (código MSI006) — 2 fórmulas, costo ref $5,400/kg
+3. **RESINA MALEICA AL 60%** (código MP-266) — 1 fórmula, sin costo registrado
+
+### Proveedores relevantes usados en vinculaciones
+
+| Proveedor | id_proveedor | Productos vinculados esta sesión |
+|---|---|---|
+| AQUATERRA S.A.S. | 35 | ANTIPIEL → ADIMON 84 |
+| AZELIS | 39 | (vinculaciones previas) |
+| ISGROUP | 32 | (vinculaciones previas) |
+
+### Excel de seguimiento
+
+Generado manualmente (Python script, sin openpyxl): `C:\Users\juans\Downloads\Auditoria_MP_v3.xlsx` con 3 hojas:
+1. "MP Sin Proveedor (3)" — las 3 restantes
+2. "Posibles Duplicados" — pares MP↔proveedor por nombre similar
+3. "MP Con Prov Sin Formula" — items de proveedor sin uso en formulaciones
+
+---
+
+> **Snapshot al cierre 2026-07-02**: Auditoría MP al 94.7% (54/57). Quedan 3 MP sin proveedor, ninguna crítica por volumen de fórmulas. Los datos están listos para que el módulo Costos de Producción muestre costos más completos.
 
