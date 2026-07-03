@@ -96,11 +96,13 @@ class FormulacionesModel extends BaseModel
         }
 
         $sql1 = 'SELECT ig.nombre, ig.codigo AS codigo_item_general,
-                    ig.*, ci.*, igf.cantidad, igf.porcentaje
+                    ig.*, ci.*, igf.cantidad, igf.porcentaje, igf.orden,
+                    igf.tipo, igf.texto, igf.nota
                     FROM item_general_formulaciones igf
                     LEFT JOIN item_general ig ON ig.id_item_general = igf.item_general_id
                     LEFT JOIN costos_item ci ON ci.item_general_id = ig.id_item_general
-                    WHERE igf.formulaciones_id = ?';
+                    WHERE igf.formulaciones_id = ?
+                    ORDER BY igf.orden ASC, igf.id_item_general_formulaciones ASC';
 
         $items = $this->db->query($sql1, [$item->id_formulaciones])->getResult();
 
@@ -174,6 +176,10 @@ class FormulacionesModel extends BaseModel
                 igf.formulaciones_id,
                 igf.item_general_id   AS materia_prima_id,
                 igf.cantidad,
+                igf.orden,
+                igf.tipo,
+                igf.texto,
+                igf.nota,
                 ig.nombre             AS materia_prima_nombre,
                 ig.codigo             AS materia_prima_codigo,
                 COALESCE(
@@ -194,11 +200,11 @@ class FormulacionesModel extends BaseModel
                     0
                 ) AS costo_total
             FROM item_general_formulaciones igf
-            INNER JOIN item_general ig ON igf.item_general_id = ig.id_item_general
+            LEFT JOIN item_general ig ON igf.item_general_id = ig.id_item_general
             LEFT JOIN costos_item ci   ON ig.id_item_general  = ci.item_general_id
             LEFT JOIN inventario i     ON ig.id_item_general  = i.item_general_id
             WHERE igf.formulaciones_id = ?
-            ORDER BY ig.nombre ASC
+            ORDER BY igf.orden ASC, ig.nombre ASC
         ', [$formulacion->id_formulaciones])->getResult();
 
         if (empty($materiasPrimas)) {
@@ -211,6 +217,10 @@ class FormulacionesModel extends BaseModel
                 'id'                  => (int) $mp->id_item_general_formulaciones,
                 'formulaciones_id'    => (int) $mp->formulaciones_id,
                 'materia_prima_id'    => (int) $mp->materia_prima_id,
+                'orden'               => (int) $mp->orden,
+                'tipo'                => $mp->tipo ?? 'ingrediente',
+                'texto'               => $mp->texto,
+                'nota'                => $mp->nota,
                 'nombre'              => $mp->materia_prima_nombre,
                 'codigo'              => $mp->materia_prima_codigo,
                 'cantidad'            => (float) $mp->cantidad,
@@ -316,6 +326,10 @@ class FormulacionesModel extends BaseModel
                                 igf.item_general_id,
                                 igf.formulaciones_id,
                                 igf.cantidad,
+                                igf.orden,
+                                igf.tipo,
+                                igf.texto,
+                                igf.nota,
                                 i.cantidad AS inventario_cantidad,
                                 ci.fecha_calculo,
                                 ig.nombre AS materia_prima_nombre,
@@ -337,10 +351,11 @@ class FormulacionesModel extends BaseModel
                                     0
                                 ) as costo_total_materia
                             FROM item_general_formulaciones igf
-                            INNER JOIN item_general ig ON igf.item_general_id = ig.id_item_general
+                            LEFT JOIN item_general ig ON igf.item_general_id = ig.id_item_general
                             LEFT JOIN costos_item ci ON ig.id_item_general = ci.item_general_id
                             LEFT JOIN inventario i ON ig.id_item_general = i.item_general_id
-                            WHERE igf.formulaciones_id = ?'; // <--- Ahora usará el ID correcto
+                            WHERE igf.formulaciones_id = ?
+                            ORDER BY igf.orden ASC, igf.id_item_general_formulaciones ASC'; // orden = secuencia de proceso (libreta). LEFT JOIN: incluye filas de instrucción/fase (item_general_id NULL)
 
         // Usamos $realFormulacionId en vez de $item->id_item_general
         $formulaciones = $this->db->query($formulacionesSql, [$realFormulacionId])->getResult();
@@ -364,6 +379,9 @@ class FormulacionesModel extends BaseModel
         }
 
         foreach ($formulaciones as $row) {
+            // Las filas de instrucción/fase no suman al peso ni al costo.
+            if (($row->tipo ?? 'ingrediente') !== 'ingrediente') continue;
+
             if ($usarNuevoVolumen) {
                 $cantidadRecalculada = round($row->cantidad * $factorVolumen, 2);
                 $costoTotalMateria = round($row->costo_total_materia * $factorVolumen, 2);
@@ -481,6 +499,10 @@ class FormulacionesModel extends BaseModel
                 'id_item_general_formulaciones' => $f['id_item_general_formulaciones'],
                 'item_general_id' => $f['item_general_id'],
                 'formulaciones_id' => $f['formulaciones_id'],
+                'orden' => $f['orden'] ?? 0,
+                'tipo' => $f['tipo'] ?? 'ingrediente',
+                'texto' => $f['texto'] ?? null,
+                'nota' => $f['nota'] ?? null,
                 'cantidad' => $f['cantidad'],
                 'cantidad_recalculada' => round($cantidad_recalculada, 2),
                 'inventario_cantidad' => $f['inventario_cantidad'],
@@ -959,6 +981,61 @@ class FormulacionesModel extends BaseModel
     }
 
     /**
+     * Inserta las líneas de una formulación EN ORDEN. Cada línea puede ser:
+     *  - 'ingrediente' (default): materia prima. Dedup por item_general_id
+     *    (los ingredientes repetidos son Fase 3; hoy se colapsan).
+     *  - 'instruccion' / 'fase': paso de proceso o separador (item_general_id NULL, texto).
+     * `nota` = anotación corta por ingrediente. `orden` = posición enviada por el frontend.
+     */
+    private function insertarLineas(int $formulacionId, array $lineas): void
+    {
+        // Fase 3: el mismo ingrediente puede repetirse (se agrega en pasos distintos).
+        $orden = 0;
+        foreach ($lineas as $mp) {
+            $tipo = $mp['tipo'] ?? 'ingrediente';
+            if (! in_array($tipo, ['ingrediente', 'instruccion', 'fase'], true)) {
+                $tipo = 'ingrediente';
+            }
+
+            if ($tipo === 'ingrediente') {
+                if (empty($mp['materia_prima_id'])) continue;
+                $mpId = (int) $mp['materia_prima_id'];
+                $orden++;
+                $nota = trim((string) ($mp['nota'] ?? ''));
+                $this->db->query(
+                    'INSERT INTO item_general_formulaciones
+                        (formulaciones_id, item_general_id, cantidad, porcentaje, orden, tipo, nota)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)',
+                    [
+                        $formulacionId,
+                        $mpId,
+                        $mp['cantidad']   ?? 0,
+                        $mp['porcentaje'] ?? 0,
+                        (int) ($mp['orden'] ?? $orden),
+                        'ingrediente',
+                        $nota !== '' ? $nota : null,
+                    ]
+                );
+            } else {
+                $texto = trim((string) ($mp['texto'] ?? ''));
+                if ($texto === '') continue; // no guardar pasos vacíos
+                $orden++;
+                $this->db->query(
+                    'INSERT INTO item_general_formulaciones
+                        (formulaciones_id, item_general_id, cantidad, porcentaje, orden, tipo, texto)
+                     VALUES (?, NULL, 0, 0, ?, ?, ?)',
+                    [
+                        $formulacionId,
+                        (int) ($mp['orden'] ?? $orden),
+                        $tipo,
+                        $texto,
+                    ]
+                );
+            }
+        }
+    }
+
+    /**
      * Clona la fórmula activa de $fromItemId hacia $toItemId.
      * El producto destino debe existir y NO debe tener una fórmula activa
      * (si la tiene, se desactiva con UPDATE estado=0 igual que crearFormulacion).
@@ -1003,11 +1080,12 @@ class FormulacionesModel extends BaseModel
         }
 
         $ingredientes = $this->db->query(
-            'SELECT igf.item_general_id, igf.cantidad, igf.porcentaje
+            "SELECT igf.item_general_id, igf.cantidad, igf.porcentaje, igf.orden, igf.tipo, igf.texto, igf.nota
              FROM item_general_formulaciones igf
-             INNER JOIN item_general ig ON ig.id_item_general = igf.item_general_id
+             LEFT JOIN item_general ig ON ig.id_item_general = igf.item_general_id
              WHERE igf.formulaciones_id = ?
-               AND ig.deleted_at IS NULL',
+               AND (ig.deleted_at IS NULL OR igf.tipo <> 'ingrediente')
+             ORDER BY igf.orden ASC, igf.id_item_general_formulaciones ASC",
             [$origen['id_formulaciones']]
         )->getResultArray();
 
@@ -1019,6 +1097,10 @@ class FormulacionesModel extends BaseModel
             'materia_prima_id' => (int) $i['item_general_id'],
             'cantidad'         => (float) $i['cantidad'],
             'porcentaje'       => (float) $i['porcentaje'],
+            'orden'            => (int) $i['orden'],
+            'tipo'             => $i['tipo'] ?? 'ingrediente',
+            'texto'            => $i['texto'] ?? null,
+            'nota'             => $i['nota'] ?? null,
         ], $ingredientes);
 
         // Reusar crearFormulacion con la receta copiada
@@ -1064,23 +1146,7 @@ class FormulacionesModel extends BaseModel
 
             $formulacionId = $this->db->insertID();
 
-            // Insertar materias primas (dedup por si el frontend envía repetidos)
-            $vistos = [];
-            foreach ($data['materias_primas'] as $mp) {
-                if (empty($mp['materia_prima_id'])) continue;
-                $mpId = (int) $mp['materia_prima_id'];
-                if (isset($vistos[$mpId])) continue;
-                $vistos[$mpId] = true;
-                $this->db->query('
-                    INSERT INTO item_general_formulaciones (formulaciones_id, item_general_id, cantidad, porcentaje)
-                    VALUES (?, ?, ?, ?)
-                ', [
-                    $formulacionId,
-                    $mpId,
-                    $mp['cantidad']   ?? 0,
-                    $mp['porcentaje'] ?? 0,
-                ]);
-            }
+            $this->insertarLineas($formulacionId, $data['materias_primas']);
 
             // Guardar volumen en costos_item si viene en el payload
             if (isset($data['volumen']) && is_numeric($data['volumen']) && $data['volumen'] > 0) {
@@ -1155,22 +1221,7 @@ class FormulacionesModel extends BaseModel
                 DELETE FROM item_general_formulaciones WHERE formulaciones_id = ?
             ', [$formulacionId]);
 
-            $vistos = [];
-            foreach ($data['materias_primas'] as $mp) {
-                if (empty($mp['materia_prima_id'])) continue;
-                $mpId = (int) $mp['materia_prima_id'];
-                if (isset($vistos[$mpId])) continue;
-                $vistos[$mpId] = true;
-                $this->db->query('
-                    INSERT INTO item_general_formulaciones (formulaciones_id, item_general_id, cantidad, porcentaje)
-                    VALUES (?, ?, ?, ?)
-                ', [
-                    $formulacionId,
-                    $mpId,
-                    $mp['cantidad']   ?? 0,
-                    $mp['porcentaje'] ?? 0,
-                ]);
-            }
+            $this->insertarLineas($formulacionId, $data['materias_primas']);
 
             // Guardar volumen en costos_item si viene en el payload
             if (isset($data['volumen']) && is_numeric($data['volumen']) && $data['volumen'] > 0) {
@@ -1246,12 +1297,16 @@ class FormulacionesModel extends BaseModel
                 igf.item_general_id,
                 igf.cantidad,
                 igf.porcentaje,
+                igf.orden,
+                igf.tipo,
+                igf.texto,
+                igf.nota,
                 ig.nombre AS item_nombre,
                 ig.codigo AS item_codigo
             FROM item_general_formulaciones igf
             LEFT JOIN item_general ig ON ig.id_item_general = igf.item_general_id
             WHERE igf.formulaciones_id = ?
-            ORDER BY igf.id_item_general_formulaciones
+            ORDER BY igf.orden ASC, igf.id_item_general_formulaciones ASC
         ", [$formulacionId])->getResultArray();
 
         // Próximo número de versión
@@ -1418,20 +1473,18 @@ class FormulacionesModel extends BaseModel
             // Reemplazar receta actual por la del snapshot
             $this->db->query('DELETE FROM item_general_formulaciones WHERE formulaciones_id = ?', [$formulacionId]);
 
-            foreach ($ingredientes as $ing) {
-                $itemId = (int) ($ing['item_general_id'] ?? 0);
-                if ($itemId <= 0) continue;
-                $this->db->query(
-                    'INSERT INTO item_general_formulaciones (formulaciones_id, item_general_id, cantidad, porcentaje)
-                     VALUES (?, ?, ?, ?)',
-                    [
-                        $formulacionId,
-                        $itemId,
-                        (float) ($ing['cantidad']   ?? 0),
-                        (float) ($ing['porcentaje'] ?? 0),
-                    ]
-                );
-            }
+            // Mapear el snapshot al formato de insertarLineas (respeta ingredientes,
+            // instrucciones y fases). Snapshots viejos sin `tipo` → 'ingrediente'.
+            $lineas = array_map(fn($ing) => [
+                'tipo'             => $ing['tipo'] ?? 'ingrediente',
+                'materia_prima_id' => $ing['item_general_id'] ?? null,
+                'cantidad'         => $ing['cantidad']   ?? 0,
+                'porcentaje'       => $ing['porcentaje'] ?? 0,
+                'orden'            => $ing['orden']      ?? null,
+                'texto'            => $ing['texto']      ?? null,
+                'nota'             => $ing['nota']       ?? null,
+            ], $ingredientes);
+            $this->insertarLineas($formulacionId, $lineas);
 
             $this->db->transCommit();
         } catch (\Throwable $e) {
