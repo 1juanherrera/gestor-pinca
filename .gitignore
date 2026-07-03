@@ -124,3 +124,6 @@ _modules/*
 
 /results/
 /phpunit*.xml
+
+# Override local de Docker (writable como volumen ext4)
+docker-compose.override.yml
