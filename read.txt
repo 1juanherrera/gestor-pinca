@@ -13,3 +13,6 @@ DISPERSANTE AGUA SOLO EN VINILO
 el epoxico lleva 4 galones a comparacion de los demas en cuñete que son 5
 
 catalizados, formula aparte con costo en tabla de costos en todas las formulas de epoxicos
+
+no se actualiaza al cambiar de formulacion permaneciendo los datos de la antigua
+AUMENTAR TAMAÑO LENGHT DE DIRECCION PROVEEDOR

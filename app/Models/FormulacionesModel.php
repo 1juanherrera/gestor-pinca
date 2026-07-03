@@ -1652,14 +1652,25 @@ class FormulacionesModel extends BaseModel
                     }
                 }
 
-                // Item archivado o sin proveedor priority-1 → faltante
-                if (!empty($mp['mp_deleted']) || empty($proveedoresPorMp[$mpId])) {
+                $esAgua = mb_strtoupper(trim($mp['mp_nombre'])) === 'AGUA';
+
+                // Item archivado o sin proveedor → faltante (AGUA se excluye: tiene costo propio)
+                if (!empty($mp['mp_deleted']) || (empty($proveedoresPorMp[$mpId]) && !$esAgua)) {
                     $faltantes[] = [
                         'id'      => $mpId,
                         'nombre'  => $mp['mp_nombre'],
                         'codigo'  => $mp['mp_codigo'],
                         'motivo'  => !empty($mp['mp_deleted']) ? 'archivado' : 'sin_proveedor',
                     ];
+                    continue;
+                }
+
+                // AGUA sin proveedor: usar su costo estándar de costos_item
+                if ($esAgua && empty($proveedoresPorMp[$mpId])) {
+                    $costoAgua = (float) $this->db->query(
+                        'SELECT COALESCE(costo_unitario, 0) AS cu FROM costos_item WHERE item_general_id = ?', [$mpId]
+                    )->getRow()->cu;
+                    $costoMpTotal += $cantidad * $costoAgua;
                     continue;
                 }
 
@@ -1729,11 +1740,13 @@ class FormulacionesModel extends BaseModel
             ];
         }
 
-        // Cobertura global de MPs: para onboarding/diagnóstico del usuario.
+        // Cobertura global de MPs (AGUA se cuenta como cubierta: costo propio).
         $totalMps     = count($mpIds);
         $cubiertasMps = 0;
         foreach ($mpIds as $mid) {
-            if (!empty($proveedoresPorMp[$mid])) $cubiertasMps++;
+            $nombre = $mpsPorId[$mid]['nombre'] ?? '';
+            $esAgua = mb_strtoupper(trim($nombre)) === 'AGUA';
+            if (!empty($proveedoresPorMp[$mid]) || $esAgua) $cubiertasMps++;
         }
 
         return [
@@ -1852,6 +1865,33 @@ class FormulacionesModel extends BaseModel
             $cantidad = (float) $mp['cantidad'];
             $opciones = $proveedoresPorMp[$mpId] ?? [];
             $mejor    = $opciones[0] ?? null;
+            $esAgua   = mb_strtoupper(trim($mp['mp_nombre'])) === 'AGUA';
+
+            if ($esAgua && empty($opciones)) {
+                $costoAgua = (float) $this->db->query(
+                    'SELECT COALESCE(costo_unitario, 0) AS cu FROM costos_item WHERE item_general_id = ?', [$mpId]
+                )->getRow()->cu;
+                $detalle[] = [
+                    'mp_id'               => $mpId,
+                    'nombre'              => $mp['mp_nombre'],
+                    'codigo'              => $mp['mp_codigo'],
+                    'archivado'           => false,
+                    'cantidad_kg'         => $cantidad,
+                    'porcentaje'          => (float) ($mp['porcentaje'] ?? 0),
+                    'proveedor_id'        => null,
+                    'proveedor_nombre'    => 'Costo interno',
+                    'item_proveedor_id'   => null,
+                    'item_proveedor_nombre' => null,
+                    'unidad_compra'       => null,
+                    'factor_conversion'   => null,
+                    'precio_unitario'     => $costoAgua,
+                    'precio_por_kg'       => $costoAgua,
+                    'subtotal'            => round($cantidad * $costoAgua, 2),
+                    'total_opciones'      => 0,
+                    'costo_interno'       => true,
+                ];
+                continue;
+            }
 
             $detalle[] = [
                 'mp_id'               => $mpId,
