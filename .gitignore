@@ -127,3 +127,7 @@ _modules/*
 
 # Override local de Docker (writable como volumen ext4)
 docker-compose.override.yml
+
+# Respaldos locales de la BD (dumps SQL) — no versionar. Excepto el estado final de referencia.
+backups/*.sql
+!backups/ESTADO_FINAL_2026-07-03_post-recarga-formulas.sql
