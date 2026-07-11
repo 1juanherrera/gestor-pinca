@@ -1763,3 +1763,35 @@ Generado manualmente (Python script, sin openpyxl): `C:\Users\juans\Downloads\Au
 
 > **Snapshot al cierre 2026-07-02**: Auditoría MP al 94.7% (54/57). Quedan 3 MP sin proveedor, ninguna crítica por volumen de fórmulas. Los datos están listos para que el módulo Costos de Producción muestre costos más completos.
 
+
+---
+
+## Sesión 2026-07-03 — Formulaciones: orden + instrucciones + repetidos (Fases 1-3) + fix login 500
+
+Commits: `4b007bf` (chore gitignore override), `f58169b` (feat formulaciones), `ff8e2b6` (chore backups). Migraciones aplicadas: `migrate` limpio.
+
+### Fix login 500 del primer request del día (`4b007bf`)
+CI4 hace `chmod()` al crear su log/cache/session del día en `writable/`, pero `writable/` está bind-montado desde Windows (drvfs) que NO soporta chmod → `ErrorException: chmod(): Operation not permitted` → 500 (p. ej. en `POST /api/login`). Tras crear el archivo dejaba de fallar (por eso solo el 1er request del día).
+Fix: montar `writable/` como **volumen Docker** (ext4, sí soporta chmod) vía `docker-compose.override.yml` **local (gitignored)** con volumen `app_writable` en `/var/www/html/writable`. `docker compose up -d app`. Verificado. (`uploads/` estaba vacío, sin pérdida.)
+
+### Feat: 3 migraciones + FormulacionesModel (`f58169b`)
+Objetivo: las fórmulas deben verse/guardarse en el ORDEN de la libreta, soportar el MISMO ingrediente varias veces (se agrega en pasos distintos) e incluir instrucciones/notas.
+Migraciones a `item_general_formulaciones`:
+```
+2026-07-03-000001_AddOrdenToFormulacionLineas      → orden SMALLINT (+ backfill por id)
+2026-07-03-000002_AddInstruccionesToFormulacionLineas → tipo ENUM('ingrediente','instruccion','fase'), texto VARCHAR(255), nota VARCHAR(150); item_general_id NULLABLE
+2026-07-03-000003_DropUniqueIngredienteFormulacion → quita UNIQUE(formulaciones_id,item_general_id)
+```
+`FormulacionesModel.php`:
+- Lecturas (`calculate_costs`, `getFormulacionConMateriasPrimas`, `get_item_formulacion_by_id`, `crearVersion`, `clonarFormulacion`) → **LEFT JOIN** item_general + traen `tipo/texto/nota/orden` + `ORDER BY igf.orden`. Las filas de instrucción/fase (item_general_id NULL) se interleavean y **no** suman al peso/costo.
+- Escrituras: nuevo helper privado **`insertarLineas()`** (usado por crear/actualizar/restaurarVersion) que maneja ingrediente|instruccion|fase, persiste `orden`, y **ya NO deduplica** (permite repetidos). El costeo funciona con repetidos porque la cantidad es por LÍNEA y el precio por MATERIAL (mismo material → mismo proveedor/precio; la auto-selección keyea por item_general_id, correcto).
+- El merge de dedup IA sigue consolidando en PHP (no dependía del UNIQUE) — no se rompió.
+
+### Datos: re-cargue de fórmulas desde la libreta (no código)
+Informe `PROYECTO_PINCA/INFORME_FORMULAS_CONSOLIDADAS_2026-07-03.md`: las fórmulas con ingredientes partidos en la libreta (ej. Resina 60+40, Varsol 30+55) estaban MAL en el sistema (guardaban solo UNA adición → faltaban kilos; a EPOXICA ROJO OXIDO le faltaba el 75% de la resina). Causa: el UNIQUE + el merge que "consolida cantidades".
+Se **re-cargaron 21 de 23** fórmulas desde las fotos (`PROYECTO_PINCA/formulas_imagenes/`) partidas + en orden + con instrucciones (SQL directo, respaldo por lote). **Pendientes 2**: VINILO BLANCO TIPO 2 y TIPO 3 (dos columnas con rayitas, peor caligrafía, Agua=0/1 — probable mal emparejamiento nombre↔kg; el usuario las aclara con el encargado). Conflictos foto-vs-sistema dejados con el valor del sistema y listados en el handoff (§8).
+
+### Backups (`ff8e2b6`)
+`backups/ESTADO_FINAL_2026-07-03_post-recarga-formulas.sql` versionado como referencia. `backups/*.sql` gitignored (con esa excepción); desregistrados los 2 dumps viejos que estaban trackeados (siguen en disco). Los `.sql` locales son los únicos restore points del re-cargue (los cambios de datos NO están en git).
+
+> ⚠️ Fase 4 (opcional, no hecha): sub-componente catalizador (base + catalizador con su proporción, ej. epóxico "para 1 galón r/4"). Hoy el catalizador quedó como fila 'fase' + instrucciones.
